@@ -213,23 +213,23 @@ const u1* Segmenter::peekToken(u2& aLen, u2& aSymLen, u2 n)
 		int num = m_unidict->findHits((const char*)ptr,&rs[1],1024-1, MAX_TOKEN_LENGTH);
 		if(num){
 			if(rs[1].length == len)
-				m_thunk.setItems(i, num, &rs[1]);
+				m_thunk.setItems(i, num, &rs[1], m_unidict);
 			else{
 				//no single char in unigram-dict.
 				rs[0].length = len;
 				rs[0].value = 1;
-				m_thunk.setItems(i,num+1, rs);
+				m_thunk.setItems(i,num+1, rs, m_unidict);
 			}
 		}else{
 			rs[0].length = len;
 			rs[0].value = 1;
-			m_thunk.setItems(i,1, rs);
+			m_thunk.setItems(i,1, rs, m_unidict);
 		}
 		if(m_kwdict)
 			num = m_kwdict->findHits((const char*)ptr,&rs[1],1024-1, MAX_TOKEN_LENGTH);
 		else
 			num = 0;
-		m_thunk.setKwItems(i, num, &rs[1]); //set to kword
+		m_thunk.setKwItems(i, num, &rs[1], m_kwdict); //set to kword
 
 		ptr +=  len;
 		i+=len;

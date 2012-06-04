@@ -32,7 +32,7 @@
 #include "freelist.h"
 
 #define CHUNK_BUFFER_SIZE 1024
-#define CHUNK_DEBUG		1
+#define CHUNK_DEBUG		0
 
 namespace css {
 	
@@ -111,7 +111,7 @@ namespace css {
 		}
 		inline void popup() {
 			if(tokens.size()) {
-				total_length -= tokens[tokens.size() - 1];
+				total_length -= tokens.back();
 				tokens.pop_back();
 				freqs.pop_back();
 			}
@@ -245,8 +245,14 @@ namespace css {
 		};
 		~MMThunk() {};
 		
-		void setItems(i4 idx, u2 rs_count, UnigramDict::result_pair_type* results);
-		void setKwItems(i4 idx, u2 rs_count, UnigramDict::result_pair_type* results);
+		void setItems(i4 idx,
+		    u2 rs_count,
+		    UnigramDict::result_pair_type* results,
+		    UnigramDict* dict);
+		void setKwItems(i4 idx,
+		    u2 rs_count,
+		    UnigramDict::result_pair_type* results,
+		    UnigramDict* dict);
 		void advance(u2 step) { base_offset += step; };
 		//peek the current token
 		u1* peekToken(u2& length);
@@ -267,7 +273,7 @@ namespace css {
 		u2 base_offset;
 		CRFPP::FreeList<item_info> item_list;
 		item_info* m_charinfos[CHUNK_BUFFER_SIZE];
-		std::vector<u2> tokens;
+		std::queue<u2> tokens;
 		//std::vector<u4> omni_tokens; //dirty hacking -> the low word -> offset; the high -> len
 		item_info* m_kwinfos[CHUNK_BUFFER_SIZE];
 		i4 m_kw_pos;

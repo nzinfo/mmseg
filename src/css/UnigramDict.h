@@ -27,6 +27,8 @@
 #include <string>
 
 #include "darts.h"
+#include "csr.h"
+#include "csr_mmap.h"
 
 namespace css {
 class UnigramCorpusReader;
@@ -43,8 +45,12 @@ class UnigramDict {
 
  public:
 	typedef Darts::DoubleArray::result_pair_type result_pair_type;
-	UnigramDict() {};
-	virtual ~UnigramDict() {};
+	UnigramDict():m_file(NULL) {};
+	virtual ~UnigramDict() {
+		if(m_file){
+			 csr_munmap_file(m_file);
+		 }
+	};
  public:
 
     virtual int load(const char* filename);	
@@ -62,13 +68,16 @@ class UnigramDict {
      */
     virtual int findHits(const char* buf, result_pair_type *result = NULL, size_t result_len = 0, int keylen = 0);
 
-    virtual int import(UnigramCorpusReader &ur);
+    virtual int import(UnigramCorpusReader &ur, std::string target_file);
+	
+	virtual int import(UnigramCorpusReader &ur );
 
     virtual int save(const char* filename);
 
     virtual int exactMatch(const char* key, int *id = NULL);
 protected:
 	Darts::DoubleArray m_da;
+	_csr_mmap_t* m_file;
 };
 
 } /* End of namespace css */

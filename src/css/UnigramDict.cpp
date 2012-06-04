@@ -27,11 +27,30 @@
 namespace css {
 
 
+const char thdt_head_mgc[] = "UNID";
+
+typedef struct _csr_unigramdict_fileheader_tag{
+	char mg[4];
+	short version;
+	short reserve;
+	int	  darts_size;
+	int	  tagpool_size; //[string\0, ]
+	int   pool_size; // [(freq, [(offset_tag, count), ]), ]
+}_csr_unigramdict_fileheader;
+
 
 int UnigramDict::load(const char* filename)
 {
 	m_da.clear();
-	return m_da.open(filename);
+	m_file = csr_mmap_file(filename,0);
+	
+	if(!m_file)
+		return -1; //can not load dict.
+	csr_offset_t tm_size = csr_mmap_size(m_file);
+	u1* ptr = (u1*)csr_mmap_map(m_file);
+	u1* ptr_end = ptr + tm_size;
+	m_da.set_array(ptr,tm_size);
+	return 0;
 }
 
 /** 
@@ -55,6 +74,35 @@ int UnigramDict::findHits(const char* buf, result_pair_type *result, size_t resu
 	return num;
 }
 
+int UnigramDict::import(UnigramCorpusReader &ur, std::string target_file)
+{
+	/*
+		apply tag pool.
+		The file format
+		- tag map
+		- darts lookup file.
+	*/
+	std::vector<std::string> tag_map ;
+
+	std::vector <Darts::DoubleArray::key_type *> key;
+	std::vector <Darts::DoubleArray::value_type> value;
+	int i = 0;
+	UnigramRecord* rec = NULL;
+	for(i=0;i<ur.count();i++){
+		rec = ur.getAt(i);
+		if(rec){
+			char* ptr = &rec->key[0];
+			key.push_back(ptr);
+			value.push_back(rec->count);
+		}
+	}//end for	
+	//build da
+	m_da.clear();
+	//1st 0 is the length array.
+	//return m_da.build(key.size(), &key[0], 0, 0, &progress_bar) ;
+	return m_da.build(key.size(), &key[0], 0, &value[0] ) ;
+}
+
 int UnigramDict::import(UnigramCorpusReader &ur)
 {
 	std::vector <Darts::DoubleArray::key_type *> key;
@@ -75,7 +123,6 @@ int UnigramDict::import(UnigramCorpusReader &ur)
 	//return m_da.build(key.size(), &key[0], 0, 0, &progress_bar) ;
 	return m_da.build(key.size(), &key[0], 0, &value[0] ) ;
 }
-
 int UnigramDict::save(const char* filename)
 {
 	m_da.save(filename);
