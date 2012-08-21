@@ -1,0 +1,33 @@
+syntax:glob
+*.pyc
+*.exe
+*.dll
+*.o
+*.obj
+*.a
+*.la
+*~
+*.orig
+.DS_Store
+.settings/
+binlog.*
+
+#qt related
+moc_*
+
+#cmake related
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+#project related
+version.gen
+
+#thrift related
+gen-cpp/
+
+glob:data/
+glob:zygiella/interface
+glob:zygiella/interface_client
+
