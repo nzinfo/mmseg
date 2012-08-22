@@ -7,7 +7,7 @@
 
 namespace css {
 //using namespace CRFPP;
-#ifdef WIN32
+#if defined(_MSC_VER) && (_MSC_VER > 1200)
 using namespace stdext;
 #else
 using namespace __gnu_cxx;
