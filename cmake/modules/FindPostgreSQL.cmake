@@ -34,8 +34,10 @@ else()
   set(POSTGRESQL_VERSION "unknown")
 endif()
 
-find_path(POSTGRESQL_INCLUDE_DIR libpq-fe.h
+find_path(POSTGRESQL_INCLUDE_DIR postgres_fe.h
   ${PG_CONFIG_INCLUDEDIR}
+  ${PG_CONFIG_INCLUDEDIR}/postgresql
+  ${PG_CONFIG_INCLUDEDIR}/postgresql/server
   /usr/local/include
   /usr/include
   /usr/local/pgsql/include
@@ -47,6 +49,25 @@ find_path(POSTGRESQL_INCLUDE_DIR libpq-fe.h
   /usr/include/postgresql/*/server
   $ENV{ProgramFiles}/PostgreSQL/*/include
   $ENV{SystemDrive}/PostgreSQL/*/include)
+
+find_path(POSTGRESQL_EXTLIB_DIR plpgsql.dll
+  PATHS
+  ${PG_CONFIG_LIBDIR}  
+  ${PG_CONFIG_LIBDIR}/postgresql
+  /usr/lib
+  /usr/local/lib
+  /usr/lib/postgresql
+  /usr/lib64
+  /usr/local/lib64
+  /usr/lib64/postgresql
+  /usr/local/pgsql/lib
+  /usr/local/pgsql/lib64  
+  $ENV{ProgramFiles}/PostgreSQL/*/lib
+  $ENV{SystemDrive}/PostgreSQL/*/lib
+  $ENV{ProgramFiles}/PostgreSQL/*/lib/ms
+  $ENV{SystemDrive}/PostgreSQL/*/lib/ms)
+
+message(STATUS "Found ZYGEXT_CORE core: ${POSTGRESQL_EXTLIB_DIR}")
 
 find_library(POSTGRESQL_LIBRARIES NAMES pq libpq
   PATHS
