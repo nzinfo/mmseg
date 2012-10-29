@@ -165,6 +165,11 @@ add_definitions(-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_REENTRANT)
 #find_package(LibEvent)
 #find_package(Thrift REQUIRED)
 #find_package(Boost REQUIRED)
+FIND_PACKAGE(MsgPack REQUIRED)
+FIND_PACKAGE(ZeroMQ)
+IF (ZEROMQ_FOUND)
+        MESSAGE(STATUS "Found zeromq (lib) in: ${ZEROMQ_LIBRARY}")
+ENDIF (ZEROMQ_FOUND)
 
 # Add needed subdirs - the order is important, since src needs some vars set by other dirs
 #add_subdirectory(data)
