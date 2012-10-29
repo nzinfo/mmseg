@@ -85,4 +85,10 @@ add_library(mmseg STATIC ${SOURCES} ${HEADERS})
 #add_dependencies(irc_core GenerateMoc)
 #add_dependencies(irc_core mod_common)
 
+# build the demo app
+add_executable(mmseg_bin mmseg_main.cpp )
+set_target_properties(mmseg_bin PROPERTIES
+                               OUTPUT_NAME ./mmseg)
+target_link_libraries(mmseg_bin mmseg)
+add_dependencies(mmseg_bin mmseg)
 
