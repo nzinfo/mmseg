@@ -1,0 +1,26 @@
+The zeromq protocol for mmseg.
+
+cmds:
+Q:
+  V:
+  i32: return the ver
+  str: the message
+
+D:
+  the data package
+
+= input:
+  @cmd[1b]: the command
+  @crc32: used as text id.
+  @text: the real text
+  # not support! for easy arch.
+  @method: currently only mmseg | crfseg
+  @dict: can use multi dict
+
+= output:
+  R:
+  @crc32: used as id.
+  @bin: the binmap of segments.
+  @pos: the pos info. [option]
+
+! use messagepark.
