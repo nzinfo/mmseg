@@ -92,3 +92,5 @@ set_target_properties(mmseg_bin PROPERTIES
 target_link_libraries(mmseg_bin mmseg)
 add_dependencies(mmseg_bin mmseg)
 
+add_executable(tst_stdin tests/tst_timeout_std.c )
+

@@ -9,6 +9,10 @@ Q:
 D:
   the data package
 
+P:
+  the ping command -> are u alive?
+  the response must be O, stands for OK.
+
 = input:
   @cmd[1b]: the command
   @crc32: used as text id.
@@ -24,3 +28,44 @@ D:
   @pos: the pos info. [option]
 
 ! use messagepark.
+# needs to bind two interface 
+  + one data in.
+  + the other data out
+
+# needs a control interface
+# needs a buffer @Sphinx side..
+  /*
+   * should in sphinx code side.
+   *  -> send text to processor [publish]
+   *  -> recv result from result pool, [push] pushed by workers.
+   * @Sphinx only one token co-processor is supported. so....
+   */
+
+[test bed]
+use python!!
+
+easy_install pyzmq
+easy_install msgpack-python ->! forgive msgpack, use custom binrary protocol.
+
+text -> [push] - > {task queue }
+                   [pull] -> raw text
+
+use c-extension bitarray process the segmentor.
+http://pypi.python.org/pypi/bitarray/
+
+
+[todo]
+ = use boost warp segmentor -> for fast python prototype.
+ = refer current impl.
+
+
+
+
+
+SET(PYTHON_INCLUDE_DIRS "/usr/include/python2.6")
+find_package(PythonLibs REQUIRED)
+include_directories(${PYTHON_INCLUDE_DIRS})
+target_link_libraries(${PROJNAME} ${PYTHON_LIBRARIES})
+
+boost refer
+http://code.google.com/p/opennero/source/browse/trunk/cmake/FindBoost.cmake

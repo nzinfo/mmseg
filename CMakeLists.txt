@@ -164,12 +164,25 @@ add_definitions(-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_REENTRANT)
 # check packages.
 #find_package(LibEvent)
 #find_package(Thrift REQUIRED)
-#find_package(Boost REQUIRED)
+find_package(Boost COMPONENTS program_options python REQUIRED)
+#FIND_PACKAGE( Boost 1.40 COMPONENTS program_options REQUIRED )
+#INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+
+IF (Boost_FOUND)
+    MESSAGE(STATUS "Found boost (lib) in: ${Boost_LIBRARY_DIRS}")
+ENDIF (Boost_FOUND)
+
 FIND_PACKAGE(MsgPack REQUIRED)
 FIND_PACKAGE(ZeroMQ)
 IF (ZEROMQ_FOUND)
         MESSAGE(STATUS "Found zeromq (lib) in: ${ZEROMQ_LIBRARY}")
 ENDIF (ZEROMQ_FOUND)
+
+find_package(PythonInterp REQUIRED)
+find_package(PythonLibs REQUIRED)
+IF (PYTHONLIBS_FOUND)
+     MESSAGE(STATUS "Found python lib in: ${PYTHON_LIBRARIES}")
+ENDIF (PYTHONLIBS_FOUND)
 
 # Add needed subdirs - the order is important, since src needs some vars set by other dirs
 #add_subdirectory(data)
