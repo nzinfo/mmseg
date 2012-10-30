@@ -170,6 +170,11 @@ find_package(Boost COMPONENTS program_options python REQUIRED)
 
 IF (Boost_FOUND)
     MESSAGE(STATUS "Found boost (lib) in: ${Boost_LIBRARY_DIRS}")
+    SET(Boost_USE_STATIC_LIBS OFF)
+    SET(Boost_USE_MULTITHREADED ON)
+    SET(Boost_USE_STATIC_RUNTIME OFF)
+    #reset options -> as we support Linux only, require boost does not the matter.
+    find_package(Boost COMPONENTS program_options python REQUIRED)
 ENDIF (Boost_FOUND)
 
 FIND_PACKAGE(MsgPack REQUIRED)
@@ -190,4 +195,5 @@ ENDIF (PYTHONLIBS_FOUND)
 #add_subdirectory(pics)
 #add_subdirectory(po)
 add_subdirectory(src)
+add_subdirectory(python)
 #add_subdirectory(examples)
