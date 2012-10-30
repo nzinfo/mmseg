@@ -1,6 +1,14 @@
 
 INCLUDE_DIRECTORIES("${Boost_INCLUDE_DIRS}" "${PYTHON_INCLUDE_DIR}")
 
+set(MAIN_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
+
+include_directories(${MAIN_SOURCE_DIR})
+include_directories(${MAIN_SOURCE_DIR}/css)
+include_directories(${MAIN_SOURCE_DIR}/iniparser)
+include_directories(${MAIN_SOURCE_DIR}/utils)
+
+
 FIND_PACKAGE(Boost COMPONENTS python)
 ADD_LIBRARY(pymmseg SHARED pymmseg.cpp)
 #set_target_properties(pymmseg PROPERTIES
