@@ -1,9 +1,13 @@
 
-INCLUDE_DIRECTORIES("${Boost_INCLUDE_DIRS}" "${PYTHON_INCLUDE_DIRS}")
+INCLUDE_DIRECTORIES("${Boost_INCLUDE_DIRS}" "${PYTHON_INCLUDE_DIR}")
 
 FIND_PACKAGE(Boost COMPONENTS python)
 ADD_LIBRARY(pymmseg SHARED pymmseg.cpp)
-TARGET_LINK_LIBRARIES(pymmseg ${Boost_LIBRARIES})
+#set_target_properties(pymmseg PROPERTIES
+#                               OUTPUT_NAME pymmseg)
+set_target_properties(pymmseg PROPERTIES PREFIX "")
+
+TARGET_LINK_LIBRARIES(pymmseg ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
  
 IF(CMAKE_COMPILER_IS_GNUCXX)
    ADD_DEFINITIONS("-Wall")

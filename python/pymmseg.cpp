@@ -5,7 +5,7 @@
    return "Yay!";
  }
  
- BOOST_PYTHON_MODULE(libyay)
+ BOOST_PYTHON_MODULE(pymmseg)
  {
    using namespace boost::python;
    def("yay", yay);
