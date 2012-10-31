@@ -57,7 +57,8 @@ http://pypi.python.org/pypi/bitarray/
 [todo]
  = use boost warp segmentor -> for fast python prototype.
  = refer current impl.
-
+ = use simple request reponse protocol.
+ = do NOT compress result for dirty & quick.. for Sphinx.
 
 
 
