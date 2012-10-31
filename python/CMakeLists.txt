@@ -14,8 +14,8 @@ ADD_LIBRARY(pymmseg SHARED pymmseg.cpp)
 #set_target_properties(pymmseg PROPERTIES
 #                               OUTPUT_NAME pymmseg)
 set_target_properties(pymmseg PROPERTIES PREFIX "")
-
-TARGET_LINK_LIBRARIES(pymmseg ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+add_dependencies(pymmseg mmseg)
+TARGET_LINK_LIBRARIES(pymmseg ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} mmseg )
  
 IF(CMAKE_COMPILER_IS_GNUCXX)
    ADD_DEFINITIONS("-Wall")

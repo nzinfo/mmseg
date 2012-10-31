@@ -82,6 +82,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/utils)
 #add_definitions(-DCOMMUNI_STATIC)
 add_library(mmseg STATIC ${SOURCES} ${HEADERS})
 
+SET_TARGET_PROPERTIES( mmseg PROPERTIES COMPILE_FLAGS -fPIC)
+
 #add_dependencies(irc_core GenerateMoc)
 #add_dependencies(irc_core mod_common)
 
