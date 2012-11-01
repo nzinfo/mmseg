@@ -30,6 +30,9 @@ def main(zq_addr, dict_path):
         try:
             sText = parse_token_request(req)
             rs = m.split(sText)
+            print sText
+            for i in rs:
+                print i, 
             resp = make_token_reponse(rs)
         except InvalidCommandError, ex:
             pass # default route.
