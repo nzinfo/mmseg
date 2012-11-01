@@ -198,3 +198,8 @@ ENDIF (PYTHONLIBS_FOUND)
 add_subdirectory(src)
 add_subdirectory(python)
 #add_subdirectory(examples)
+
+#install (TARGETS mmseg DESTINATION lib)
+#install (TARGETS mmseg_bin DESTINATION bin)
+
+
