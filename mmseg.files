@@ -47,9 +47,12 @@ src/utils/StringTokenizer.h
 src/utils/Utf8_16.cpp
 src/utils/Utf8_16.h
 src/config.win.h
-src/csr_typedefs.h
+include/csr_typedefs.h
 src/mmseg_main.cpp
 CMakeLists.txt
 include/darts.h
 src/tst_cmake.cpp
+src/tst_dict.cpp
 src/CMakeLists.txt
+include/basedict.h
+src/basedict.cpp

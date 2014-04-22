@@ -15,6 +15,7 @@ ENDIF()
 #ADD_LIBRARY(tst_cmake STATIC tst_cmake.cpp )
 ADD_EXECUTABLE(tst_cmake tst_cmake.cpp )
 #target_link_libraries(tst_tut )
+ADD_EXECUTABLE(tst_dict tst_dict.cpp )
 
 #INSTALL(TARGETS rosetta DESTINATION ${LIBRARY_INSTALL_PATH})
 
