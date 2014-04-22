@@ -1,0 +1,19 @@
+# all file needs ignore.
+*.o
+*.a
+*.lib
+*.so
+*.pyc
+*.user
+
+.DS_Store
+.idea/
+*.egg-info/
+
+ext/*.cpp
+
+tmp/
+var/
+refer/
+build/
+bld/
