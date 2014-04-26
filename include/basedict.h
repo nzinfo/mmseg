@@ -91,7 +91,7 @@ public:
     int MappingPass(u4 src_begin, u1 tag = 0);
     int MappingRangePass(u4 src_begin, u4 src_end, u1 tag = 0);
 
-    inline u4 Transform(u4 src, u1* out_tag);
+    u4 Transform(u4 src, u1* out_tag);
 
 private:
     u4   _char_mapping[MAX_UNICODE_CODEPOINT];

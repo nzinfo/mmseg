@@ -27,7 +27,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "utilities.h"
 #include "config.h"
 
 #ifdef HAVE_USING_OPERATOR
@@ -36,8 +35,8 @@
 
 #include <iostream>
 #include <map>
+#include <ostream>
 #include <string>
-#include <strstream>
 #include <vector>
 
 #ifdef __GNUC__
@@ -64,11 +63,9 @@ void TestSTLLogging() {
     v.push_back(10);
     v.push_back(20);
     v.push_back(30);
-    char ss_buf[1000];
-    ostrstream ss(ss_buf, sizeof(ss_buf));
-    // Just ostrstream s1; leaks heap.
-    ss << v << ends;
-    CHECK_STREQ(ss.str(), "10 20 30");
+    ostringstream ss;
+    ss << v;
+    EXPECT_EQ(ss.str(), "10 20 30");
     vector<int> copied_v(v);
     CHECK_EQ(v, copied_v);  // This must compile.
   }
@@ -79,10 +76,9 @@ void TestSTLLogging() {
     m[20] = "twenty";
     m[10] = "ten";
     m[30] = "thirty";
-    char ss_buf[1000];
-    ostrstream ss(ss_buf, sizeof(ss_buf));
-    ss << m << ends;
-    CHECK_STREQ(ss.str(), "(10, ten) (20, twenty) (30, thirty)");
+    ostringstream ss;
+    ss << m;
+    EXPECT_EQ(ss.str(), "(10, ten) (20, twenty) (30, thirty)");
     map< int, string > copied_m(m);
     CHECK_EQ(m, copied_m);  // This must compile.
   }
@@ -94,10 +90,9 @@ void TestSTLLogging() {
     hs.insert(10);
     hs.insert(20);
     hs.insert(30);
-    char ss_buf[1000];
-    ostrstream ss(ss_buf, sizeof(ss_buf));
-    ss << hs << ends;
-    CHECK_STREQ(ss.str(), "10 20 30");
+    ostringstream ss;
+    ss << hs;
+    EXPECT_EQ(ss.str(), "10 20 30");
     hash_set<int> copied_hs(hs);
     CHECK_EQ(hs, copied_hs);  // This must compile.
   }
@@ -110,10 +105,9 @@ void TestSTLLogging() {
     hm[10] = "ten";
     hm[20] = "twenty";
     hm[30] = "thirty";
-    char ss_buf[1000];
-    ostrstream ss(ss_buf, sizeof(ss_buf));
-    ss << hm << ends;
-    CHECK_STREQ(ss.str(), "(10, ten) (20, twenty) (30, thirty)");
+    ostringstream ss;
+    ss << hm;
+    EXPECT_EQ(ss.str(), "(10, ten) (20, twenty) (30, thirty)");
     hash_map<int, string> copied_hm(hm);
     CHECK_EQ(hm, copied_hm);  // this must compile
   }
@@ -132,10 +126,9 @@ void TestSTLLogging() {
     }
     v.push_back(100);
     expected += " ...";
-    char ss_buf[1000];
-    ostrstream ss(ss_buf, sizeof(ss_buf));
-    ss << v << ends;
-    CHECK_STREQ(ss.str(), expected.c_str());
+    ostringstream ss;
+    ss << v;
+    CHECK_EQ(ss.str(), expected.c_str());
   }
 
   {
@@ -145,10 +138,9 @@ void TestSTLLogging() {
     m[20] = "twenty";
     m[10] = "ten";
     m[30] = "thirty";
-    char ss_buf[1000];
-    ostrstream ss(ss_buf, sizeof(ss_buf));
-    ss << m << ends;
-    CHECK_STREQ(ss.str(), "(30, thirty) (20, twenty) (10, ten)");
+    ostringstream ss;
+    ss << m;
+    EXPECT_EQ(ss.str(), "(30, thirty) (20, twenty) (10, ten)");
     map< int, string, greater<int> > copied_m(m);
     CHECK_EQ(m, copied_m);  // This must compile.
   }
@@ -161,17 +153,16 @@ void TestSTLLogging() {
     hs.insert(10);
     hs.insert(20);
     hs.insert(30);
-    char ss_buf[1000];
-    ostrstream ss(ss_buf, sizeof(ss_buf));
-    ss << hs << ends;
-    CHECK_STREQ(ss.str(), "10 20 30");
+    ostringstream ss;
+    ss << hs;
+    EXPECT_EQ(ss.str(), "10 20 30");
     hash_set<int, user_hash> copied_hs(hs);
     CHECK_EQ(hs, copied_hs);  // This must compile.
   }
 #endif
 }
 
-int main(int argc, char** argv) {
+int main(int, char**) {
   TestSTLLogging();
   std::cout << "PASS\n";
   return 0;
@@ -181,7 +172,7 @@ int main(int argc, char** argv) {
 
 #include <iostream>
 
-int main(int argc, char** argv) {
+int main(int, char**) {
   std::cout << "We don't support stl_logging for this compiler.\n"
             << "(we need compiler support of 'using ::operator<<' "
             << "for this feature.)\n";

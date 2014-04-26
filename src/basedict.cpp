@@ -54,7 +54,7 @@ CharMapper::MappingRangePass(u4 src_begin, u4 src_end, u1 tag)
     return 0;
 }
 
-inline u4
+u4
 CharMapper::Transform(u4 src, u1* out_tag)
 {
     // dictionary based lookup return 0.

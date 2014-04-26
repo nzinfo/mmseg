@@ -4,9 +4,7 @@ IF (WIN32)
     ../../msinttypes
   )
 ELSE (WIN32)
-  INCLUDE_DIRECTORIES(
-    .
-  )
+  include_directories(${PROJECT_SOURCE_DIR}/third_party/glog-0.3.3/src)
 ENDIF (WIN32)
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
@@ -55,4 +53,4 @@ IF (NOT WIN32)
 
 ENDIF (NOT WIN32)
 
-LIBMV_INSTALL_THIRD_PARTY_LIB(glog)
+#LIBMV_INSTALL_THIRD_PARTY_LIB(glog)
