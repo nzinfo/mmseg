@@ -48,6 +48,14 @@ public:
     // seg result.
 };
 
+class Token
+{
+    /*
+     * The token wrapper , client library access segment result.
+     */
+    int GetToken();             // the lower case format.
+    int GetTokenOrigin();       // origin
+};
 
 class Segmentor
 {

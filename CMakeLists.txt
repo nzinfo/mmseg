@@ -35,15 +35,17 @@ else(NOT APPLE)
   SET(PACK_ARCH "")
 endif(NOT APPLE)
 
+# Add log library
+include_directories(${PROJECT_SOURCE_DIR})
+
+add_subdirectory (third_party)
 # Setup GTest
 if (test)
-    add_subdirectory (deps/gtest-1.7.0)
     enable_testing()
     include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
     add_subdirectory(tests)
 endif()
-# Add log library
-add_subdirectory (deps/glog-0.3.1)
+
 
 # Debug build
 message("-- Build type: ${CMAKE_BUILD_TYPE}")
