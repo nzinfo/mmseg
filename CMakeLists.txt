@@ -42,6 +42,8 @@ if (test)
     include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
     add_subdirectory(tests)
 endif()
+# Add log library
+add_subdirectory (deps/glog-0.3.1)
 
 # Debug build
 message("-- Build type: ${CMAKE_BUILD_TYPE}")

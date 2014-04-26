@@ -10,7 +10,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
 #include "csr_assert.h"
-#include "Utf8_16.h"
+#include "utf8_to_16.h"
 
 namespace csr { 
 

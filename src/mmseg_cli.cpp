@@ -78,7 +78,8 @@ int main(int argc, char **argv) {
 
     // load basic diction only -> for system booting up.
     {
-        rs = seg.LoadTermDictionary(resolved_dict_path, 0);
+        SegmentOptions opts;
+        rs = seg.LoadTermDictionary(resolved_dict_path, 0, opts);
     }
     rs = segment(out_file, seg, bQuite);
 
@@ -118,8 +119,9 @@ int segment(const char* utf8_file, Segmentor& seg, u1 b_quit) {
     }
     // do segment
     {
+        SegmentOptions opts;
         SegmentStatus seg_stat;
-        rs = seg.Tokenize(&seg_stat, buffer, length);
+        rs = seg.Tokenize(&seg_stat, buffer, length, opts);
     }
 
     // free memory

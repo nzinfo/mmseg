@@ -36,6 +36,8 @@ namespace css {
 
 #define MAX_TOKEN_LENGTH 15 //3*5
 
+
+////////////////////////////////////////////////////////////////////////////////
 int Segmenter::getOffset()
 {
 	return 0; //(int)(m_offset + m_pkg_offset);
