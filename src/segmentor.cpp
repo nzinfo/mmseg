@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "segmentor.h"
 
 Segmentor::Segmentor()
@@ -8,18 +10,22 @@ Segmentor::~Segmentor()
 {
 }
 
-int LoadTermDictionary(const char* dict_path, int dict_id)
+int
+Segmentor::LoadTermDictionary(const char* dict_path, int dict_id)
 {
     return 0;
 }
 
-int LoadPharseDictionary(const char* dict_path, int dict_id)
+int
+Segmentor::LoadPharseDictionary(const char* dict_path, int dict_id)
 {
     return 0;
 }
 
-int Tokenize(SegmentStatus* stat, const char *utf8_string, u4 utf8_string_len )
+int
+Segmentor::Tokenize(SegmentStatus* stat, const char *utf8_string, u4 utf8_string_len )
 {
+    printf("%s\n", utf8_string);
     return 0;
 }
 

@@ -17,6 +17,7 @@ SET(LIBMMSEG_SOURCE basedict.cpp segmentor.cpp )
 ADD_LIBRARY(mmseg_c STATIC ${LIBMMSEG_SOURCE} )
 
 ADD_EXECUTABLE(mmseg mmseg_cli.cpp )
+target_link_libraries(mmseg mmseg_c)
 
 ADD_EXECUTABLE(tst_cmake tst_cmake.cpp )
 #target_link_libraries(tst_tut )
