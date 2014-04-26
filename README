@@ -5,3 +5,11 @@ Coreseek MMSeg Tokenizer
 包括两个词库，基础词库和短语词库。
 其中短语词库可以预先定义切分方案，如果没有给定切分方案，则使用基础词库进行切分；
 对于词条可以设置属性
+
+
+
+Build On Mac with brew
+===============================
+cmake .. -DPYTHON_LIBRARY=/usr/local/Cellar/python/2.7.6/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib
+
+

@@ -54,7 +54,7 @@ add_subdirectory (src)
 include_directories(src)
 
 #build language binding
-#add_subdirectory (binding)
+add_subdirectory (binding)
 
 
 

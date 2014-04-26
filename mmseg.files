@@ -56,3 +56,8 @@ src/tst_dict.cpp
 src/CMakeLists.txt
 include/basedict.h
 src/basedict.cpp
+include/segmentor.h
+src/segmentor.cpp
+README
+
+src/mmseg_cli.cpp

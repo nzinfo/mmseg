@@ -31,9 +31,9 @@ typedef struct LemmaPropertyDefine
 
 typedef struct LemmaPropertyEntry
 {
-    const char* key;
+    char* key;
     LemmaPropertyType prop_type;
-    const void* data;
+    void* data;
     u4          data_len;
 }LemmaPropertyEntry;
 
@@ -57,7 +57,7 @@ public:
     int SetProp(const char* term, const char* key, const void* data, int data_len); // when prop_type is short|int|long, data_len will be ignored.
     int GetProp(const char* term, const char* key, void** data, int* data_len);
 
-    int Properties(const char* term);
+    int Properties(const char* term, LemmaPropertyEntry** entries);
 
 };
 
