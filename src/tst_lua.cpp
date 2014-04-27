@@ -25,9 +25,23 @@ extern "C" {
         char val[255];
     }token_ctx;
 
+    // must replace with __stdcall in ffi define. compat for windows
     typedef int (STDCALL *charlevel_callback_proto)(token_ctx*, const char*, int);
+    //typedef int (*charlevel_callback_proto)(const char*, int);
+    int must_call_callback(charlevel_callback_proto func, const char* msg){
+        if(func) {
+            return (func)(NULL, msg, 100);
+        }
+        return 0;
+    }
 
     // regisit ?
+    /*
+     *  定义一个全局的管理程序, 管理当前活跃的需要被 LUA 调用的对象(实际上应该只有一个);
+     *  传入 LUA 代码此对象ID,
+     *  后续注册操作, 皆通过本 ID 访问
+     *
+     */
 } // end extern "C"
 
 int
@@ -55,10 +69,13 @@ main(int argc, char* argv[])
     }
 
     /* Ask Lua to run our little script */
-    result = lua_pcall(L, 0, LUA_MULTRET, 0);
-    if (result) {
-        fprintf(stderr, "Failed to run script: %s\n", lua_tostring(L, -1));
-        exit(1);
+    if(1)
+    {
+        result = lua_pcall(L, 0, LUA_MULTRET, 0);
+        if (result) {
+            fprintf(stderr, "Failed to run script: %s\n", lua_tostring(L, -1));
+            exit(1);
+        }
     }
 
     /* Manual call lua function from c side. */
