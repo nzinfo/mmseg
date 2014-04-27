@@ -1,9 +1,17 @@
 #include <glog/logging.h>
 
+#include <unordered_map>
+#if defined __GNUC__ || defined __APPLE__
+using std::unordered_map;
+#else
+using namespace std::tr1;
+#endif
+
+#include "darts.h"
+
 #include "basedict.h"
 
 #undef HAVE_MMAP
-
 #include "csr_mmap.h"
 
 namespace mm {
@@ -198,6 +206,27 @@ CharMapper::Transform(u4 src, u2* out_tag)
 ////////////////////////////////////////////////////////////////////////////////
 ///  Base & Basic Dictionary. (Private)
 ////////////////////////////////////////////////////////////////////////////////
+
+class LemmaPropertyEntry
+{
+public:
+    std::string prop_name;
+    char  prop_type;
+    int   row_offset;
+    void* data;
+    u4    data_len;
+};
+
+class LemmaEntry
+{
+public:
+    unsigned int term_id;
+    std::string term;
+    int freq;
+    std::vector<u4> pos;
+    std::vector<LemmaPropertyEntry> props;
+};
+
 class BaseDictPrivate
 {
 public:
@@ -205,8 +234,29 @@ public:
     // where store attributes?
     // where store string pool (hash)
 
+    int AddColumn(const std::string& def, int offset){
+        column_offset[def] = offset;
+        return 0;
+    }
+
+    void ResetColumn() {
+        column_offset.clear();
+    }
+
+    char GetColumnType(const char* column_name) {
+        for(unordered_map<std::string, int>::iterator it = column_offset.begin(); it !=  column_offset.end(); ++it) {
+            if(strncmp(column_name, it->first.c_str()+2, strlen(column_name)) == 0)
+                return it->first[0];
+        }
+        return ' ';  // type not found.
+    }
+
 public:
-    //Darts::DoubleArray _dict;
+    Darts::DoubleArray _dict;
+    unordered_map<int, LemmaEntry> entries;    // row uncompress format.
+
+protected:
+    unordered_map<std::string, int> column_offset;  // column-> offset in data block
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -271,8 +321,62 @@ BaseDict::Build()
 }
 
 int
+BaseDict::Reset()
+{
+    // clear entry -> move to private ?
+    for(unordered_map<int, LemmaEntry>::iterator it = _p->entries.begin(); it !=  _p->entries.end(); ++it) {
+        LemmaEntry & entry = it->second;
+        for(std::vector<LemmaPropertyEntry>::iterator it = entry.props.begin(); it != entry.props.end(); ++it) {
+            //printf("tok=%s\t", it->key);
+            if(it->data) {
+                // FIXME: should alloc data in memory pool
+                free(it->data);
+                it->data = NULL;
+                it->data_len = 0;
+            }
+        }
+    }
+    _p->entries.clear(); // remove all entry.
+    return 0;
+}
+
+int
 BaseDict::Init(const LemmaPropertyDefine* props, int prop_count)
 {
+    /*
+     * Calc & Build PropData Define.
+     *  - combine u2 together.
+     *  crc32(key): offset_in_data_row  u2 first; add together
+     */
+    int offset = 0;
+    char buf[MAX_LEMMA_PROPERTY_NAME_LENGTH+2];
+    const LemmaPropertyDefine* props_ptr = props;
+    for(int i=0; i<prop_count; i++) {
+        if(props_ptr[i].prop_type == '2') {
+            snprintf(buf, sizeof(buf), "%c:%s", props_ptr[i].prop_type, props_ptr[i].key);
+            _p->AddColumn(buf, offset);
+            offset += 2;
+        }
+    }
+    // check offset
+    if(offset % 4 != 0) {
+        offset += 2;
+        LOG(INFO) << " inc offset -> " << offset;
+    }
+    for(int i=0; i<prop_count; i++) {
+        if(props_ptr[i].prop_type == '2')
+            continue;
+        // do other property
+        snprintf(buf, sizeof(buf), "%c:%s", props_ptr[i].prop_type, props_ptr[i].key);
+        _p->AddColumn(buf, offset);
+        // inc offset
+        if(props_ptr[i].prop_type == '4' || props_ptr[i].prop_type == 's')
+            offset += 4;
+        if(props_ptr[i].prop_type == '8' )
+            offset += 8;
+    }
+
+    _record_row_size = offset; // set row size.
     return 0;
 }
 
@@ -307,20 +411,11 @@ BaseDict::InitString(const char* prop_define, int str_define_len)
             key_len = strlen(tok);
             CHECK_LT(key_len, MAX_LEMMA_PROPERTY_NAME_LENGTH) << "property define too long!";
             memcpy(prop.key, tok, key_len);
-            //printf("tok====%s\t", tok);
+            prop.key[key_len] = 0;
         }else{
             // check type  2 4 8 s
             if(tok[0] == '2' || tok[0] == '4' || tok[0] == '8' || tok[0] == 's') {
-                switch(tok[0]) {
-                case '2':
-                    prop.prop_type = PROP_SHORT;    break;
-                case '4':
-                    prop.prop_type = PROP_INT;    break;
-                case '8':
-                    prop.prop_type = PROP_LONG;    break;
-                case 's':
-                    prop.prop_type = PROP_STRING;    break;
-                }
+                prop.prop_type = tok[0];
             } else {
                 CHECK(false) << "property type invalid";
             }
@@ -328,39 +423,109 @@ BaseDict::InitString(const char* prop_define, int str_define_len)
         }
         tok = strtok(NULL, delim);
         sno++;
-        //printf("tok=%s\t", tok);
-    };
-    // recheck
+    }; //end while true.
+
+    if(0)
     {
         for(std::vector<LemmaPropertyDefine>::iterator it = props.begin(); it != props.end(); ++it) {
             printf("tok=%s\t", it->key);
         }
     }
-    return 0;
+    return Init(props.data(), props.size());
 }
 
 int
 BaseDict::Insert(const char* term, unsigned int term_id, int freq, const u4* pos, int pos_count)
 {
+    // build entry.
+    LemmaEntry entry;
+    entry.term = term;
+    entry.freq = freq;
+    entry.term_id = term_id;
+    for(int i=0; i<pos_count;i++)
+        entry.pos.push_back(pos[i]);
+
+    _p->entries[term_id] = entry; //copy construct
     return 0;
 }
 
 int
-BaseDict::SetProp(unsigned int term_id,  const char* key, const void* data, int data_len)
+BaseDict::SetProp(unsigned int term_id,  const char* key, const char* data, int data_len)
 {
+    /*
+     * How to alloc entry property's data ?
+     *  - simple alloc data in this function. and free ?
+     *  ! should use memory pool, all entry data alloc from pool
+     *  ! as this code will be used only in diction pre-build, so...
+     *
+     *  ! should check term_id in hash ?
+     */
+    if( _p->entries.find(term_id) == _p->entries.end() )
+        return -1;
+    LemmaPropertyEntry prop_entry;
+    prop_entry.prop_name = key;
+    {
+        // lookup property key
+        prop_entry.prop_type = _p->GetColumnType(key);
+        if(prop_entry.prop_type == ' ')
+            return -2; // prop not found.
+    }
+    prop_entry.data = malloc(data_len);         //FIXME: should alloc from a memory pool
+    memcpy(prop_entry.data, data, data_len);
+    prop_entry.data_len = data_len;
+    _p->entries.find(term_id)->second.props.push_back(prop_entry);
     return 0;
 }
 
 int
-BaseDict::GetProp(unsigned int term_id, const char* key, void** data, int* data_len)
+BaseDict::GetProp(unsigned int term_id, const char* key, char* data, int* data_len)
 {
-    return 0;
+    if( _p->entries.find(term_id) == _p->entries.end() )
+        return -1;
+
+    std::string prop_name = key;
+    std::vector<LemmaPropertyEntry>& props = _p->entries.find(term_id)->second.props;
+    for(std::vector<LemmaPropertyEntry>::iterator it = props.begin(); it != props.end(); ++it) {
+        // printf("tok=%s\t", it->key);
+        if( it->prop_name == prop_name ) {
+            if(*data_len >= it->data_len) {
+                memcpy(data, it->data, it->data_len);
+                *data_len = it->data_len;
+                return 0;   // done. ok.
+            } else {
+                *data_len = it->data_len;
+                return -2;  // ? data buffer too small
+            }
+        }
+    } //end for
+    return -3; //? key not found
 }
 
+int
+BaseDict::SetPropInteger(unsigned int term_id, const char* key, u8 v)
+{
+    // have to do alloc, the reset does not care about type.
+    char* ptr = (char*) &v;
+    return SetProp(term_id, key, ptr, 8);
+}
+
+int
+BaseDict::GetPropInteger(unsigned int term_id, const char* key, u8* v)
+{
+    char buf[8];
+    int  buf_size = 8;
+    int rs = GetProp(term_id, key, buf, &buf_size);
+    if(rs == 0)
+        *v = * ( (u8*)buf );
+    return rs;
+}
+
+/*
 int
 BaseDict::Properties(const char* term, LemmaPropertyEntry** entries){
     return 0;
 }
+*/
 
 ////////////////////////////////////////////////////////////////////////////////
 

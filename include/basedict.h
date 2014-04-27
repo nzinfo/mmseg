@@ -26,27 +26,21 @@
 
 namespace mm {
 
+/*
 enum LemmaPropertyType {
     PROP_STRING,        // s: variant size (4B offset, 2G Max)
     PROP_SHORT,         // 2: 2B
     PROP_INT,           // 4: 4B
     PROP_LONG           // 8: 8B
-};
+}; */
 
 typedef struct LemmaPropertyDefine
 {
+    char prop_type;         // s 2 4 8
     char key[MAX_LEMMA_PROPERTY_NAME_LENGTH];
-    LemmaPropertyType prop_type;
 }LemmaPropertyDefine;
 
-typedef struct LemmaPropertyEntry
-{
-    char* key;
-    LemmaPropertyType prop_type;
-    void* data;
-    u4          data_len;
-}LemmaPropertyEntry;
-
+class LemmaPropertyEntry;
 class BaseDictPrivate;
 
 class BaseDict
@@ -59,6 +53,7 @@ public:
     int Open(const char* dict_path, char mode); // mode can be 'r', 'n'.  'n' stands for new; 'r' load pre-build dict from disk.
     int Save(const char* dict_path);            // save to disk
     int Build();                                // build trie-tree in memory.
+    int Reset();                                // clear all in memory entry (inlcude property's data)
 
     int Init(const LemmaPropertyDefine* props, int prop_count);     // define how many propery a lemma in this dictionary can have.
                                                                     // once this func been call, all data in dict will be trunc
@@ -70,10 +65,12 @@ public:
 
     int Insert(const char* term, unsigned int term_id, int freq, const u4* pos, int pos_count); // add new term -> dict, pos = char[4]
 
-    int SetProp(unsigned int term_id, const char* key, const void* data, int data_len); // when prop_type is short|int|long, data_len will be ignored.
-    int GetProp(unsigned int term_id, const char* key, void** data, int* data_len);
+    int SetProp(unsigned int term_id, const char* key, const char* data, int data_len); // when prop_type is short|int|long, data_len will be ignored.
+    int GetProp(unsigned int term_id, const char* key, char* data, int* data_len);
+    int SetPropInteger(unsigned int term_id, const char* key, u8 v);
+    int GetPropInteger(unsigned int term_id, const char* key, u8* v);
 
-    int Properties(const char* term, LemmaPropertyEntry** entries);
+    //int Properties(const char* term, LemmaPropertyEntry** entries);
 
 private:
     BaseDictPrivate* _p;

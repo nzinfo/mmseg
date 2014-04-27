@@ -40,8 +40,17 @@ if False:
 
 if True:
 	dt =  _mmseg.new_BaseDict()
-	schema = "id:4;name:s;"
+	schema = "id:4;attr2:2;name:s;attr1:2;attr3:2"
 	_mmseg.BaseDict_InitString( dt, schema, len(schema) )
+	# add entry
+	_mmseg.BaseDict_Insert(dt, "abcdef", 100, 10, None, 0)
+	msg = "hello world, abceef"
+	_mmseg.BaseDict_SetProp(dt, 100, "name", msg, len(msg))
+	c = _mmseg.get_dict_property_string(dt, 100, "name")
+	print c
+
+	_mmseg.BaseDict_SetPropInteger(dt, 100, "id", 9999)
+	print _mmseg.get_dict_property_number(dt, 100, "id")
 
 	_mmseg.delete_BaseDict(dt)
 	#pass
