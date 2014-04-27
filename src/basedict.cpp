@@ -1,3 +1,5 @@
+#include <glog/logging.h>
+
 #include "basedict.h"
 
 namespace mm {
@@ -32,31 +34,33 @@ CharMapper::Save(const char* filename)
 
 // mapping opt, not support A..Z/2 , should be done @ script side.
 int
-CharMapper::Mapping(u4 src, u4 dest, u1 tag)
+CharMapper::Mapping(unsigned int src, unsigned int dest, unsigned short tag)
+{
+    CHECK_LT(src, MAX_UNICODE_CODEPOINT) << "src out of range(UCS-2)!";
+    CHECK(dest<MAX_UNICODE_CODEPOINT) << "src out of range(UCS-2)!";
+    return 0;
+}
+
+int
+CharMapper::MappingRange(u4 src_begin, u4 src_end, u4 dest_begin, u4 dest_end, u2 tag)
 {
     return 0;
 }
 
 int
-CharMapper::MappingRange(u4 src_begin, u4 src_end, u4 dest_begin, u4 dest_end, u1 tag)
+CharMapper::MappingPass(u4 src_begin, u2 tag)
 {
     return 0;
 }
 
 int
-CharMapper::MappingPass(u4 src_begin, u1 tag)
-{
-    return 0;
-}
-
-int
-CharMapper::MappingRangePass(u4 src_begin, u4 src_end, u1 tag)
+CharMapper::MappingRangePass(u4 src_begin, u4 src_end, u2 tag)
 {
     return 0;
 }
 
 u4
-CharMapper::Transform(u4 src, u1* out_tag)
+CharMapper::Transform(u4 src, u2* out_tag)
 {
     // dictionary based lookup return 0.
     if(_bDefaultPass)

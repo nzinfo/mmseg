@@ -60,6 +60,9 @@ public:
 
     int Init(const LemmaPropertyDefine* props, int prop_count);     // define how many propery a lemma in this dictionary can have.
                                                                     // once this func been call, all data in dict will be trunc
+    /*
+     *  property_name:type;
+     */
     int InitString(const char* prop_define, int str_define_len);    // use string define property, for scripting interface.
 
     int Insert(const char* term, int freq, const u4* pos, int pos_count); // add new term -> dict, pos = char[4]
@@ -89,15 +92,15 @@ public:
     int Save(const char* filename);
 
     // mapping opt, not support A..Z/2 , should be done @ script side.
-    int Mapping(u4 src, u4 dest, u1 tag = 0);
-    int MappingRange(u4 src_begin, u4 src_end, u4 dest_begin, u4 dest_end, u1 tag = 0);
-    int MappingPass(u4 src_begin, u1 tag = 0);
-    int MappingRangePass(u4 src_begin, u4 src_end, u1 tag = 0);
+    int Mapping(unsigned int src, unsigned int dest, unsigned short tag = 0);
+    int MappingRange(u4 src_begin, u4 src_end, u4 dest_begin, u4 dest_end, u2 tag = 0);
+    int MappingPass(u4 src_begin, u2 tag = 0);
+    int MappingRangePass(u4 src_begin, u4 src_end, u2 tag = 0);
 
-    u4 Transform(u4 src, u1* out_tag);
+    u4 Transform(u4 src, u2* out_tag);
 
 private:
-    u4   _char_mapping[MAX_UNICODE_CODEPOINT];
+    u4   _char_mapping[MAX_UNICODE_CODEPOINT]; // lower bit is trans iCode, higher is category flag.
     bool _bDefaultPass;
 };
 

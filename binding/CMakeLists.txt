@@ -66,7 +66,7 @@ if ( SWIG_FOUND AND PYTHONINTERP_FOUND )
   endif()
 
   swig_add_module ( mmseg python mmseg.i )
-  swig_link_libraries ( mmseg  mmseg_c)
+  swig_link_libraries ( mmseg  mmseg_c glog)
 
   if ( LINK_PYTHON_LIBRARY )
     swig_link_libraries ( mmseg ${PYTHON_LIBRARIES} )
@@ -127,7 +127,7 @@ if ( JAVA_BINDINGS )
   set(SWIG_MODULE_MMSegJave_EXTRA_DEPS ${SWIG_EXTRA_DEPS}
     ${CMAKE_CURRENT_SOURCE_DIR}/Java.i )
   SWIG_add_module ( MMSegJava java mmseg.i mmsegJAVA_wrap.cxx)
-  SWIG_link_libraries(MMSegJava ${MMSegJava_LIBRARIES} mmseg_c)
+  SWIG_link_libraries(MMSegJava ${MMSegJava_LIBRARIES} mmseg_c glog)
   set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/mmsegJAVA_wrap.cxx  PROPERTIES COMPILE_FLAGS "-w")
   #mmseg_strip_target( ${SWIG_MODULE_MMSegJava_TARGET_NAME} )
 

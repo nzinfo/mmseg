@@ -18,4 +18,7 @@ print dir(_mmseg)
 
 char_map = _mmseg.new_CharMapper(True)
 _mmseg.CharMapper_Load(char_map, "hello");
+_mmseg.CharMapper_Mapping(char_map, 655, 1, 1)
+rs = _mmseg.new_ushortp()
+print _mmseg.CharMapper_Transform(char_map, 655, rs)
 _mmseg.delete_CharMapper(char_map)
