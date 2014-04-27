@@ -1,6 +1,11 @@
 # ==== unittest TFoo ====
 #set(GTEST_ROOT ${PROJECT_SOURCE_DIR}/gmock-1.6.0/gtest)
 
+# FIX LUAJIT @MAC
+IF(APPLE)
+    SET(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
+ENDIF(APPLE)
+
 #include_directories(${PROJECT_SOURCE_DIR})
 include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_SOURCE_DIR}/src)
@@ -30,6 +35,13 @@ ADD_EXECUTABLE(tst_cmake tst_cmake.cpp )
 target_link_libraries(tst_cmake glog)
 #target_link_libraries(tst_tut )
 ADD_EXECUTABLE(tst_dict tst_dict.cpp )
+
+include_directories(${PROJECT_SOURCE_DIR}/third_party/luajit/src)
+# FIXME: should be build_dir
+include_directories(${PROJECT_BINARY_DIR}/third_party/luajit)
+
+ADD_EXECUTABLE(tst_lua tst_lua.cpp )
+target_link_libraries(tst_lua liblua)
 
 #INSTALL(TARGETS rosetta DESTINATION ${LIBRARY_INSTALL_PATH})
 

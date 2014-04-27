@@ -60,3 +60,4 @@ src/segmentor.cpp
 README
 
 src/mmseg_cli.cpp
+src/tst_lua.cpp

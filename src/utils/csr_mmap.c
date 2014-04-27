@@ -3,6 +3,7 @@
  * All rights reserved.
  * $Id: csr_mmap.c
  */
+#include <stdlib.h>
 
 #include "os.h"
 
