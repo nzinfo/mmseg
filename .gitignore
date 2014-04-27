@@ -5,6 +5,7 @@
 *.so
 *.pyc
 *.user
+*.autosave
 
 .DS_Store
 .idea/

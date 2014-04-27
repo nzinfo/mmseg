@@ -12,7 +12,8 @@ extern "C" {
         /* a dummy function to test with FFI */
         return foo + 1;
     }
-}
+
+} // end extern "C"
 
 int
 main(int argc, char* argv[])
@@ -21,7 +22,15 @@ main(int argc, char* argv[])
     lua_State *L;
     L = luaL_newstate();
 
-    luaL_openlibs(L);
+    /*
+    luaopen_io(L); // provides io.*
+    luaopen_base(L);
+    luaopen_table(L);
+    luaopen_string(L);
+    luaopen_math(L);
+    luaopen_loadlib(L);
+     */
+    luaL_openlibs(L);  // grant all permission.
 
     /* Load the file containing the script we are going to run */
     status = luaL_loadfile(L, argv[1]);
