@@ -2,18 +2,23 @@
 
 #ifdef __APPLE__
 #include <unordered_map>
+using std::unordered_map;
 #else
     #ifdef __GNUC__
-    #include <ext/hash_map>
-    #define unordered_map __gnu_cxx::hash_map
+    #include <tr1/unordered_map>
+    using namespace std::tr1;
+    //#include <ext/hash_map>
+    //   #define unordered_map std::hash_map
     #endif
 #endif
 
+/*
 #if defined __GNUC__ || defined __APPLE__
 using std::unordered_map;
 #else
 using namespace std::tr1;
 #endif
+*/
 
 #include "darts.h"
 
@@ -242,7 +247,7 @@ public:
     std::vector<LemmaPropertyEntry> props;
 };
 
-bool EntryAscOrderCmp ( LemmaEntry& elem1, LemmaEntry& elem2 )
+bool EntryAscOrderCmp (const LemmaEntry& elem1, const LemmaEntry& elem2 )
 {
     return elem1.term < elem2.term;
 }
