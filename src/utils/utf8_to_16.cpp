@@ -434,15 +434,15 @@ void Utf16_Iter::operator++() {
 			m_nCur = static_cast<ubyte>(m_nCur16 & 0xFF);
 			m_eState = eStart;
 		} else if (m_nCur16 < 0x800) {
-			m_nCur = static_cast<ubyte>(0xC0 | m_nCur16 >> 6);
+            m_nCur = static_cast<ubyte>(0xC0 | (m_nCur16 >> 6) );
 			m_eState = e2Bytes2;
 		} else {
-			m_nCur = static_cast<ubyte>(0xE0 | m_nCur16 >> 12);
+            m_nCur = static_cast<ubyte>(0xE0 | (m_nCur16 >> 12) );
 			m_eState = e3Bytes2;
 		}
 		break;
 	case e2Bytes2:
-		m_nCur = static_cast<ubyte>(0x80 | m_nCur16 & 0x3F);
+        m_nCur = static_cast<ubyte>(0x80 | (m_nCur16 & 0x3F) );
 		m_eState = eStart;
 		break;
 	case e3Bytes2:
@@ -450,7 +450,7 @@ void Utf16_Iter::operator++() {
 		m_eState = e3Bytes3;
 		break;
 	case e3Bytes3:
-		m_nCur = static_cast<ubyte>(0x80 | m_nCur16 & 0x3F);
+        m_nCur = static_cast<ubyte>(0x80 | (m_nCur16 & 0x3F) );
 		m_eState = eStart;
 		break;
 	}

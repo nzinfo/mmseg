@@ -2,6 +2,10 @@
 
 #include "basedict.h"
 
+#undef HAVE_MMAP
+
+#include "csr_mmap.h"
+
 namespace mm {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -11,20 +15,59 @@ namespace mm {
 ///     Use CHECK & Exit policy because the library built interface will be called
 /// by Administrators. If have some error happen, it means some hidden bug.
 ////////////////////////////////////////////////////////////////////////////////
+const char charmap_head_mgc[] = "UNID";
+
+typedef struct _mmseg_char_map_file_header{
+    char mg[4];
+    short version;
+    short flags;
+}mmseg_char_map_file_header;
+
+#define MMSEG_CHARMAP_FLAG_DEFAULT_PASS     0x1
+
 int
 CharMapper::Load(const char* filename)
 {
     /*
      * Load from disk , defined in { file_header, char[] }
-     *
+     * fileheader = i4[magic_string="mmcm"], u2 ver, u2 opts[default_pass|...]
      * -404 file not found.
-     * -4xx file format error.
+     * -415 file format error.
+     * -416 file head is ok, file data loss.
      *
-     * 200 ok
+     * 0 ok
      */
-    printf("I got %s %d.\n", filename, this->_bDefaultPass);
+    int rs = 0;
 
-    return 0;
+    LOG(INFO) << "load charmap" << filename;
+    //printf("I got %s %d.\n", filename, this->_bDefaultPass);
+    // legacy code, use load into memory switch only. bLoadMem = true
+    const u1* ptr = NULL;
+    csr_mmap_t * dict_file = csr_mmap_file(filename, true);
+    if(!dict_file) {
+        rs = -404; goto CHARMAP_LOADFAIL; }
+    ptr = (const u1*)csr_mmap_map(dict_file);
+    // deal header.
+    {
+        mmseg_char_map_file_header* _header = (mmseg_char_map_file_header*)ptr;
+        if(strncmp(charmap_head_mgc, _header->mg, 4) != 0) {
+            rs = -415; goto CHARMAP_LOADFAIL; }
+        // check length
+        if(csr_mmap_size(dict_file) < sizeof(mmseg_char_map_file_header) + sizeof(_char_mapping)) {
+            rs = -416; goto CHARMAP_LOADFAIL; }
+        // do load , skip version now.
+        this->_bDefaultPass = _header->flags & MMSEG_CHARMAP_FLAG_DEFAULT_PASS;
+    }
+    ptr += sizeof(mmseg_char_map_file_header);
+    memcpy(_char_mapping, ptr, sizeof(_char_mapping));
+    LOG(INFO) << "load charmap done " << filename ;
+
+CHARMAP_LOADFAIL:
+    {
+        if(dict_file)
+            csr_munmap_file(dict_file);
+    }
+    return rs;
 }
 
 int
@@ -33,6 +76,19 @@ CharMapper::Save(const char* filename)
     /*
      * Save to disk , defined in { file_header, char[] }
      */
+    mmseg_char_map_file_header header;
+    header.flags = MMSEG_CHARMAP_FLAG_DEFAULT_PASS;
+    header.version = 1;
+    memcpy(header.mg, charmap_head_mgc, sizeof(header.mg));
+    {
+        //write header
+        std::FILE *fp  = std::fopen(filename, "wb");
+        if(!fp)
+            return -503;
+        std::fwrite(&header,sizeof(mmseg_char_map_file_header),1,fp);
+        std::fwrite(&_char_mapping,sizeof(_char_mapping),1,fp);
+        std::fclose(fp);
+    }
     return 0;
 }
 

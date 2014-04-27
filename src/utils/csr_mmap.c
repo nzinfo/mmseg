@@ -44,7 +44,7 @@ struct _csr_mmap_t {
 };
 
 static csr_mmap_t *
-mmap_file(const char *filename, int prot,unsigned char bLoadMem)
+mmap_file(const char *filename, int prot, unsigned char bLoadMem)
 {
     csr_mmap_t *mm;
 	int fd;

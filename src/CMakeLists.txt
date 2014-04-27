@@ -12,7 +12,13 @@ IF(WIN32) # Check if we are on Windows
   endif()
 ENDIF()
 
-SET(LIBMMSEG_SOURCE basedict.cpp segmentor.cpp )
+SET(LIBMMSEG_SOURCE
+    basedict.cpp
+    segmentor.cpp
+    utils/utf8_to_16.cpp
+    utils/csr_utils.c
+    utils/csr_mmap.c
+)
 #SET(LIBRARY_OUTPUT_PATH ../../lib/)
 ADD_LIBRARY(mmseg_c STATIC ${LIBMMSEG_SOURCE} )
 

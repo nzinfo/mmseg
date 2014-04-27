@@ -17,10 +17,24 @@ import _mmseg
 print dir(_mmseg)
 
 char_map = _mmseg.new_CharMapper(True)
-_mmseg.CharMapper_Load(char_map, "hello");
 _mmseg.CharMapper_Mapping(char_map, 655, 1, 8)
 rs = _mmseg.new_ushortp()
 print _mmseg.CharMapper_TransformScript(char_map, 655, rs)
 print _mmseg.ushortp_value(rs)      # Dereference
 _mmseg.delete_ushortp(rs)     # Delete
+
+# save 
+_mmseg.CharMapper_Save(char_map, "mm_cm.lib")
 _mmseg.delete_CharMapper(char_map)
+
+# reload
+char_map = _mmseg.new_CharMapper(True)
+_mmseg.CharMapper_Load(char_map, "mm_cm.lib")
+
+rs = _mmseg.new_ushortp()
+print _mmseg.CharMapper_TransformScript(char_map, 655, rs)
+print _mmseg.ushortp_value(rs)      # Dereference
+_mmseg.delete_ushortp(rs)     # Delete
+_mmseg.delete_CharMapper(char_map)
+
+#end of file
