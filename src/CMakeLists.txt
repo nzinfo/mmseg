@@ -19,7 +19,9 @@ ADD_LIBRARY(mmseg_c STATIC ${LIBMMSEG_SOURCE} )
 ADD_EXECUTABLE(mmseg mmseg_cli.cpp )
 target_link_libraries(mmseg mmseg_c)
 
+include_directories(${PROJECT_SOURCE_DIR}/third_party/glog/src)
 ADD_EXECUTABLE(tst_cmake tst_cmake.cpp )
+target_link_libraries(tst_cmake glog)
 #target_link_libraries(tst_tut )
 ADD_EXECUTABLE(tst_dict tst_dict.cpp )
 

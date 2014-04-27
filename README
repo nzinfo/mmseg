@@ -37,3 +37,13 @@ Design
 6 词库加载是,应该增加 options 参数,用于控制词库加载时的具体行为
 7 需要引入 cpp 的 log 库 -> glog , a bit harder.
 8 需要提供脚本, 构造词库, 解析Sphinx 的字符映射文件
+
+
+Log
+===============================
+1 集成了 glog , 目前发现只有
+    GLOG_logtostderr=1 ./src/tst_cmake
+  能够看到 Log 信息, 不过, 对于库函数来说, 默认不记录在文件中, 这个行为是正确的.
+
+
+
