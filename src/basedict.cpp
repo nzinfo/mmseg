@@ -280,26 +280,62 @@ int
 BaseDict::InitString(const char* prop_define, int str_define_len)
 {
     /*
+     * assume prop_define in right format.
      * 1 if no prop_defined ( input NULL | "")
      *      - add define "id":u4
      * 2 else
      *      - if no id in prop_define, append it.
      */
+    LemmaPropertyDefine prop;
+    std::vector<LemmaPropertyDefine> props;
     char schema_define[1024];
-    char *delim = ":;";
-    char *tok = NULL;
+    char delim[] = ":;";
+    char *tok = schema_define;
+    int sno = 0;
+    size_t key_len = 0;
+
     if(str_define_len > 1023)
         return -413; // schema define too large.
 
     memcpy(schema_define, prop_define, str_define_len);
     schema_define[str_define_len] = 0;
 
-    do {
-        tok = strtok(schema_define, delim);
-        if(tok)
-            printf("tok=%s\t", tok);
-    }while(tok);
-
+    tok = strtok(schema_define, delim);
+    sno++;
+    while(tok) {
+        if(sno % 2 == 1) {
+            key_len = strlen(tok);
+            CHECK_LT(key_len, MAX_LEMMA_PROPERTY_NAME_LENGTH) << "property define too long!";
+            memcpy(prop.key, tok, key_len);
+            //printf("tok====%s\t", tok);
+        }else{
+            // check type  2 4 8 s
+            if(tok[0] == '2' || tok[0] == '4' || tok[0] == '8' || tok[0] == 's') {
+                switch(tok[0]) {
+                case '2':
+                    prop.prop_type = PROP_SHORT;    break;
+                case '4':
+                    prop.prop_type = PROP_INT;    break;
+                case '8':
+                    prop.prop_type = PROP_LONG;    break;
+                case 's':
+                    prop.prop_type = PROP_STRING;    break;
+                }
+            } else {
+                CHECK(false) << "property type invalid";
+            }
+            props.push_back(prop);
+        }
+        tok = strtok(NULL, delim);
+        sno++;
+        //printf("tok=%s\t", tok);
+    };
+    // recheck
+    {
+        for(std::vector<LemmaPropertyDefine>::iterator it = props.begin(); it != props.end(); ++it) {
+            printf("tok=%s\t", it->key);
+        }
+    }
     return 0;
 }
 

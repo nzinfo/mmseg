@@ -22,19 +22,20 @@
 
 // CharMapper define
 #define MAX_UNICODE_CODEPOINT   65535       // UCS-2's MAX
+#define MAX_LEMMA_PROPERTY_NAME_LENGTH 64
 
 namespace mm {
 
 enum LemmaPropertyType {
-    PROP_STRING,        // variant size (4B offset, 2G Max)
-    PROP_SHORT,         // 2B
-    PROP_INT,           // 4B
-    PROP_LONG           // 8B
+    PROP_STRING,        // s: variant size (4B offset, 2G Max)
+    PROP_SHORT,         // 2: 2B
+    PROP_INT,           // 4: 4B
+    PROP_LONG           // 8: 8B
 };
 
 typedef struct LemmaPropertyDefine
 {
-    char key[64];
+    char key[MAX_LEMMA_PROPERTY_NAME_LENGTH];
     LemmaPropertyType prop_type;
 }LemmaPropertyDefine;
 

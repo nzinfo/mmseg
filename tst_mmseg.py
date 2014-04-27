@@ -39,6 +39,11 @@ if False:
 	_mmseg.delete_CharMapper(char_map)
 
 if True:
-	pass
+	dt =  _mmseg.new_BaseDict()
+	schema = "id:4;name:s;"
+	_mmseg.BaseDict_InitString( dt, schema, len(schema) )
+
+	_mmseg.delete_BaseDict(dt)
+	#pass
 
 #end of file
