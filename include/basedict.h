@@ -46,6 +46,7 @@ typedef struct LemmaPropertyEntry
     u4          data_len;
 }LemmaPropertyEntry;
 
+class BaseDictPrivate;
 
 class BaseDict
 {
@@ -62,16 +63,20 @@ public:
                                                                     // once this func been call, all data in dict will be trunc
     /*
      *  property_name:type;
+     *  Default: id:u4; comunicate with external system?
      */
     int InitString(const char* prop_define, int str_define_len);    // use string define property, for scripting interface.
 
-    int Insert(const char* term, int freq, const u4* pos, int pos_count); // add new term -> dict, pos = char[4]
+    int Insert(const char* term, unsigned int term_id, int freq, const u4* pos, int pos_count); // add new term -> dict, pos = char[4]
 
-    int SetProp(const char* term, const char* key, const void* data, int data_len); // when prop_type is short|int|long, data_len will be ignored.
-    int GetProp(const char* term, const char* key, void** data, int* data_len);
+    int SetProp(unsigned int term_id, const char* key, const void* data, int data_len); // when prop_type is short|int|long, data_len will be ignored.
+    int GetProp(unsigned int term_id, const char* key, void** data, int* data_len);
 
     int Properties(const char* term, LemmaPropertyEntry** entries);
 
+private:
+    BaseDictPrivate* _p;
+    u2               _record_row_size;
 };
 
 class CharMapper

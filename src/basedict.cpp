@@ -8,6 +8,10 @@
 
 namespace mm {
 
+#define SafeDelete(_arg)		{ if ( _arg ) delete ( _arg );		(_arg) = NULL; }
+#define SafeDeleteArray(_arg)	{ if ( _arg ) delete [] ( _arg );	(_arg) = NULL; }
+
+
 ////////////////////////////////////////////////////////////////////////////////
 /// CharMapper: Map Unicode Char -> Unicode Char in search form.
 ///
@@ -192,14 +196,32 @@ CharMapper::Transform(u4 src, u2* out_tag)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-///  Base & Basic Dictionary.
+///  Base & Basic Dictionary. (Private)
 ////////////////////////////////////////////////////////////////////////////////
-BaseDict::BaseDict()
+class BaseDictPrivate
 {
+public:
+    // where store items
+    // where store attributes?
+    // where store string pool (hash)
+
+public:
+    //Darts::DoubleArray _dict;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+/// BaseDict
+////////////////////////////////////////////////////////////////////////////////////
+
+BaseDict::BaseDict()
+    :_record_row_size(0)
+{
+    _p = new BaseDictPrivate();
 }
 
 BaseDict::~BaseDict()
 {
+    SafeDelete(_p);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -237,6 +259,7 @@ BaseDict::Save(const char* dict_path){
      *    - data pool
      *      (length, data)
      *
+     * 在取结果时,可以选择要去的字段.
      */
     return 0;
 }
@@ -256,23 +279,44 @@ BaseDict::Init(const LemmaPropertyDefine* props, int prop_count)
 int
 BaseDict::InitString(const char* prop_define, int str_define_len)
 {
+    /*
+     * 1 if no prop_defined ( input NULL | "")
+     *      - add define "id":u4
+     * 2 else
+     *      - if no id in prop_define, append it.
+     */
+    char schema_define[1024];
+    char *delim = ":;";
+    char *tok = NULL;
+    if(str_define_len > 1023)
+        return -413; // schema define too large.
+
+    memcpy(schema_define, prop_define, str_define_len);
+    schema_define[str_define_len] = 0;
+
+    do {
+        tok = strtok(schema_define, delim);
+        if(tok)
+            printf("tok=%s\t", tok);
+    }while(tok);
+
     return 0;
 }
 
 int
-BaseDict::Insert(const char* term, int freq, const u4* pos, int pos_count)
+BaseDict::Insert(const char* term, unsigned int term_id, int freq, const u4* pos, int pos_count)
 {
     return 0;
 }
 
 int
-BaseDict::SetProp(const char* term, const char* key, const void* data, int data_len)
+BaseDict::SetProp(unsigned int term_id,  const char* key, const void* data, int data_len)
 {
     return 0;
 }
 
 int
-BaseDict::GetProp(const char* term, const char* key, void** data, int* data_len)
+BaseDict::GetProp(unsigned int term_id, const char* key, void** data, int* data_len)
 {
     return 0;
 }
