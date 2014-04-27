@@ -17,6 +17,9 @@ IF(WIN32) # Check if we are on Windows
   endif()
 ENDIF()
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+
 SET(LIBMMSEG_SOURCE
     basedict.cpp
     segmentor.cpp
@@ -32,7 +35,7 @@ target_link_libraries(mmseg mmseg_c)
 
 include_directories(${PROJECT_SOURCE_DIR}/third_party/glog/src)
 ADD_EXECUTABLE(tst_cmake tst_cmake.cpp )
-target_link_libraries(tst_cmake glog)
+target_link_libraries(tst_cmake glog pthread)
 #target_link_libraries(tst_tut )
 ADD_EXECUTABLE(tst_dict tst_dict.cpp )
 
