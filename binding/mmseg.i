@@ -36,6 +36,8 @@
 %ignore mm::LemmaPropertyDefine; 
 %ignore mm::LemmaPropertyType; 
 %ignore mm::BaseDict::Init;
+%ignore mm::CharMapper::Transform;
+
 
 // This section is copied verbatim into the generated source code.
 // Any include files, definitions, etc. need to go here.
