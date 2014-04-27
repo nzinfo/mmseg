@@ -28,6 +28,7 @@ class SegmentStatus
      *  1 Record token's status, all person names, etc
      *  2 Record current Status  ( init, inprogess, finished )
      *  3 Save the result.
+     *  4 recalc last 5 token, avoid mislead by buffer. eg .. 中] [国人...
      */
 public:
     SegmentStatus();
@@ -72,6 +73,11 @@ public:
      */
     int LoadTermDictionary(const char* dict_path, int dict_id, SegmentOptions& opts);
     int LoadPharseDictionary(const char* dict_path, int dict_id, SegmentOptions& opts);
+
+    /*
+     *      reload new dictionary from disk, double memory usage while loading.
+     */
+    int ReloadDictionary(int dict_id);
 
     int Tokenize(SegmentStatus* stat, const char *utf8_string, u4 utf8_string_len, SegmentOptions& opts);
 };

@@ -29,7 +29,7 @@ local cb = ffi.cast("charlevel_callback_proto", function(ctx, msg, n)
   -- ffi.string will alloc new memory; if wanna for speed, try use c API's string compare method.
   print(ffi.string ( msg ) )
   print("world")
-  print(C.strncmp("hello world.", msg, 10))
+  print(C.strncmp("hello world.", msg, 10))  -- better.
   return 0
 end )
 

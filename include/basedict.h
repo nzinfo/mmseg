@@ -26,10 +26,10 @@
 namespace mm {
 
 enum LemmaPropertyType {
-    PROP_STRING,        // variant size
-    PROP_SHORT,         // 2bit
-    PROP_INT,           // 4bit
-    PROP_LONG           // 8bit
+    PROP_STRING,        // variant size (4B offset, 2G Max)
+    PROP_SHORT,         // 2B
+    PROP_INT,           // 4B
+    PROP_LONG           // 8B
 };
 
 typedef struct LemmaPropertyDefine

@@ -45,5 +45,4 @@ Log
     GLOG_logtostderr=1 ./src/tst_cmake
   能够看到 Log 信息, 不过, 对于库函数来说, 默认不记录在文件中, 这个行为是正确的.
 
-
-
+2 如果在CentOS5 上编译,需要额外对 glog 进行 configure 生成新的 config.h

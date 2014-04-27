@@ -37,6 +37,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/timeb.h>
+#include <sys/time.h>
 #endif
 
 #ifdef __cplusplus

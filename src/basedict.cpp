@@ -206,11 +206,38 @@ BaseDict::~BaseDict()
 int
 BaseDict::Open(const char* dict_path, char mode)
 {
+
     return 0;
 }
 
 int
 BaseDict::Save(const char* dict_path){
+    /*
+     *  Dictionary File Format:
+     *  [header]
+     *    - magic
+     *    - version
+     *    - flag ?
+     *    - dictionary id eg. com.coreseek.mmseg.basic, sys should provide a feature load dict by id.
+     *    - schema: how properties stored
+     *      * pack: row_size, (column -> row ), if len(string) <= 4byte encode in pack.
+     *    - dart size
+     *    - prop count
+     *    - data pool size
+     *
+     *  [darts]
+     *    - dart array.
+     *
+     *  [properties]
+     *    - fix size of record , packed
+     *
+     *  [datapool]
+     *    - reuse pool ?
+     *      (resue if entry's property is the same)
+     *    - data pool
+     *      (length, data)
+     *
+     */
     return 0;
 }
 
