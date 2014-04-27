@@ -1,5 +1,6 @@
 #include "basedict.h"
 
+namespace mm {
 
 ////////////////////////////////////////////////////////////////////////////////
 /// CharMapper: Map Unicode Char -> Unicode Char in search form.
@@ -15,7 +16,7 @@ CharMapper::Load(const char* filename)
      *
      * 200 ok
      */
-
+    printf("I got %s %d.\n", filename, this->_bDefaultPass);
 
     return 0;
 }
@@ -100,6 +101,12 @@ BaseDict::Init(const LemmaPropertyDefine* props, int prop_count)
 }
 
 int
+BaseDict::InitString(const char* prop_define, int str_define_len)
+{
+    return 0;
+}
+
+int
 BaseDict::Insert(const char* term, int freq, const u4* pos, int pos_count)
 {
     return 0;
@@ -121,5 +128,9 @@ int
 BaseDict::Properties(const char* term, LemmaPropertyEntry** entries){
     return 0;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+} // end namespace mm
 
 /* -- end of file -- */

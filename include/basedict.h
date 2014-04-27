@@ -23,6 +23,8 @@
 // CharMapper define
 #define MAX_UNICODE_CODEPOINT   65535       // UCS-2's MAX
 
+namespace mm {
+
 enum LemmaPropertyType {
     PROP_STRING,        // variant size
     PROP_SHORT,         // 2bit
@@ -58,6 +60,7 @@ public:
 
     int Init(const LemmaPropertyDefine* props, int prop_count);     // define how many propery a lemma in this dictionary can have.
                                                                     // once this func been call, all data in dict will be trunc
+    int InitString(const char* prop_define, int str_define_len);    // use string define property, for scripting interface.
 
     int Insert(const char* term, int freq, const u4* pos, int pos_count); // add new term -> dict, pos = char[4]
 
@@ -127,5 +130,7 @@ private:
 #     This mapping shortcut is helpful for a number of Unicode blocks where uppercase
 #     and lowercase letters go in such interleaved order instead of contiguous chunks.
 */
+
+} //end namespace
 
 #endif // BASEDICT_H

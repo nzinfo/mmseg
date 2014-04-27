@@ -16,6 +16,12 @@
 // Use exceptions
 %include "exception.i"
 
+// Global Tweaks to basedict
+%ignore mm::LemmaPropertyEntry; 
+%ignore mm::LemmaPropertyDefine; 
+%ignore mm::LemmaPropertyType; 
+%ignore mm::BaseDict::Init;
+
 // This section is copied verbatim into the generated source code.
 // Any include files, definitions, etc. need to go here.
 %{
