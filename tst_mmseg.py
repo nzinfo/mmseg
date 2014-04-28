@@ -38,7 +38,7 @@ if False:
 	_mmseg.delete_ushortp(rs)     # Delete
 	_mmseg.delete_CharMapper(char_map)
 
-if True:
+if False:	# Test property
 	dt =  _mmseg.new_BaseDict()
 	schema = "id:4;attr2:2;name:s;attr1:2;attr3:2"
 	_mmseg.BaseDict_InitString( dt, schema, len(schema) )
@@ -54,5 +54,28 @@ if True:
 
 	_mmseg.delete_BaseDict(dt)
 	#pass
+
+if True:	# Test Dart
+	dt =  _mmseg.new_BaseDict()
+	schema = "id:4;attr2:2;name:s;attr1:2;attr3:2"
+	_mmseg.BaseDict_InitString( dt, schema, len(schema) )
+	# add entrys
+	_mmseg.BaseDict_Insert(dt, "a", 100, 10, None, 0)
+	_mmseg.BaseDict_Insert(dt, "abc", 100, 10, None, 0)
+	_mmseg.BaseDict_Insert(dt, "abcd", 100, 10, None, 0)
+	_mmseg.BaseDict_Insert(dt, "ab", 100, 10, None, 0)
+	_mmseg.BaseDict_Insert(dt, "abgaowei", 100, 10, None, 0)
+	_mmseg.BaseDict_Insert(dt, u"选".encode('utf-8'), 100, 10, None, 0)
+	_mmseg.BaseDict_Insert(dt, u"选择".encode('utf-8'), 100, 10, None, 0)
+	_mmseg.BaseDict_Insert(dt, u"选择题".encode('utf-8'), 100, 10, None, 0)
+	# build darts
+	_mmseg.BaseDict_Build(dt)
+	_mmseg.BaseDict_SaveRaw(dt, 'd.lib')
+	# save
+	# reload
+	# query extract
+	# query commonprefix
+
+	_mmseg.delete_BaseDict(dt)
 
 #end of file

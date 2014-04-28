@@ -48,6 +48,30 @@ Segmentor::LoadPharseDictionary(const char* dict_path, int dict_id, SegmentOptio
 }
 
 int
+Segmentor::AddTermDictionary(const mm::BaseDict* dict, int dict_id, SegmentOptions& opts)
+{
+    return 0;
+}
+
+int
+Segmentor::AddPharseDictionary(const mm::BaseDict* dict, int dict_id, SegmentOptions& opts)
+{
+    return 0;
+}
+
+int
+Segmentor::ReloadDictionary(int dict_id)
+{
+    return 0;
+}
+
+int
+Segmentor::ReplaceDictionary(const mm::BaseDict* dict, int dict_id)
+{
+    return 0;
+}
+
+int
 Segmentor::Tokenize(SegmentStatus* stat, const char *utf8_string, u4 utf8_string_len, SegmentOptions& opts)
 {
     /*

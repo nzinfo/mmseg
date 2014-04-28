@@ -227,6 +227,77 @@ public:
     std::vector<LemmaPropertyEntry> props;
 };
 
+bool EntryAscOrderCmp ( LemmaEntry& elem1, LemmaEntry& elem2 )
+{
+    return elem1.term < elem2.term;
+}
+
+/*
+ * FIXME: should change darts.h make this type keyset work
+ */
+template <typename T>
+class Keyset : public Darts::Details::Keyset<T>{
+ public:
+  Keyset(std::size_t num_keys, const LemmaEntry* entries) :
+      Darts::Details::Keyset<int>(num_keys, NULL, NULL, NULL),
+      num_keys_(num_keys), entries_(entries)
+  {
+    //printf("111111111111\n");
+  }
+
+  std::size_t num_keys() const {
+    //printf("111111111111====\n");
+    return num_keys_;
+  }
+  const Darts::Details::char_type *keys(std::size_t id) const {
+    //printf("111111111111kkkkkkkkkk====\n");
+    return entries_[id].term.c_str();
+  }
+  Darts::Details::uchar_type keys(std::size_t key_id, std::size_t char_id) const {
+    if (has_lengths() && char_id >= entries_[key_id].term.length())
+      return '\0';
+    return entries_[key_id].term[char_id];
+  }
+
+  bool has_lengths() const {
+    return true;
+  }
+  std::size_t lengths(std::size_t id) const {
+    //if (has_lengths())
+    {
+      return entries_[id].term.length();
+    }
+    /*
+    std::size_t length = 0;
+    while (keys_[id][length] != '\0') {
+      ++length;
+    }
+    return length;
+    */
+  }
+
+  bool has_values() const {
+    return true;
+  }
+
+  const Darts::Details::value_type values(std::size_t id) const {
+    //if (has_values())
+    {
+      return static_cast<Darts::Details::value_type>(entries_[id].term_id);
+    }
+    //return static_cast<value_type>(id);
+  }
+
+ private:
+  std::size_t num_keys_;
+  const LemmaEntry* entries_;
+
+  // Disallows copy and assignment.
+  Keyset(const Keyset &);
+  Keyset &operator=(const Keyset &);
+};
+
+
 class BaseDictPrivate
 {
 public:
@@ -279,6 +350,79 @@ public:
             } // end for unordered_map
         } // end if bFreeEntryPropertyData
         entries.clear();
+        ResetDart();
+        return 0;
+    }
+
+    // Darts Related
+    int BuildDart(unsigned int *dup_term_buf, int buf_length) {
+        /*
+         *  1 check have dup term
+         *  2 sort key in asc order
+         *  3 clear darts
+         *  4 call darts build
+         *
+         *  FIXME: preformace is NOT a consider.
+         */
+        std::vector<LemmaEntry> v;
+        v.reserve(entries.size());
+
+        {
+            // check dup
+            unsigned int* dup_term_buf_ptr = dup_term_buf;
+            unsigned int* dup_term_buf_end = dup_term_buf + buf_length;
+            * dup_term_buf_ptr = 0;
+
+            unordered_map<std::string, int> keys_hash;
+            for(unordered_map<int, LemmaEntry>::iterator it = entries.begin();
+                    it !=  entries.end(); ++it) {
+                LemmaEntry & entry = it->second;
+                if ( keys_hash.find(entry.term) != keys_hash.end() ) {
+                    if(dup_term_buf_ptr < dup_term_buf_end) {
+                        *dup_term_buf_ptr = entry.term_id;
+                        dup_term_buf_ptr ++;
+                    }
+                } // end if find
+                keys_hash[entry.term] = entry.term_id;
+                v.push_back(entry);
+            } // for
+
+            if (*dup_term_buf_ptr != 0)
+                return -1; //dup entry found.
+        }
+
+        {
+            // sort in alphabet order
+            std::sort(v.begin(), v.end(), EntryAscOrderCmp);
+
+            /*
+            Darts::Details::DoubleArrayBuilder builder(NULL);
+            Keyset<int> keyset(entries.size(), v.data());
+            builder.build(keyset);
+
+            std::size_t size = 0;
+            Darts::Details::DoubleArrayUnit *buf = NULL;
+            builder.copy(&size, &buf);
+
+            // data data.
+            _dict.set_array(buf, size);
+            */
+            // slow darts build, but it works.
+            std::vector <Darts::DoubleArray::key_type *> key;
+            std::vector <Darts::DoubleArray::value_type> value;
+            for(std::vector<LemmaEntry>::iterator it = v.begin(); it != v.end(); ++it) {
+                char* ptr = &( it->term[0] );
+                key.push_back(ptr);
+                value.push_back(it->term_id);
+            }
+            _dict.build(key.size(), &key[0], 0, &value[0] ) ;
+        }
+
+        return 0;
+    }
+
+    int ResetDart() {
+        _dict.clear();
         return 0;
     }
 
@@ -341,6 +485,12 @@ BaseDict::Save(const char* dict_path){
      *      (length, data)
      *
      * 在取结果时,可以选择要去的字段.
+     * Note:
+     *  1 只保存词库的原始格式 header + properties + datapool, 不再保存 dart
+     *  2 在分词法部分加载多个词库后, 可以构造统一的 dart, 也可以分词库构造 dart
+     *  3 更新| Reload 词库后, 主 dart 对应的词库作废, 读取分词库的.
+     *  4 优化过程为重新构造 新的 dart
+     *  引入 zlib, 压缩存储
      */
     return 0;
 }
@@ -364,9 +514,10 @@ BaseDict::Build()
 {
     /*
      * Rebuild Darts from entries
+     * -
      */
-    //_p
-    return 0;
+    unsigned int dup_term_buf[100] = {0};
+    return _p->BuildDart(dup_term_buf, 100);
 }
 
 int

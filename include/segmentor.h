@@ -2,6 +2,7 @@
 #define SEGMENTOR_H
 
 #include "csr_typedefs.h"
+#include "basedict.h"
 
 /*
  *  Segment Options , define switch-set during dictionary loading & segment.
@@ -73,11 +74,14 @@ public:
      */
     int LoadTermDictionary(const char* dict_path, int dict_id, SegmentOptions& opts);
     int LoadPharseDictionary(const char* dict_path, int dict_id, SegmentOptions& opts);
+    int AddTermDictionary(const mm::BaseDict* dict, int dict_id, SegmentOptions& opts);
+    int AddPharseDictionary(const mm::BaseDict* dict, int dict_id, SegmentOptions& opts);
 
     /*
      *      reload new dictionary from disk, double memory usage while loading.
      */
-    int ReloadDictionary(int dict_id);
+    int ReloadDictionary(int dict_id);  //used only dict_id -> dict load from file
+    int ReplaceDictionary(const mm::BaseDict* dict, int dict_id); // both working.
 
     int Tokenize(SegmentStatus* stat, const char *utf8_string, u4 utf8_string_len, SegmentOptions& opts);
 };
