@@ -50,7 +50,7 @@ public:
     ~BaseDict();
 
 public:
-    int Open(const char* dict_path, char mode); // mode can be 'r', 'n'.  'n' stands for new; 'r' load pre-build dict from disk.
+    int Load(const char* dict_path, char mode); // mode can be 'r', 'n'.  'n' stands for new; 'r' load pre-build dict from disk.
     int Save(const char* dict_path);            // save to disk
     int Build();                                // build trie-tree in memory.
     int Reset();                                // clear all in memory entry (inlcude property's data)
@@ -71,6 +71,10 @@ public:
     int GetPropInteger(unsigned int term_id, const char* key, u8* v);
 
     //int Properties(const char* term, LemmaPropertyEntry** entries);
+
+    // Darts Debug
+    int SaveRaw(const char* dict_path);
+    int LoadRaw(const char* dict_path);
 
 private:
     BaseDictPrivate* _p;

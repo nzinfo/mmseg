@@ -49,8 +49,8 @@ if True:
 	c = _mmseg.get_dict_property_string(dt, 100, "name")
 	print c
 
-	_mmseg.BaseDict_SetPropInteger(dt, 100, "id", 9999)
-	print _mmseg.get_dict_property_number(dt, 100, "id")
+	#_mmseg.BaseDict_SetPropInteger(dt, 100, "id", 9999)
+	#print _mmseg.get_dict_property_number(dt, 100, "id")
 
 	_mmseg.delete_BaseDict(dt)
 	#pass

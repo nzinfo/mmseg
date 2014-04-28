@@ -234,6 +234,7 @@ public:
     // where store attributes?
     // where store string pool (hash)
 
+    // Column Related
     int AddColumn(const std::string& def, int offset){
         column_offset[def] = offset;
         return 0;
@@ -244,11 +245,41 @@ public:
     }
 
     char GetColumnType(const char* column_name) {
+        // FIXME: use a hash ?
         for(unordered_map<std::string, int>::iterator it = column_offset.begin(); it !=  column_offset.end(); ++it) {
             if(strncmp(column_name, it->first.c_str()+2, strlen(column_name)) == 0)
                 return it->first[0];
         }
         return ' ';  // type not found.
+    }
+
+    // Entry Related
+    int AddEntry(LemmaEntry entry) {
+        entries[entry.term_id] = entry;
+        return 0;
+    }
+
+    int ResetEntry(bool bFreeEntryPropertyData = true) {
+        /*
+         * 1 free all entry's data_ptr
+         * 2 reset hash
+         */
+        if(bFreeEntryPropertyData) {
+            for(unordered_map<int, LemmaEntry>::iterator it = entries.begin(); it !=  entries.end(); ++it) {
+                LemmaEntry & entry = it->second;
+                for(std::vector<LemmaPropertyEntry>::iterator it = entry.props.begin(); it != entry.props.end(); ++it) {
+                    //printf("tok=%s\t", it->key);
+                    if(it->data) {
+                        // FIXME: should alloc data in memory pool
+                        free(it->data);
+                        it->data = NULL;
+                        it->data_len = 0;
+                    }
+                } // end for vector
+            } // end for unordered_map
+        } // end if bFreeEntryPropertyData
+        entries.clear();
+        return 0;
     }
 
 public:
@@ -276,7 +307,7 @@ BaseDict::~BaseDict()
 
 ////////////////////////////////////////////////////////////////////////////////
 int
-BaseDict::Open(const char* dict_path, char mode)
+BaseDict::Load(const char* dict_path, char mode)
 {
 
     return 0;
@@ -315,8 +346,26 @@ BaseDict::Save(const char* dict_path){
 }
 
 int
+BaseDict::SaveRaw(const char* dict_path)
+{
+    _p->_dict.save(dict_path);
+    return 0;
+}
+
+int
+BaseDict::LoadRaw(const char* dict_path)
+{
+    _p->_dict.open(dict_path);
+    return 0;
+}
+
+int
 BaseDict::Build()
 {
+    /*
+     * Rebuild Darts from entries
+     */
+    //_p
     return 0;
 }
 
@@ -324,19 +373,7 @@ int
 BaseDict::Reset()
 {
     // clear entry -> move to private ?
-    for(unordered_map<int, LemmaEntry>::iterator it = _p->entries.begin(); it !=  _p->entries.end(); ++it) {
-        LemmaEntry & entry = it->second;
-        for(std::vector<LemmaPropertyEntry>::iterator it = entry.props.begin(); it != entry.props.end(); ++it) {
-            //printf("tok=%s\t", it->key);
-            if(it->data) {
-                // FIXME: should alloc data in memory pool
-                free(it->data);
-                it->data = NULL;
-                it->data_len = 0;
-            }
-        }
-    }
-    _p->entries.clear(); // remove all entry.
+    _p->ResetEntry(true);// remove all entry.
     return 0;
 }
 
@@ -445,7 +482,8 @@ BaseDict::Insert(const char* term, unsigned int term_id, int freq, const u4* pos
     for(int i=0; i<pos_count;i++)
         entry.pos.push_back(pos[i]);
 
-    _p->entries[term_id] = entry; //copy construct
+    //_p->entries[entry.term_id] = entry;
+    _p->AddEntry(entry); //copy construct
     return 0;
 }
 
@@ -480,13 +518,15 @@ BaseDict::SetProp(unsigned int term_id,  const char* key, const char* data, int 
 int
 BaseDict::GetProp(unsigned int term_id, const char* key, char* data, int* data_len)
 {
+    // WARNING: if data_len extactly eq sizeof(it->data), will pass the function
+    // if u wanna use string, should manually append \0 at caller side.
     if( _p->entries.find(term_id) == _p->entries.end() )
         return -1;
 
     std::string prop_name = key;
     std::vector<LemmaPropertyEntry>& props = _p->entries.find(term_id)->second.props;
     for(std::vector<LemmaPropertyEntry>::iterator it = props.begin(); it != props.end(); ++it) {
-        // printf("tok=%s\t", it->key);
+        //printf("tok=%s\t", it->prop_name.c_str() );
         if( it->prop_name == prop_name ) {
             if(*data_len >= it->data_len) {
                 memcpy(data, it->data, it->data_len);

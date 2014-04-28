@@ -58,13 +58,16 @@
   	int rs = 0;
   	char* buf = NULL;
   	rs = dict->GetProp ( term_id, key, buf, &data_len);  // buf == NULL;
+  	//printf("get data_len %d\n", data_len);
   	if(data_len) {
-  		buf = (char*)malloc(data_len);
+  		buf = (char*)malloc(data_len+1); // +1 for whitespace for string.
   		rs = dict->GetProp ( term_id, key, buf, &data_len);
-  		if(rs == 0)
+  		if(rs == 0) {
+  			buf[data_len] = 0;
   			return buf;
+  		}
   	}
-  	return buf;
+  	return NULL;
   }
   u8 get_dict_property_number(mm::BaseDict* dict, unsigned int term_id, const char* key) {
   	u8 v = 0;
