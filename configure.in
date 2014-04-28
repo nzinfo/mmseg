@@ -15,7 +15,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
-AC_INIT(src/mmseg_main.cpp)
+AC_INIT(src/mmseg_cli.cpp)
 AC_CONFIG_AUX_DIR(config)
 AM_CONFIG_HEADER(config.h:config-h.in)
 AM_INIT_AUTOMAKE(mmseg, 0.7)
