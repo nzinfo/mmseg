@@ -88,7 +88,7 @@ protected:
     StringPoolMemoryEntry* _begin;
     StringPoolMemoryEntry* _current;
 
-	unordered_map<u8, u4> _string_entries;	// 系统已知的 string 值，为了省内存，保存的是数据的 hash code， 而不是数据本身。会造成部分冲突，在词典的应用中，足够了。
+    unordered_map<u8, u4> _string_entries;	// 系统已知的 string 值，为了省内存，保存的是数据的 hash code， 而不是数据本身。会造成部分冲突，在词典的应用中，足够了。
     u4  _total_size;	// the total size of string data entry, 
 
 protected:

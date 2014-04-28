@@ -51,6 +51,11 @@ typedef struct {u4 low, high;}  u8;
 #define CSR_INT64_MAX	9223372036854775807LL
 #define CSR_UINT64_MAX	18446744073709551615ULL
 
+#ifdef __GNUC__
+   #define FLT_MIN __FLT_MIN__
+   #define FLT_MAX __FLT_MAX __
+#endif
+
 
 #ifdef WIN32
 #undef  HIBYTE

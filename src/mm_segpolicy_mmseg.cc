@@ -118,12 +118,12 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
      */
     int pos = 0;
     const DictMatchEntry* match_entry = NULL;
-	const DictMatchEntry* match_entry2 = NULL;
+    const DictMatchEntry* match_entry2 = NULL;
     const DictMatchEntry* match_entry3 = NULL;
 
 	int chunk_max_len = 0;
 	int chunk_len = 0;
-    float min_avg = FLT_MAX ;  //
+    float min_avg = std::FLT_MAX ;  //
 	float max_freedom = 0.0; // 最大单字自由度， 只有单字才有意义。
 	u4 i_level2 = 0;
 	u4 i_level3 = 0;

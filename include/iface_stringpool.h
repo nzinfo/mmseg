@@ -40,4 +40,5 @@ public:
 
 } // namespace mm
 
+
 #endif  //_ISTRINGPOOL_H
