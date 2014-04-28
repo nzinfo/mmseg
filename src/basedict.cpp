@@ -1,6 +1,14 @@
 #include <glog/logging.h>
 
+#ifdef __APPLE__
 #include <unordered_map>
+#else
+    #ifdef __GNUC__
+    #include <ext/hash_map>
+    #define unordered_map __gnu_cxx::hash_map
+    #endif
+#endif
+
 #if defined __GNUC__ || defined __APPLE__
 using std::unordered_map;
 #else
@@ -476,19 +484,37 @@ public:
                     return -503;
 
                 std::fwrite(idx_data, sizeof(u1), 1, fp);
-
+                // Simple & stupid code, assume no entry have more than 128K property.
+                void* entry_data = malloc(1024*128);
+                int rs = 0;
+                int entry_data_length = 0;
                 for(std::vector<LemmaEntry>::iterator it = v.begin(); it != v.end(); ++it) {
-                    int entry_data_length = 0;
-                    const void* entry_data = GetEntryData((*it), &entry_data_length);
+                    entry_data_length = 0;
+                    LemmaEntry& entry = *it;
+                    rs = GetEntryData(entry, entry_data, &entry_data_length);
                 }
+                free(entry_data);
+
+                free(idx_data);
             }
         }
         return 0;
     }
 
-    void* GetEntryData(LemmaEntry& entry, int* data_size) {
+    int GetEntryData(LemmaEntry& entry, void* data, int* data_size) {
         *data_size = 0;
-        return NULL;
+        int offset = 0;
+        std::string prop;
+        prop.reserve(256);
+        for(std::vector<LemmaPropertyEntry>::iterator it = entry.props.begin(); it != entry.props.end(); ++it) {
+            prop.clear();
+            prop.push_back(it->prop_type);
+            prop.push_back(':');
+            prop.assign(it->prop_name);
+            offset = column_offset[prop];
+            printf("key=%s, offset=%d\n", prop.c_str(), offset);
+        }
+        return 0;
     }
 
 public:
