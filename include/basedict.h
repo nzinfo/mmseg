@@ -63,7 +63,7 @@ public:
      */
     int InitString(const char* prop_define, int str_define_len);    // use string define property, for scripting interface.
 
-    int Insert(const char* term, unsigned int term_id, int freq, const u4* pos, int pos_count); // add new term -> dict, pos = char[4]
+    int Insert(const char* term, unsigned int term_id, int freq); // add new term -> dict, pos = char[4]
 
     int SetProp(unsigned int term_id, const char* key, const char* data, int data_len); // when prop_type is short|int|long, data_len will be ignored.
     int GetProp(unsigned int term_id, const char* key, char* data, int* data_len);
@@ -78,7 +78,6 @@ public:
 
 private:
     BaseDictPrivate* _p;
-    u2               _record_row_size;
 };
 
 class CharMapper

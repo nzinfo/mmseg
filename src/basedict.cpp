@@ -28,12 +28,20 @@ namespace mm {
 /// by Administrators. If have some error happen, it means some hidden bug.
 ////////////////////////////////////////////////////////////////////////////////
 const char charmap_head_mgc[] = "UNID";
+const char basedict_head_mgc[] = "TERM";
 
 typedef struct _mmseg_char_map_file_header{
     char mg[4];
     short version;
     short flags;
 }mmseg_char_map_file_header;
+
+typedef struct _mmseg_dict_file_header{
+    char mg[4];
+    short version;
+    short flags;
+    char dictname[128];
+}mmseg_dict_file_header;
 
 #define MMSEG_CHARMAP_FLAG_DEFAULT_PASS     0x1
 
@@ -223,7 +231,6 @@ public:
     unsigned int term_id;
     std::string term;
     int freq;
-    std::vector<u4> pos;
     std::vector<LemmaPropertyEntry> props;
 };
 
@@ -387,7 +394,7 @@ public:
                 v.push_back(entry);
             } // for
 
-            if (*dup_term_buf_ptr != 0)
+            if (*dup_term_buf != 0)
                 return -1; //dup entry found.
         }
 
@@ -426,10 +433,70 @@ public:
         return 0;
     }
 
+    // Save & Load
+    int Load() {
+        return 0;
+    }
+
+    int Save(const char* filename) {
+        /*
+         *  In Save & Load, I do NOT care about dup term.
+         *  Raw File Format:
+         *  [ hearder][schema][string_len_index][value_index][string_index]
+         *               {the offset of raw value}  -> values { id, attrs }
+         *  raw_data = data_len, fixdata, strings,  opt for easy transfer via network.
+         *
+         */
+        std::vector<LemmaEntry> v;
+        v.reserve(entries.size());
+        {
+            size_t total_string_len = 0;
+            for(unordered_map<int, LemmaEntry>::iterator it = entries.begin();
+                    it !=  entries.end(); ++it) {
+                LemmaEntry & entry = it->second;
+                v.push_back(entry);
+                total_string_len += entry.term.length();
+            } // for
+
+            // sort in alphabet order
+            std::sort(v.begin(), v.end(), EntryAscOrderCmp);
+
+            // try build dump data.
+            // header + size(u2) * term_count + size(u4) * term_count + total_string_len
+            //  + [ entry_data ]
+            {
+                u4 idx_data_len = sizeof(mmseg_dict_file_header) +
+                        ( sizeof(u2) + sizeof(u4) ) * v.size() +  total_string_len;
+
+                u1 * idx_data = (u1*)malloc( idx_data_len );
+                mmseg_dict_file_header* header = (mmseg_dict_file_header*) idx_data;
+
+                std::FILE *fp  = std::fopen(filename, "wb");
+                if(!fp)
+                    return -503;
+
+                std::fwrite(idx_data, sizeof(u1), 1, fp);
+
+                for(std::vector<LemmaEntry>::iterator it = v.begin(); it != v.end(); ++it) {
+                    int entry_data_length = 0;
+                    const void* entry_data = GetEntryData((*it), &entry_data_length);
+                }
+            }
+        }
+        return 0;
+    }
+
+    void* GetEntryData(LemmaEntry& entry, int* data_size) {
+        *data_size = 0;
+        return NULL;
+    }
+
 public:
     Darts::DoubleArray _dict;
     unordered_map<int, LemmaEntry> entries;    // row uncompress format.
 
+    std::string dict_name;
+    u2   _record_row_size;
 protected:
     unordered_map<std::string, int> column_offset;  // column-> offset in data block
 };
@@ -439,7 +506,6 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////////
 
 BaseDict::BaseDict()
-    :_record_row_size(0)
 {
     _p = new BaseDictPrivate();
 }
@@ -459,6 +525,7 @@ BaseDict::Load(const char* dict_path, char mode)
 
 int
 BaseDict::Save(const char* dict_path){
+
     /*
      *  Dictionary File Format:
      *  [header]
@@ -490,8 +557,14 @@ BaseDict::Save(const char* dict_path){
      *  2 在分词法部分加载多个词库后, 可以构造统一的 dart, 也可以分词库构造 dart
      *  3 更新| Reload 词库后, 主 dart 对应的词库作废, 读取分词库的.
      *  4 优化过程为重新构造 新的 dart
-     *  引入 zlib, 压缩存储
+     *  引入 zlib, 压缩存储?
+     *
+     *  Raw File Format:
+     *  [ hearder][schema][string_len_index][value_index][string_index]  {the offset of raw value}  -> values { id, attrs }
+     *  raw_data = data_len, fixdata, strings,  opt for easy transfer via network.
+     *
      */
+
     return 0;
 }
 
@@ -516,8 +589,17 @@ BaseDict::Build()
      * Rebuild Darts from entries
      * -
      */
+    int n = 0;
     unsigned int dup_term_buf[100] = {0};
-    return _p->BuildDart(dup_term_buf, 100);
+    n = _p->BuildDart(dup_term_buf, 100);
+    if(n == -1) {
+       unsigned int * ptr = dup_term_buf;
+       while(*ptr) {
+         LOG(INFO) << "term id dup." << *ptr;
+         ptr++;
+       }
+    }
+    return n;
 }
 
 int
@@ -564,7 +646,7 @@ BaseDict::Init(const LemmaPropertyDefine* props, int prop_count)
             offset += 8;
     }
 
-    _record_row_size = offset; // set row size.
+    _p->_record_row_size = offset; // set row size.
     return 0;
 }
 
@@ -623,15 +705,13 @@ BaseDict::InitString(const char* prop_define, int str_define_len)
 }
 
 int
-BaseDict::Insert(const char* term, unsigned int term_id, int freq, const u4* pos, int pos_count)
+BaseDict::Insert(const char* term, unsigned int term_id, int freq)
 {
     // build entry.
     LemmaEntry entry;
     entry.term = term;
     entry.freq = freq;
     entry.term_id = term_id;
-    for(int i=0; i<pos_count;i++)
-        entry.pos.push_back(pos[i]);
 
     //_p->entries[entry.term_id] = entry;
     _p->AddEntry(entry); //copy construct

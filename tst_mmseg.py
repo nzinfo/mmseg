@@ -60,14 +60,14 @@ if True:	# Test Dart
 	schema = "id:4;attr2:2;name:s;attr1:2;attr3:2"
 	_mmseg.BaseDict_InitString( dt, schema, len(schema) )
 	# add entrys
-	_mmseg.BaseDict_Insert(dt, "a", 100, 10, None, 0)
-	_mmseg.BaseDict_Insert(dt, "abc", 100, 10, None, 0)
-	_mmseg.BaseDict_Insert(dt, "abcd", 100, 10, None, 0)
-	_mmseg.BaseDict_Insert(dt, "ab", 100, 10, None, 0)
-	_mmseg.BaseDict_Insert(dt, "abgaowei", 100, 10, None, 0)
-	_mmseg.BaseDict_Insert(dt, u"选".encode('utf-8'), 100, 10, None, 0)
-	_mmseg.BaseDict_Insert(dt, u"选择".encode('utf-8'), 100, 10, None, 0)
-	_mmseg.BaseDict_Insert(dt, u"选择题".encode('utf-8'), 100, 10, None, 0)
+	_mmseg.BaseDict_Insert(dt, "a", 100, 10)
+	_mmseg.BaseDict_Insert(dt, "abc", 101, 10)
+	_mmseg.BaseDict_Insert(dt, "abcd", 102, 10)
+	_mmseg.BaseDict_Insert(dt, "ab", 103, 10)
+	_mmseg.BaseDict_Insert(dt, "abgaowei", 104, 10)
+	_mmseg.BaseDict_Insert(dt, u"选".encode('utf-8'), 105, 10)
+	_mmseg.BaseDict_Insert(dt, u"选择".encode('utf-8'), 106, 10)
+	_mmseg.BaseDict_Insert(dt, u"选择题".encode('utf-8'), 107, 10)
 	# build darts
 	_mmseg.BaseDict_Build(dt)
 	_mmseg.BaseDict_SaveRaw(dt, 'd.lib')
