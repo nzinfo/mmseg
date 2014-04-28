@@ -53,8 +53,7 @@ typedef struct {u4 low, high;}  u8;
 
 #ifdef __GNUC__
    #define FLT_MIN __FLT_MIN__
-   #define FLT_MAX __FLT_MAX __
-   #define min     std::min
+   #define FLT_MAX __FLT_MAX__
 #endif
 
 

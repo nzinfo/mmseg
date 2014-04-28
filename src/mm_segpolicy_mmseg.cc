@@ -236,9 +236,9 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                             min_avg = avg;
                             best_chunk = current_chunk;
                         }else
-                        if(abs(avg - min_avg) < 1E-6) {  //应该是  avg == min_avg, 最好不要依赖编译器判断 float 是否相同
+                        if((std::abs)(avg - min_avg) < 1E-6) {  //应该是  avg == min_avg, 最好不要依赖编译器判断 float 是否相同
                             // R4: 最大自由度
-                            if( abs(max_freedom -0) < 1E-6 ) {
+                            if( (std::abs)(max_freedom -0) < 1E-6 ) {
                               max_freedom = best_chunk.free(i, _icode_chars, _ucs2_freq_log);
                             }
                             float free_score = current_chunk.free(i, _icode_chars, _ucs2_freq_log);

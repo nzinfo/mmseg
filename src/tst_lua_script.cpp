@@ -31,7 +31,7 @@ main(int argc, char* argv[])
     
     {
         const char* fname = argv[1];
-        int n = init_script(&ctx, fname);
+        int n = init_script(&ctx, 0, fname);
     }
     
     lua_script_clear(&ctx);
