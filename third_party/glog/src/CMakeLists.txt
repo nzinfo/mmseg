@@ -9,9 +9,9 @@ ELSE (WIN32)
     INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/third_party/glog/src/mac)
   ENDIF(APPLE)
   
-  #IF(APPLE)
-  #  INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/third_party/glog/src/posix/mac)
-  #ENDIF(APPLE)
+  IF(UNIX AND NOT APPLE)
+    INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/third_party/glog/src/unix)
+  ENDIF(UNIX AND NOT APPLE)
 
 ENDIF (WIN32)
 
