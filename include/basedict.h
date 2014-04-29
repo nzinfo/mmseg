@@ -23,6 +23,10 @@
 // CharMapper define
 #define MAX_UNICODE_CODEPOINT   65535       // UCS-2's MAX
 #define MAX_LEMMA_PROPERTY_NAME_LENGTH 64
+#define MAX_LEMMA_ENTRY_ID      2147483648  //2^31
+#define MAX_PROPERTY_COUNT      15          //if fact can not change, the highest bit stands for ID | DATA
+#define MAX_ENTRY_DATA          65535       //64K
+#define MAX_ENTRY_TERM_LENGTH   32768       //2**15 max term length
 
 namespace mm {
 
@@ -51,7 +55,7 @@ public:
 
 public:
     int Load(const char* dict_path, char mode); // mode can be 'r', 'n'.  'n' stands for new; 'r' load pre-build dict from disk.
-    int Save(const char* dict_path);            // save to disk
+    int Save(const char* dict_path, int dict_rev);            // save to disk
     int Build();                                // build trie-tree in memory.
     int Reset();                                // clear all in memory entry (inlcude property's data)
 
@@ -62,8 +66,9 @@ public:
      *  Default: id:u4; comunicate with external system?
      */
     int InitString(const char* prop_define, int str_define_len);    // use string define property, for scripting interface.
+    int SetDictName(const char* dict_name);
 
-    int Insert(const char* term, unsigned int term_id, int freq); // add new term -> dict, pos = char[4]
+    int Insert(const char* term, unsigned int term_length, unsigned int term_id, int freq); // add new term -> dict, pos = char[4]
 
     int SetProp(unsigned int term_id, const char* key, const char* data, int data_len); // when prop_type is short|int|long, data_len will be ignored.
     int GetProp(unsigned int term_id, const char* key, char* data, int* data_len);

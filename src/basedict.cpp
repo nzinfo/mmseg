@@ -27,6 +27,8 @@ using namespace std::tr1;
 #undef HAVE_MMAP
 #include "csr_mmap.h"
 
+#include "csr_utils.h"
+
 namespace mm {
 
 #define SafeDelete(_arg)		{ if ( _arg ) delete ( _arg );		(_arg) = NULL; }
@@ -54,6 +56,10 @@ typedef struct _mmseg_dict_file_header{
     short version;
     short flags;
     char dictname[128];
+    u4   dict_rev;              // dictionay reversion.
+    u8   timestamp;             // create_at ?
+    u4   item_count;            // 多少词条
+    u4   entry_data_offset;     // 词条属性的偏移量, 从文件头开始计算, 包括 head. idx_data_len
 }mmseg_dict_file_header;
 
 #define MMSEG_CHARMAP_FLAG_DEFAULT_PASS     0x1
@@ -234,8 +240,8 @@ public:
     std::string prop_name;
     char  prop_type;
     int   row_offset;
-    void* data;
-    u4    data_len;
+    void* data;     // if prop_type = 2 4; data is real value, do not use high 32bit on 64bit machine, for 32-bit compt
+    u2    data_len; // if type_type = 8, this is high 4byte. void* point to a memory addr only when type = s
 };
 
 class LemmaEntry
@@ -326,26 +332,59 @@ public:
     // where store string pool (hash)
 
     // Column Related
-    int AddColumn(const std::string& def, int offset){
-        column_offset[def] = offset;
+    int AddColumn(const std::string& def, u2 idx){
+        column_by_idx[idx] = def;                          // full_name  -> offset in datapkg.
+        column_type_and_idx[def.c_str()+2] = def[0] & (idx<<8);    // raw_name: type
+        CHECK_LT(column_by_idx.size(), MAX_PROPERTY_COUNT) << "max column reached!";
         return 0;
     }
 
     void ResetColumn() {
-        column_offset.clear();
+        column_by_idx.clear();
+        column_type_and_idx.clear();
     }
 
-    char GetColumnType(const char* column_name) {
-        // FIXME: use a hash ?
-        for(unordered_map<std::string, int>::iterator it = column_offset.begin(); it !=  column_offset.end(); ++it) {
-            if(strncmp(column_name, it->first.c_str()+2, strlen(column_name)) == 0)
-                return it->first[0];
-        }
+    inline char GetColumnType(const char* column_name) {
+        unordered_map<std::string, u2>::iterator it = column_type_and_idx.find(column_name);
+        if(it != column_type_and_idx.end() )
+            return (it->second) & 0xFF; // give the lower byte
         return ' ';  // type not found.
     }
 
+    inline short GetColumnIdx(const char* column_name) {
+        // FIXME: use a hash ?
+        unordered_map<std::string, u2>::iterator it = column_type_and_idx.find(column_name);
+        if(it != column_type_and_idx.end() )
+            return (it->second) >> 8; // give the lower byte
+        return -1;  // type not found.
+    }
+
+    const std::string GetSchemaDefine() {
+        std::stringstream ss;
+        //schema = [total_schema_len][type(2b):offset(2b):name],pos is id
+        for(short i=0; i<MAX_PROPERTY_COUNT; i++) {
+            unordered_map<int, std::string>::iterator it = column_by_idx.find(i);
+            if(it != column_by_idx.end())
+                ss << it->second << ";" ;
+        }
+        return ss.str();
+    }
+
     // Entry Related
-    int AddEntry(LemmaEntry entry) {
+    int AddEntry(LemmaEntry& entry) {
+        //FIXME: change here if use entry's string pool
+        LemmaEntry& origin_entry = entries[entry.term_id];
+        if(origin_entry.term_id) {
+            //  free data
+            for(std::vector<LemmaPropertyEntry>::iterator it = entry.props.begin(); it != entry.props.end(); ++it) {
+                if(it->data && it->prop_type == 's') {
+                    free(it->data);
+                    it->data = NULL;
+                    it->data_len = 0;
+                }
+            } // end for vector
+            LOG(INFO) << "term id " << origin_entry.term_id << " " << origin_entry.term << " replaced by " << entry.term;
+        }
         entries[entry.term_id] = entry;
         return 0;
     }
@@ -359,8 +398,7 @@ public:
             for(unordered_map<int, LemmaEntry>::iterator it = entries.begin(); it !=  entries.end(); ++it) {
                 LemmaEntry & entry = it->second;
                 for(std::vector<LemmaPropertyEntry>::iterator it = entry.props.begin(); it != entry.props.end(); ++it) {
-                    //printf("tok=%s\t", it->key);
-                    if(it->data) {
+                    if(it->data && it->prop_type == 's') {
                         // FIXME: should alloc data in memory pool
                         free(it->data);
                         it->data = NULL;
@@ -416,6 +454,7 @@ public:
             std::sort(v.begin(), v.end(), EntryAscOrderCmp);
 
             /*
+            //FIXME: do NOT remove the code, can be fixed by doing a bit darts hacking.
             Darts::Details::DoubleArrayBuilder builder(NULL);
             Keyset<int> keyset(entries.size(), v.data());
             builder.build(keyset);
@@ -447,19 +486,62 @@ public:
     }
 
     // Save & Load
-    int Load() {
+    int Load(const char* filename, BaseDict* dict) {
+        LOG(INFO) << "load dictionary begin " << filename;
+
+        std::FILE *fp = std::fopen(filename, "rb");
+        //FIXME: should check ptr's length.
+        //process header
+        mmseg_dict_file_header header;
+        if (1 == std::fread(&header, sizeof(mmseg_dict_file_header), 1, fp))
+        {
+            //Check file magic header
+            if(strncmp(header.mg, basedict_head_mgc, 4) != 0)
+                return -2; //file type error.
+            LOG(INFO) << "dict name " << header.dictname;
+            LOG(INFO) << "entry count " << header.item_count;
+            LOG(INFO) << "dict rev " << header.dict_rev;
+            LOG(INFO) << "dict entry_data_offset " << header.entry_data_offset;
+            dict_name_.assign(header.dictname);
+
+        } else
+            return -1;
+
+        //schema
+        u4 schema_str_length = 0;
+        if (1 == std::fread(&schema_str_length, sizeof(u4), 1, fp))
+        {
+            char* schema_buf = (char*)malloc(schema_str_length+1);
+            schema_buf[schema_str_length] = 0;
+            if (schema_str_length != std::fread(schema_buf, 1, schema_str_length, fp))
+                return -1;
+            LOG(INFO) << "dict schema " <<schema_buf;
+            dict->InitString(schema_buf, schema_str_length);
+            LOG(INFO) << "dict schema (rebuild)" << GetSchemaDefine();
+            free(schema_buf);
+        }
+        //item's values
+        //item's strings.
+        //build darts?
+        LOG(INFO) << "load dictionary finished " << filename;
+        {
+            if(fp)
+                std::fclose(fp);
+        }
         return 0;
     }
 
-    int Save(const char* filename) {
+    int Save(const char* filename, int dict_rev) {
         /*
          *  In Save & Load, I do NOT care about dup term.
          *  Raw File Format:
          *  [ hearder][schema][string_len_index][value_index][string_index]
          *               {the offset of raw value}  -> values { id, attrs }
          *  raw_data = data_len, fixdata, strings,  opt for easy transfer via network.
-         *
+         *  schema = [total_schema_len][type(2b):offset(2b):name],pos is id
+         *  FIXME: compress file?
          */
+        LOG(INFO) << "save dictionary begin " << filename;
         std::vector<LemmaEntry> v;
         v.reserve(entries.size());
         {
@@ -468,68 +550,179 @@ public:
                     it !=  entries.end(); ++it) {
                 LemmaEntry & entry = it->second;
                 v.push_back(entry);
-                total_string_len += entry.term.length();
+                total_string_len += entry.term.length() + 1;    // will append a \0
             } // for
-
+            LOG(INFO) << "total entry count " <<  v.size();
             // sort in alphabet order
             std::sort(v.begin(), v.end(), EntryAscOrderCmp);
-
+            LOG(INFO) << "sort entry done ";
             // try build dump data.
-            // header + size(u2) * term_count + size(u4) * term_count + total_string_len
+            // header + size(u4){property data}* term_count + total_string_len + (zero)*term_count ,  不额外保存字符串长度信息，而改为0， 因为多数字符串长度小于128
             //  + [ entry_data ]
             {
-                u4 idx_data_len = sizeof(mmseg_dict_file_header) +
-                        ( sizeof(u2) + sizeof(u4) ) * v.size() +  total_string_len;
+                u4 schema_define_len = 0;   // how to define schema in file
+                const std::string& schema_str = this->GetSchemaDefine();
+                schema_define_len = sizeof(u4) + schema_str.size(); // length:string_data
+                LOG(INFO) << "schema define " << schema_str ;
+                u4 idx_data_len = sizeof(mmseg_dict_file_header) + schema_define_len +
+                        sizeof(u4) * v.size() +  total_string_len;
 
                 u1 * idx_data = (u1*)malloc( idx_data_len );
+                // pointers
                 mmseg_dict_file_header* header = (mmseg_dict_file_header*) idx_data;
+                // 词条属性偏移量的列表, 对应 darts 的 value (定长)
+                u4* term_prop_idx_ptr = (u4*)( idx_data + sizeof(mmseg_dict_file_header) + schema_define_len );
+                // 词条值的字符串池, \0 标记为结尾
+                u1* term_pool_ptr = idx_data + sizeof(mmseg_dict_file_header) + schema_define_len + sizeof(u4) * v.size();
 
                 std::FILE *fp  = std::fopen(filename, "wb");
                 if(!fp)
                     return -503;
 
-                std::fwrite(idx_data, sizeof(u1), 1, fp);
+                std::fwrite(idx_data, sizeof(u1), idx_data_len, fp);
                 // Simple & stupid code, assume no entry have more than 128K property.
-                void* entry_data = malloc(1024*128);
+                void* entry_data = malloc(MAX_ENTRY_DATA);
                 int rs = 0;
                 int entry_data_length = 0;
+                int entry_data_total_length = 0;
                 for(std::vector<LemmaEntry>::iterator it = v.begin(); it != v.end(); ++it) {
+                    // 设置字符串实际值的 string-pool
+                    memcpy(term_pool_ptr, it->term.c_str(), it->term.size());
+                    term_pool_ptr += it->term.size();
+                    *term_pool_ptr = 0;
+                    term_pool_ptr++;  // append \0
+
                     entry_data_length = 0;
                     LemmaEntry& entry = *it;
                     rs = GetEntryData(entry, entry_data, &entry_data_length);
+                    if(rs == 0 && entry_data_length) {
+                        // inc prop offset.
+                        *term_prop_idx_ptr = entry_data_total_length;
+                        term_prop_idx_ptr ++;
+                        // write to...
+                        std::fwrite(entry_data, sizeof(u1), entry_data_length, fp);
+                        entry_data_total_length += entry_data_length;
+                    } //end if
+                } // end for
+                // rewrite header.
+                {
+                    // header schema_length:u4; schema offset_list; string_pool, entry_data
+                    memcpy(header->mg, basedict_head_mgc, 4);
+                    header->version = 1;
+                    header->flags = 0;
+                    memcpy(header->dictname, dict_name_.c_str(), dict_name_.size());
+                    header->dictname[dict_name_.size()] = 0;
+
+                    header->dict_rev = dict_rev;
+                    header->timestamp = currentTimeMillis();
+                    header->item_count = v.size();
+                    header->entry_data_offset = idx_data_len;
+
+                    // build schema
+                    u1* schema_ptr = idx_data + sizeof(mmseg_dict_file_header);
+                    *(u4*)schema_ptr = schema_str.size();
+                    memcpy(schema_ptr+sizeof(u4), schema_str.c_str(), schema_str.size());
+                    // entry offset
+                    std::fseek(fp, 0, SEEK_SET);
+                    std::fwrite(idx_data, sizeof(u1), idx_data_len, fp);
+                    printf("idx=%d, entry=%d\n", idx_data_len, entry_data_total_length);
                 }
                 free(entry_data);
-
                 free(idx_data);
+                // close file
+                std::fclose(fp);
             }
         }
+        LOG(INFO) << "save dictionary done " << filename;
         return 0;
     }
 
     int GetEntryData(LemmaEntry& entry, void* data, int* data_size) {
-        *data_size = 0;
-        int offset = 0;
-        std::string prop;
-        prop.reserve(256);
+        /*
+         *  EntryData: 的格式
+         *  ID 4B: Entry 对应外部关联的编号 最高位为 0
+         *  FLAG 2B: 最高位永远为 1, 可选
+         *   SIZE 2B 如果 存在 FLAG 则存在;
+         *   DATA 整数的存储,如果是字符串存储 2B 的偏移量, 从 DATA 起始 开始计算
+         *   STRING 包括的全部字符串信息, 使用 \0 标记结尾
+         */
+        short prop_idx = 0;
+        u2  property_map_flags = 0;  // [1~15], 1 if the property is exist , 0 not.
+        u2  idx2entry_prop[MAX_PROPERTY_COUNT] = {0};      // 按属性顺序的 idx -> prop_entry 的映射表
         for(std::vector<LemmaPropertyEntry>::iterator it = entry.props.begin(); it != entry.props.end(); ++it) {
-            prop.clear();
-            prop.push_back(it->prop_type);
-            prop.push_back(':');
-            prop.assign(it->prop_name);
-            offset = column_offset[prop];
-            printf("key=%s, offset=%d\n", prop.c_str(), offset);
+            prop_idx = GetColumnIdx(it->prop_name.c_str());
+            idx2entry_prop[prop_idx] = ( it - entry.props.begin() ) + 1;    // if 0 means, property not exist, so needs plus 1
+            property_map_flags |= 1 << prop_idx;
         }
+        // if no property data
+        if(property_map_flags ==0 ) {
+           * ( (u4*) data ) = entry.term_id; // should check data_size
+           *data_size = 4;
+           return 0;
+        }
+
+        u1 string_pool[MAX_ENTRY_DATA] = {0};
+        u1 * data_ptr = (u1*)data;  // pointer to id, flag & size
+        u1 * data_begin = data_ptr;
+        data_ptr += 8;  // id:4; flag&size: 4
+        u1 * string_pool_ptr = string_pool;
+        for(short i=0; i<MAX_PROPERTY_COUNT; i++) {
+            if(idx2entry_prop[i]) {
+                LemmaPropertyEntry & prop_entry = entry.props[ idx2entry_prop[i] - 1];
+                // A bit trick, I use prop_entry.data pointer save u2 u4 's real value.
+                void* entry_data_ptr = &(prop_entry.data);
+                switch (prop_entry.prop_type ) {
+                case '2':{
+                        u2* ptr = (u2*)data_ptr;
+                        *ptr = *(u2*)entry_data_ptr;
+                        data_ptr += 2;
+                    }
+                    break;
+                case '4':{
+                        u4* ptr = (u4*)data_ptr;
+                        *ptr = *(u4*)entry_data_ptr;
+                        data_ptr += 4;
+                    }
+                    break;
+                case '8':{
+                        u4* ptr = (u4*)data_ptr;
+                        *ptr = *(u4*)entry_data_ptr;
+                        ptr[1] = prop_entry.data_len;
+                        data_ptr += 8;
+                    }
+                    break;
+                case 's':{
+                        // save a u2 offset here.
+                        u2* ptr = (u2*)data_ptr;
+                        *ptr = (u2) (string_pool_ptr - string_pool);
+                        data_ptr += 2;
+                        //Check buffer size.
+                        CHECK_LT(string_pool_ptr - string_pool + prop_entry.data_len, MAX_ENTRY_DATA) << "entry string data too large, id=" << entry.term_id;
+                        memcpy(string_pool_ptr, prop_entry.data, prop_entry.data_len);
+                        string_pool_ptr += prop_entry.data_len;
+                        *string_pool_ptr = 0;
+                    }
+                    break;
+                }
+            }
+        } //end for short
+        * (u4*)(data_begin + 4)  = (1<<31) | ( property_map_flags << 16 ) | (data_ptr - data_begin + 8);
+        if(string_pool_ptr!=string_pool)
+            memcpy(data_ptr, string_pool, string_pool_ptr-string_pool);
         return 0;
     }
+
 
 public:
     Darts::DoubleArray _dict;
     unordered_map<int, LemmaEntry> entries;    // row uncompress format.
 
-    std::string dict_name;
-    u2   _record_row_size;
+    std::string dict_name_;
+    //u2   _record_row_size;
 protected:
-    unordered_map<std::string, int> column_offset;  // column-> offset in data block
+    //unordered_map<std::string, int> column_offset;  // column-> index[2]|offset[2b] in data block
+    unordered_map<int, std::string> column_by_idx;  // idx -> column name
+    unordered_map<std::string, u2> column_type_and_idx;   // raw_name -> column type(1B), column index(1B),
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -550,15 +743,15 @@ BaseDict::~BaseDict()
 int
 BaseDict::Load(const char* dict_path, char mode)
 {
-
-    return 0;
+    return _p->Load(dict_path, this);
+    //return 0;
 }
 
 int
-BaseDict::Save(const char* dict_path){
+BaseDict::Save(const char* dict_path, int dict_rev){
 
     /*
-     *  Dictionary File Format:
+     *  Dictionary File Format:  废弃, 改为在词库加载时, 动态计算 darts, darts 可以被缓存为文件
      *  [header]
      *    - magic
      *    - version
@@ -595,7 +788,7 @@ BaseDict::Save(const char* dict_path){
      *  raw_data = data_len, fixdata, strings,  opt for easy transfer via network.
      *
      */
-
+    return _p->Save(dict_path, dict_rev);
     return 0;
 }
 
@@ -649,35 +842,15 @@ BaseDict::Init(const LemmaPropertyDefine* props, int prop_count)
      *  - combine u2 together.
      *  crc32(key): offset_in_data_row  u2 first; add together
      */
-    int offset = 0;
     char buf[MAX_LEMMA_PROPERTY_NAME_LENGTH+2];
     const LemmaPropertyDefine* props_ptr = props;
+    // do not use _record_row_size , each row have dyn row data.
     for(int i=0; i<prop_count; i++) {
-        if(props_ptr[i].prop_type == '2') {
-            snprintf(buf, sizeof(buf), "%c:%s", props_ptr[i].prop_type, props_ptr[i].key);
-            _p->AddColumn(buf, offset);
-            offset += 2;
-        }
-    }
-    // check offset
-    if(offset % 4 != 0) {
-        offset += 2;
-        LOG(INFO) << " inc offset -> " << offset;
-    }
-    for(int i=0; i<prop_count; i++) {
-        if(props_ptr[i].prop_type == '2')
-            continue;
-        // do other property
+        // check is id defined in schema string;
+        //CHECK_EQ(props_ptr[i].key, "id") << "You can't define column named id, system reversed!";
         snprintf(buf, sizeof(buf), "%c:%s", props_ptr[i].prop_type, props_ptr[i].key);
-        _p->AddColumn(buf, offset);
-        // inc offset
-        if(props_ptr[i].prop_type == '4' || props_ptr[i].prop_type == 's')
-            offset += 4;
-        if(props_ptr[i].prop_type == '8' )
-            offset += 8;
+        _p->AddColumn(buf, i);
     }
-
-    _p->_record_row_size = offset; // set row size.
     return 0;
 }
 
@@ -709,17 +882,18 @@ BaseDict::InitString(const char* prop_define, int str_define_len)
     sno++;
     while(tok) {
         if(sno % 2 == 1) {
-            key_len = strlen(tok);
-            CHECK_LT(key_len, MAX_LEMMA_PROPERTY_NAME_LENGTH) << "property define too long!";
-            memcpy(prop.key, tok, key_len);
-            prop.key[key_len] = 0;
-        }else{
             // check type  2 4 8 s
             if(tok[0] == '2' || tok[0] == '4' || tok[0] == '8' || tok[0] == 's') {
                 prop.prop_type = tok[0];
             } else {
                 CHECK(false) << "property type invalid";
             }
+        }else{
+            key_len = strlen(tok);
+            CHECK_LT(key_len, MAX_LEMMA_PROPERTY_NAME_LENGTH) << "property define too long!";
+            memcpy(prop.key, tok, key_len);
+            prop.key[key_len] = 0;
+
             props.push_back(prop);
         }
         tok = strtok(NULL, delim);
@@ -736,7 +910,14 @@ BaseDict::InitString(const char* prop_define, int str_define_len)
 }
 
 int
-BaseDict::Insert(const char* term, unsigned int term_id, int freq)
+BaseDict::SetDictName(const char* dict_name)
+{
+    _p->dict_name_.assign(dict_name);
+    return 0;
+}
+
+int
+BaseDict::Insert(const char* term, unsigned int term_length, unsigned int term_id, int freq)
 {
     // build entry.
     LemmaEntry entry;
@@ -744,6 +925,9 @@ BaseDict::Insert(const char* term, unsigned int term_id, int freq)
     entry.freq = freq;
     entry.term_id = term_id;
 
+    CHECK(term_id) << "term id cann't be zero!";
+    CHECK_LT(term_id, MAX_LEMMA_ENTRY_ID) << "term id larger than 2G!";
+    CHECK_LT(term_length, MAX_ENTRY_TERM_LENGTH) << "term too long!";
     //_p->entries[entry.term_id] = entry;
     _p->AddEntry(entry); //copy construct
     return 0;
@@ -762,6 +946,9 @@ BaseDict::SetProp(unsigned int term_id,  const char* key, const char* data, int 
      */
     if( _p->entries.find(term_id) == _p->entries.end() )
         return -1;
+
+    CHECK_LT(data_len + 8 , MAX_ENTRY_DATA) << "property data too large!";
+
     LemmaPropertyEntry prop_entry;
     prop_entry.prop_name = key;
     {
@@ -770,9 +957,36 @@ BaseDict::SetProp(unsigned int term_id,  const char* key, const char* data, int 
         if(prop_entry.prop_type == ' ')
             return -2; // prop not found.
     }
-    prop_entry.data = malloc(data_len);         //FIXME: should alloc from a memory pool
-    memcpy(prop_entry.data, data, data_len);
-    prop_entry.data_len = data_len;
+    // set data.
+    {
+        void* data_ptr = &(prop_entry.data);
+        switch (prop_entry.prop_type ) {
+        case '2':{
+                u2* ptr = (u2*)data;
+                *(u2*)data_ptr = *ptr;
+            }
+            break;
+        case '4':{
+                u4* ptr = (u4*)data;
+                *(u4*)data_ptr = *ptr;
+            }
+            break;
+        case '8':{
+                u4* ptr = (u4*)data;
+                // 32bit compt
+                *(u4*)data_ptr = *ptr;
+                prop_entry.data_len = ptr[1] & 0xFFFFFFFF; //ensure only 32bit.
+            }
+            break;
+        case 's':{
+                prop_entry.data = malloc(data_len);
+                memcpy(prop_entry.data, data, data_len);
+                prop_entry.data_len = data_len;
+            }
+            break;
+        }
+    }
+    // add prop_entry -> term_entry.
     _p->entries.find(term_id)->second.props.push_back(prop_entry);
     return 0;
 }
@@ -790,6 +1004,9 @@ BaseDict::GetProp(unsigned int term_id, const char* key, char* data, int* data_l
     for(std::vector<LemmaPropertyEntry>::iterator it = props.begin(); it != props.end(); ++it) {
         //printf("tok=%s\t", it->prop_name.c_str() );
         if( it->prop_name == prop_name ) {
+
+
+
             if(*data_len >= it->data_len) {
                 memcpy(data, it->data, it->data_len);
                 *data_len = it->data_len;
@@ -814,6 +1031,7 @@ BaseDict::SetPropInteger(unsigned int term_id, const char* key, u8 v)
 int
 BaseDict::GetPropInteger(unsigned int term_id, const char* key, u8* v)
 {
+    //FIXME: add type checking.
     char buf[8];
     int  buf_size = 8;
     int rs = GetProp(term_id, key, buf, &buf_size);

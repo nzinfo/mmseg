@@ -57,25 +57,29 @@ if False:	# Test property
 
 if True:	# Test Dart
 	dt =  _mmseg.new_BaseDict()
-	schema = "id:4;attr2:2;name:s;attr1:2;attr3:2"
+	schema = "2:attr2;s:name;2:attr1;2:attr3"
 	_mmseg.BaseDict_InitString( dt, schema, len(schema) )
+	_mmseg.BaseDict_SetDictName(dt, "com.coreseek.mm.test")
 	# add entrys
-	_mmseg.BaseDict_Insert(dt, "a", 100, 10)
-	_mmseg.BaseDict_Insert(dt, "abc", 101, 10)
-	_mmseg.BaseDict_Insert(dt, "abcd", 102, 10)
-	_mmseg.BaseDict_Insert(dt, "ab", 103, 10)
-	_mmseg.BaseDict_Insert(dt, "abgaowei", 104, 10)
-	_mmseg.BaseDict_Insert(dt, u"选".encode('utf-8'), 105, 10)
-	_mmseg.BaseDict_Insert(dt, u"选择".encode('utf-8'), 106, 10)
-	_mmseg.BaseDict_Insert(dt, u"选择题".encode('utf-8'), 107, 10)
+	terms = [("acc", 10), ("abc", 101), ("abcd", 102), ("ab", 103), ("abgaowei", 104), ]
+	_mmseg.BaseDict_Insert(dt, "a", 1, 100, 10)
+	msg = "hello world, abceef"
+	_mmseg.BaseDict_SetProp(dt, 100, "name", msg, len(msg))
+	_mmseg.BaseDict_SetPropInteger(dt, 100, "attr1", 9999)
+	for key, kid, in terms:
+		_mmseg.BaseDict_Insert(dt, key, len(key), kid, 10)
 	# build darts
 	_mmseg.BaseDict_Build(dt)
 	_mmseg.BaseDict_SaveRaw(dt, 'd.lib')
+	print _mmseg.BaseDict_Save(dt, 'd1.lib', 100)
 	# save
 	# reload
 	# query extract
 	# query commonprefix
-
+	_mmseg.delete_BaseDict(dt)
+	# load
+	dt =  _mmseg.new_BaseDict()
+	print _mmseg.BaseDict_Load(dt, 'd1.lib', 'n')
 	_mmseg.delete_BaseDict(dt)
 
 #end of file
