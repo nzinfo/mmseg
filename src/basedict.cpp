@@ -333,7 +333,7 @@ public:
 
     // Column Related
     int AddColumn(const std::string& def, u2 idx){
-        LOG(INFO) << "new column append " << def << " @"<<idx;
+        //LOG(INFO) << "new column append " << def << " @"<<idx;
         column_by_idx[idx] = def;                          // full_name  -> offset in datapkg.
         column_type_and_idx[def.c_str()+2] = def[0] | (idx<<8);    // raw_name: type
         CHECK_LT(column_by_idx.size(), MAX_PROPERTY_COUNT) << "max column reached!";
@@ -491,10 +491,20 @@ public:
     int Load(const char* filename, BaseDict* dict) {
         LOG(INFO) << "load dictionary begin " << filename;
 
+        u4 total_read_count = 0;
         std::FILE *fp = std::fopen(filename, "rb");
         //FIXME: should check ptr's length.
+        if (!fp) return -1;
+
+        u4 file_size = 0;
+        {
+            if (std::fseek(fp, 0L,     SEEK_END) != 0) return -1;
+            file_size = std::ftell(fp);
+            if (std::fseek(fp, (long)0, SEEK_SET) != 0) return -1;
+        }
         //process header
         mmseg_dict_file_header header;
+        total_read_count += sizeof(mmseg_dict_file_header);
         if (1 == std::fread(&header, sizeof(mmseg_dict_file_header), 1, fp))
         {
             //Check file magic header
@@ -511,10 +521,12 @@ public:
 
         //schema
         u4 schema_str_length = 0;
+        total_read_count += sizeof(u4);
         if (1 == std::fread(&schema_str_length, sizeof(u4), 1, fp))
         {
             char* schema_buf = (char*)malloc(schema_str_length+1);
             schema_buf[schema_str_length] = 0;
+            total_read_count += schema_str_length;
             if (schema_str_length != std::fread(schema_buf, 1, schema_str_length, fp))
                 return -1;
             LOG(INFO) << "dict schema " <<schema_buf;
@@ -530,6 +542,7 @@ public:
         u1ptr* string_ptr = string_begin;
 
         u4* values_ptr = (u4*)malloc(sizeof(u4) * header.item_count);
+        total_read_count += sizeof(u4) * header.item_count;
         if (header.item_count == std::fread(values_ptr, sizeof(u4), header.item_count, fp))
         {
             // do nothing ?
@@ -537,9 +550,10 @@ public:
             return -1;
 
         //item's strings.
-        u4 string_pool_begin_pos = sizeof(mmseg_dict_file_header) + schema_str_length + sizeof(u4) * header.item_count;
+        u4 string_pool_begin_pos = sizeof(mmseg_dict_file_header) + sizeof(u4) + schema_str_length + sizeof(u4) * header.item_count;
         u4 string_pool_size =  header.entry_data_offset - string_pool_begin_pos;
         u1* string_pool_ptr = (u1*)malloc(string_pool_size);
+        total_read_count += sizeof(u1) * string_pool_size;
         if (string_pool_size == std::fread(string_pool_ptr, sizeof(u1), string_pool_size, fp))
         {
             // do nothing ?
@@ -555,9 +569,19 @@ public:
             }
         }else
             return -1;
+        // load data
+        u4 entry_data_length = file_size-header.entry_data_offset;
+        LOG(INFO) << "load dictionary total entry_data length " << entry_data_length << " index block is " << header.entry_data_offset << " total read:"<<total_read_count;
+
+        u1* entry_data = (u1*)malloc(entry_data_length);
+        if (entry_data_length == std::fread(entry_data, sizeof(u1), entry_data_length, fp))
+        {
+            // do nothing ?
+        }else
+            return -1;
 
         // check string
-        if(1) {
+        if(0) {
             for(int i=0; i< header.item_count; i++) {
                 printf("item=%s\n", string_begin[i]);
             }
@@ -573,6 +597,7 @@ public:
             free(values_ptr);
             free(string_pool_ptr);
             free(string_buf_ptr);
+            free(entry_data);
         }
         return 0;
     }
@@ -650,6 +675,7 @@ public:
                         entry_data_total_length += entry_data_length;
                     } //end if
                 } // end for
+                LOG(INFO) << "save dictionary total entry_data length " << entry_data_total_length << " index block is " << idx_data_len;
                 // rewrite header.
                 {
                     // header schema_length:u4; schema offset_list; string_pool, entry_data
@@ -671,7 +697,7 @@ public:
                     // entry offset
                     std::fseek(fp, 0, SEEK_SET);
                     std::fwrite(idx_data, sizeof(u1), idx_data_len, fp);
-                    printf("idx=%d, entry=%d\n", idx_data_len, entry_data_total_length);
+                    //printf("idx=%d, entry=%d\n", idx_data_len, entry_data_total_length);
                 }
                 free(entry_data);
                 free(idx_data);
