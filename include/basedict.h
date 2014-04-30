@@ -5,6 +5,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <string>
+#include <sstream>
+#ifdef __APPLE__
+#include <unordered_map>
+using std::unordered_map;
+#else
+    #ifdef __GNUC__
+    #include <tr1/unordered_map>
+    using namespace std::tr1;
+    //#include <ext/hash_map>
+    //   #define unordered_map std::hash_map
+    #endif
+#endif
+
 /*
  *  Basic Dictionary Interface for Tokenizer.
  *
@@ -38,57 +52,6 @@ enum LemmaPropertyType {
     PROP_LONG           // 8: 8B
 }; */
 
-typedef struct LemmaPropertyDefine
-{
-    char prop_type;         // s 2 4 8
-    char key[MAX_LEMMA_PROPERTY_NAME_LENGTH];
-}LemmaPropertyDefine;
-
-class LemmaPropertyEntry;
-class BaseDictPrivate;
-
-class BaseDict
-{
-public:
-    BaseDict();
-    ~BaseDict();
-
-public:
-    // mode can be 'r', 'c'.  'c' stands for combine,
-    // when load with combind, darts idx will not built;
-    // 'r' raw & only work as origin mmseg
-    int Load(const char* dict_path, char mode);
-
-    int Save(const char* dict_path, int dict_rev);            // save to disk
-    int Build();                                // build trie-tree in memory.
-    int Reset();                                // clear all in memory entry (inlcude property's data)
-
-    int Init(const LemmaPropertyDefine* props, int prop_count);     // define how many propery a lemma in this dictionary can have.
-                                                                    // once this func been call, all data in dict will be trunc
-    /*
-     *  property_name:type;
-     *  Default: id:u4; comunicate with external system?
-     */
-    int InitString(const char* prop_define, int str_define_len);    // use string define property, for scripting interface.
-    int SetDictName(const char* dict_name);
-
-    int Insert(const char* term, unsigned int term_length, unsigned int term_id, int freq); // add new term -> dict, pos = char[4]
-
-    int SetProp(unsigned int term_id, const char* key, const char* data, int data_len); // when prop_type is short|int|long, data_len will be ignored.
-    int GetProp(unsigned int term_id, const char* key, char* data, int* data_len);
-    int SetPropInteger(unsigned int term_id, const char* key, u8 v);
-    int GetPropInteger(unsigned int term_id, const char* key, u8* v);
-
-    //int Properties(const char* term, LemmaPropertyEntry** entries);
-
-    // Darts Debug
-    int SaveRaw(const char* dict_path);
-    int LoadRaw(const char* dict_path);
-
-private:
-    BaseDictPrivate* _p;
-};
-
 class CharMapper
 {
     /*
@@ -118,6 +81,117 @@ public:
 private:
     u4   _char_mapping[MAX_UNICODE_CODEPOINT]; // lower bit is trans iCode, higher is category flag.
     bool _bDefaultPass;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+typedef struct LemmaPropertyDefine
+{
+    char prop_type;         // s 2 4 8
+    char key[MAX_LEMMA_PROPERTY_NAME_LENGTH];
+}LemmaPropertyDefine;
+
+class LemmaPropertyEntry;
+class BaseDictPrivate;
+
+class BaseDictSchema
+{
+public:
+    // Column Related
+    int AddColumn(const std::string& def, u2 idx);
+
+    void ResetColumn() {
+        column_by_idx.clear();
+        column_type_and_idx.clear();
+    }
+
+    inline char GetColumnType(const char* column_name) {
+        unordered_map<std::string, u2>::iterator it = column_type_and_idx.find(column_name);
+        if(it != column_type_and_idx.end() ) {
+            return (it->second) & 0xFF; // give the lower byte
+        }
+        return ' ';  // type not found.
+    }
+
+    inline short GetColumnIdx(const char* column_name) {
+        // FIXME: use a hash ?
+        unordered_map<std::string, u2>::iterator it = column_type_and_idx.find(column_name);
+        if(it != column_type_and_idx.end() )
+            return (it->second) >> 8; // give the lower byte
+        return -1;  // type not found.
+    }
+
+    const std::string GetSchemaDefine() ;
+
+    int Init(const LemmaPropertyDefine* props, int prop_count)
+    {
+        /*
+         * Calc & Build PropData Define.
+         *  - combine u2 together.
+         *  crc32(key): offset_in_data_row  u2 first; add together
+         */
+        char buf[MAX_LEMMA_PROPERTY_NAME_LENGTH+2];
+        const LemmaPropertyDefine* props_ptr = props;
+        // do not use _record_row_size , each row have dyn row data.
+        for(int i=0; i<prop_count; i++) {
+            // check is id defined in schema string;
+            //CHECK_EQ(props_ptr[i].key, "id") << "You can't define column named id, system reversed!";
+            snprintf(buf, sizeof(buf), "%c:%s", props_ptr[i].prop_type, props_ptr[i].key);
+            AddColumn(buf, i);
+        }
+        return 0;
+    }
+    int InitString(const char* prop_define, int str_define_len);
+protected:
+    //unordered_map<std::string, int> column_offset;  // column-> index[2]|offset[2b] in data block
+    unordered_map<int, std::string> column_by_idx;  // idx -> column name
+    unordered_map<std::string, u2> column_type_and_idx;   // raw_name -> column type(1B), column index(1B),
+
+};
+
+class BaseDict
+{
+public:
+    BaseDict();
+    ~BaseDict();
+
+public:
+    // mode can be 'r', 'c'.  'c' stands for combine,
+    // when load with combind, darts idx will not built;
+    // 'r' raw & only work as origin mmseg
+    int Load(const char* dict_path, char mode);
+
+    int Save(const char* dict_path, int dict_rev);            // save to disk
+    int Build();                                // build trie-tree in memory.
+    int Reset();                                // clear all in memory entry (inlcude property's data)
+
+    int Init(const LemmaPropertyDefine* props, int prop_count);     // define how many propery a lemma in this dictionary can have.
+                                                                    // once this func been call, all data in dict will be trunc
+    /*
+     *  property_name:type;
+     *  Default: id:u4; comunicate with external system?
+     */
+    int InitString(const char* prop_define, int str_define_len);    // use string define property, for scripting interface.
+    int SetDictName(const char* dict_name);
+
+    int Insert(const char* term, unsigned int term_length, unsigned int term_id); // add new term -> dict, pos = char[4]
+
+    int SetProp(unsigned int term_id, const char* key, const char* data, int data_len); // when prop_type is short|int|long, data_len will be ignored.
+    int GetProp(unsigned int term_id, const char* key, char* data, int* data_len);
+    int SetPropInteger(unsigned int term_id, const char* key, u8 v);
+    int GetPropInteger(unsigned int term_id, const char* key, u8* v);
+
+    //int Properties(const char* term, LemmaPropertyEntry** entries);
+
+    // Darts Debug
+    int SaveRaw(const char* dict_path);
+    int LoadRaw(const char* dict_path);
+
+    // Search
+
+private:
+    BaseDictPrivate* _p;
+    BaseDictSchema _schema;
 };
 
 /*

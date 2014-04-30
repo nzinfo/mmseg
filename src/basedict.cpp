@@ -1,17 +1,5 @@
 #include <glog/logging.h>
 
-#ifdef __APPLE__
-#include <unordered_map>
-using std::unordered_map;
-#else
-    #ifdef __GNUC__
-    #include <tr1/unordered_map>
-    using namespace std::tr1;
-    //#include <ext/hash_map>
-    //   #define unordered_map std::hash_map
-    #endif
-#endif
-
 /*
 #if defined __GNUC__ || defined __APPLE__
 using std::unordered_map;
@@ -249,7 +237,6 @@ class LemmaEntry
 public:
     unsigned int term_id;
     std::string term;
-    int freq;
     std::vector<LemmaPropertyEntry> props;
 };
 
@@ -324,14 +311,98 @@ class Keyset : public Darts::Details::Keyset<T>{
 };
 
 
+////////////////////////////////////////////////////////////////////////////////
+/// BaseDictSchema
+////////////////////////////////////////////////////////////////////////////////////
+int
+BaseDictSchema::AddColumn(const std::string& def, u2 idx){
+    //LOG(INFO) << "new column append " << def << " @"<<idx;
+    column_by_idx[idx] = def;                          // full_name  -> offset in datapkg.
+    column_type_and_idx[def.c_str()+2] = def[0] | (idx<<8);    // raw_name: type
+    CHECK_LT(column_by_idx.size(), MAX_PROPERTY_COUNT) << "max column reached!";
+    return 0;
+}
+
+const std::string
+BaseDictSchema::GetSchemaDefine() {
+    std::stringstream ss;
+    //schema = [total_schema_len][type(2b):offset(2b):name],pos is id
+    for(short i=0; i<MAX_PROPERTY_COUNT; i++) {
+        unordered_map<int, std::string>::iterator it = column_by_idx.find(i);
+        if(it != column_by_idx.end())
+            ss << it->second << ";" ;
+    }
+    return ss.str();
+}
+
+int
+BaseDictSchema::InitString(const char* prop_define, int str_define_len)
+{
+    /*
+     * assume prop_define in right format.
+     * 1 if no prop_defined ( input NULL | "")
+     *      - add define "id":u4
+     * 2 else
+     *      - if no id in prop_define, append it.
+     */
+    LemmaPropertyDefine prop;
+    std::vector<LemmaPropertyDefine> props;
+    char schema_define[1024];
+    char delim[] = ":;";
+    char *tok = schema_define;
+    int sno = 0;
+    size_t key_len = 0;
+
+    if(str_define_len > 1023)
+        return -413; // schema define too large.
+
+    memcpy(schema_define, prop_define, str_define_len);
+    schema_define[str_define_len] = 0;
+
+    tok = strtok(schema_define, delim);
+    sno++;
+    while(tok) {
+        if(sno % 2 == 1) {
+            // check type  2 4 8 s
+            if(tok[0] == '2' || tok[0] == '4' || tok[0] == '8' || tok[0] == 's') {
+                prop.prop_type = tok[0];
+            } else {
+                CHECK(false) << "property type invalid";
+            }
+        }else{
+            key_len = strlen(tok);
+            CHECK_LT(key_len, MAX_LEMMA_PROPERTY_NAME_LENGTH) << "property define too long!";
+            memcpy(prop.key, tok, key_len);
+            prop.key[key_len] = 0;
+
+            props.push_back(prop);
+        }
+        tok = strtok(NULL, delim);
+        sno++;
+    }; //end while true.
+
+    if(0)
+    {
+        for(std::vector<LemmaPropertyDefine>::iterator it = props.begin(); it != props.end(); ++it) {
+            printf("tok=%s\t", it->key);
+        }
+    }
+    return Init(props.data(), props.size());
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// BaseDictPrivate
+////////////////////////////////////////////////////////////////////////////////////
+
 class BaseDictPrivate
 {
 public:
-    BaseDictPrivate():
+    BaseDictPrivate(BaseDictSchema& schema):
         entry_data_(NULL)
       , entry_key_string_pool_(NULL)
       , entry_keys_(NULL)
       , entry_values_(NULL)
+      , _schema(schema)
     {
 
     }
@@ -341,51 +412,6 @@ public:
         if(entry_key_string_pool_) free(entry_key_string_pool_);
         if(entry_keys_) free(entry_keys_);
         if(entry_values_) free(entry_values_);
-    }
-
-    // Column Related
-    int AddColumn(const std::string& def, u2 idx){
-        if(entry_data_)
-            return -405; //read only dict. method not allow
-        //LOG(INFO) << "new column append " << def << " @"<<idx;
-        column_by_idx[idx] = def;                          // full_name  -> offset in datapkg.
-        column_type_and_idx[def.c_str()+2] = def[0] | (idx<<8);    // raw_name: type
-        CHECK_LT(column_by_idx.size(), MAX_PROPERTY_COUNT) << "max column reached!";
-        return 0;
-    }
-
-    void ResetColumn() {
-        if(entry_data_)
-            return ; //read only dict.
-        column_by_idx.clear();
-        column_type_and_idx.clear();
-    }
-
-    inline char GetColumnType(const char* column_name) {
-        unordered_map<std::string, u2>::iterator it = column_type_and_idx.find(column_name);
-        if(it != column_type_and_idx.end() ) {
-            return (it->second) & 0xFF; // give the lower byte
-        }
-        return ' ';  // type not found.
-    }
-
-    inline short GetColumnIdx(const char* column_name) {
-        // FIXME: use a hash ?
-        unordered_map<std::string, u2>::iterator it = column_type_and_idx.find(column_name);
-        if(it != column_type_and_idx.end() )
-            return (it->second) >> 8; // give the lower byte
-        return -1;  // type not found.
-    }
-
-    const std::string GetSchemaDefine() {
-        std::stringstream ss;
-        //schema = [total_schema_len][type(2b):offset(2b):name],pos is id
-        for(short i=0; i<MAX_PROPERTY_COUNT; i++) {
-            unordered_map<int, std::string>::iterator it = column_by_idx.find(i);
-            if(it != column_by_idx.end())
-                ss << it->second << ";" ;
-        }
-        return ss.str();
     }
 
     // Entry Related
@@ -508,7 +534,7 @@ public:
     }
 
     // Save & Load
-    int Load(const char* filename, bool keep_term_data, BaseDict* dict) {
+    int Load(const char* filename, bool keep_term_data) {
         LOG(INFO) << "load dictionary begin, " << filename;
 
         u4 total_read_count = 0;
@@ -544,14 +570,15 @@ public:
         total_read_count += sizeof(u4);
         if (1 == std::fread(&schema_str_length, sizeof(u4), 1, fp))
         {
+            _schema.ResetColumn(); //clear
             char* schema_buf = (char*)malloc(schema_str_length+1);
             schema_buf[schema_str_length] = 0;
             total_read_count += schema_str_length;
             if (schema_str_length != std::fread(schema_buf, 1, schema_str_length, fp))
                 return -1;
             LOG(INFO) << "dict schema " <<schema_buf;
-            dict->InitString(schema_buf, schema_str_length);
-            LOG(INFO) << "dict schema (rebuild)" << GetSchemaDefine();
+            _schema.InitString(schema_buf, schema_str_length);
+            LOG(INFO) << "dict schema (rebuild)" << _schema.GetSchemaDefine();
             free(schema_buf);
         } else
             return -1;
@@ -654,7 +681,7 @@ public:
             //  + [ entry_data ]
             {
                 u4 schema_define_len = 0;   // how to define schema in file
-                const std::string& schema_str = this->GetSchemaDefine();
+                const std::string& schema_str = _schema.GetSchemaDefine();
                 schema_define_len = sizeof(u4) + schema_str.size(); // length:string_data
                 LOG(INFO) << "schema define " << schema_str ;
                 u4 idx_data_len = sizeof(mmseg_dict_file_header) + schema_define_len +
@@ -744,7 +771,7 @@ public:
         u2  property_map_flags = 0;  // [1~15], 1 if the property is exist , 0 not.
         u2  idx2entry_prop[MAX_PROPERTY_COUNT] = {0};      // 按属性顺序的 idx -> prop_entry 的映射表
         for(std::vector<LemmaPropertyEntry>::iterator it = entry.props.begin(); it != entry.props.end(); ++it) {
-            prop_idx = GetColumnIdx(it->prop_name.c_str());
+            prop_idx = _schema.GetColumnIdx(it->prop_name.c_str());
             idx2entry_prop[prop_idx] = ( it - entry.props.begin() ) + 1;    // if 0 means, property not exist, so needs plus 1
             property_map_flags |= 1 << prop_idx;
         }
@@ -824,11 +851,7 @@ public:
 
     // 通用属性
     std::string dict_name_;     //
-    //u2   _record_row_size;
-protected:
-    //unordered_map<std::string, int> column_offset;  // column-> index[2]|offset[2b] in data block
-    unordered_map<int, std::string> column_by_idx;  // idx -> column name
-    unordered_map<std::string, u2> column_type_and_idx;   // raw_name -> column type(1B), column index(1B),
+    BaseDictSchema& _schema;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -837,7 +860,7 @@ protected:
 
 BaseDict::BaseDict()
 {
-    _p = new BaseDictPrivate();
+    _p = new BaseDictPrivate(_schema);
 }
 
 BaseDict::~BaseDict()
@@ -851,9 +874,9 @@ BaseDict::Load(const char* dict_path, char mode)
 {
     // mode : r     raw     ; c combine with many dict.
     if(mode == 'c')
-        return _p->Load(dict_path, true, this); // keep string keys
+        return _p->Load(dict_path, true); // keep string keys
     if(mode == 'r')
-        return _p->Load(dict_path, false, this); // build dart & free raw string.
+        return _p->Load(dict_path, false); // build dart & free raw string.
     return -405;
 }
 
@@ -947,21 +970,7 @@ BaseDict::Reset()
 int
 BaseDict::Init(const LemmaPropertyDefine* props, int prop_count)
 {
-    /*
-     * Calc & Build PropData Define.
-     *  - combine u2 together.
-     *  crc32(key): offset_in_data_row  u2 first; add together
-     */
-    char buf[MAX_LEMMA_PROPERTY_NAME_LENGTH+2];
-    const LemmaPropertyDefine* props_ptr = props;
-    // do not use _record_row_size , each row have dyn row data.
-    for(int i=0; i<prop_count; i++) {
-        // check is id defined in schema string;
-        //CHECK_EQ(props_ptr[i].key, "id") << "You can't define column named id, system reversed!";
-        snprintf(buf, sizeof(buf), "%c:%s", props_ptr[i].prop_type, props_ptr[i].key);
-        _p->AddColumn(buf, i);
-    }
-    return 0;
+    return _schema.Init(props, prop_count);
 }
 
 int
@@ -974,49 +983,7 @@ BaseDict::InitString(const char* prop_define, int str_define_len)
      * 2 else
      *      - if no id in prop_define, append it.
      */
-    LemmaPropertyDefine prop;
-    std::vector<LemmaPropertyDefine> props;
-    char schema_define[1024];
-    char delim[] = ":;";
-    char *tok = schema_define;
-    int sno = 0;
-    size_t key_len = 0;
-
-    if(str_define_len > 1023)
-        return -413; // schema define too large.
-
-    memcpy(schema_define, prop_define, str_define_len);
-    schema_define[str_define_len] = 0;
-
-    tok = strtok(schema_define, delim);
-    sno++;
-    while(tok) {
-        if(sno % 2 == 1) {
-            // check type  2 4 8 s
-            if(tok[0] == '2' || tok[0] == '4' || tok[0] == '8' || tok[0] == 's') {
-                prop.prop_type = tok[0];
-            } else {
-                CHECK(false) << "property type invalid";
-            }
-        }else{
-            key_len = strlen(tok);
-            CHECK_LT(key_len, MAX_LEMMA_PROPERTY_NAME_LENGTH) << "property define too long!";
-            memcpy(prop.key, tok, key_len);
-            prop.key[key_len] = 0;
-
-            props.push_back(prop);
-        }
-        tok = strtok(NULL, delim);
-        sno++;
-    }; //end while true.
-
-    if(0)
-    {
-        for(std::vector<LemmaPropertyDefine>::iterator it = props.begin(); it != props.end(); ++it) {
-            printf("tok=%s\t", it->key);
-        }
-    }
-    return Init(props.data(), props.size());
+    return _schema.InitString(prop_define, str_define_len);
 }
 
 int
@@ -1027,12 +994,11 @@ BaseDict::SetDictName(const char* dict_name)
 }
 
 int
-BaseDict::Insert(const char* term, unsigned int term_length, unsigned int term_id, int freq)
+BaseDict::Insert(const char* term, unsigned int term_length, unsigned int term_id)
 {
     // build entry.
     LemmaEntry entry;
     entry.term = term;
-    entry.freq = freq;
     entry.term_id = term_id;
 
     CHECK(term_id) << "term id cann't be zero!";
@@ -1063,7 +1029,7 @@ BaseDict::SetProp(unsigned int term_id,  const char* key, const char* data, int 
     prop_entry.prop_name = key;
     {
         // lookup property key
-        prop_entry.prop_type = _p->GetColumnType(key);
+        prop_entry.prop_type = _schema.GetColumnType(key);
         if(prop_entry.prop_type == ' ')
             return -2; // prop not found.
     }
@@ -1116,8 +1082,6 @@ BaseDict::GetProp(unsigned int term_id, const char* key, char* data, int* data_l
     for(std::vector<LemmaPropertyEntry>::iterator it = props.begin(); it != props.end(); ++it) {
         //printf("tok=%s\t", it->prop_name.c_str() );
         if( it->prop_name == prop_name ) {
-
-
 
             if(*data_len >= it->data_len) {
                 memcpy(data, it->data, it->data_len);

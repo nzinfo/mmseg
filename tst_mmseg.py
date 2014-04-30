@@ -62,16 +62,16 @@ if True:	# Test Dart
 	_mmseg.BaseDict_SetDictName(dt, "com.coreseek.mm.test")
 	# add entrys
 	terms = [("acc", 10), ("abc", 101), ("ebcd", 102), ("ab", 103), ("abgaowei", 104), ]
-	_mmseg.BaseDict_Insert(dt, "a", 1, 100, 10)
+	_mmseg.BaseDict_Insert(dt, "a", 1, 100)
 	msg = "hello world, abceef"
 	_mmseg.BaseDict_SetProp(dt, 100, "name", msg, len(msg))
 	_mmseg.BaseDict_SetPropInteger(dt, 100, "attr1", 9999)
 	for key, kid, in terms:
-		_mmseg.BaseDict_Insert(dt, key, len(key), kid, 10)
+		_mmseg.BaseDict_Insert(dt, key, len(key), kid)
 	# build darts
 	_mmseg.BaseDict_Build(dt)
 	_mmseg.BaseDict_SaveRaw(dt, 'd.lib')
-	print _mmseg.BaseDict_Save(dt, 'd1.lib', 100)
+	print _mmseg.BaseDict_Save(dt, 'd1.lib', 100)  # rev = 100
 	# save
 	# reload
 	# query extract
