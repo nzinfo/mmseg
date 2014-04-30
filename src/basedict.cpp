@@ -333,8 +333,9 @@ public:
 
     // Column Related
     int AddColumn(const std::string& def, u2 idx){
+        LOG(INFO) << "new column append " << def << " @"<<idx;
         column_by_idx[idx] = def;                          // full_name  -> offset in datapkg.
-        column_type_and_idx[def.c_str()+2] = def[0] & (idx<<8);    // raw_name: type
+        column_type_and_idx[def.c_str()+2] = def[0] | (idx<<8);    // raw_name: type
         CHECK_LT(column_by_idx.size(), MAX_PROPERTY_COUNT) << "max column reached!";
         return 0;
     }
@@ -346,8 +347,9 @@ public:
 
     inline char GetColumnType(const char* column_name) {
         unordered_map<std::string, u2>::iterator it = column_type_and_idx.find(column_name);
-        if(it != column_type_and_idx.end() )
+        if(it != column_type_and_idx.end() ) {
             return (it->second) & 0xFF; // give the lower byte
+        }
         return ' ';  // type not found.
     }
 
@@ -519,14 +521,58 @@ public:
             dict->InitString(schema_buf, schema_str_length);
             LOG(INFO) << "dict schema (rebuild)" << GetSchemaDefine();
             free(schema_buf);
-        }
-        //item's values
+        } else
+            return -1;
+
+        //item's values  //must hava a void* to char* [], else cause a compiler type detect error.
+        void* string_buf_ptr = malloc(sizeof(u1ptr) * header.item_count); // addtional one space for get char*[] easy.
+        u1ptr* string_begin = (u1ptr*)string_buf_ptr;
+        u1ptr* string_ptr = string_begin;
+
+        u4* values_ptr = (u4*)malloc(sizeof(u4) * header.item_count);
+        if (header.item_count == std::fread(values_ptr, sizeof(u4), header.item_count, fp))
+        {
+            // do nothing ?
+        }else
+            return -1;
+
         //item's strings.
+        u4 string_pool_begin_pos = sizeof(mmseg_dict_file_header) + schema_str_length + sizeof(u4) * header.item_count;
+        u4 string_pool_size =  header.entry_data_offset - string_pool_begin_pos;
+        u1* string_pool_ptr = (u1*)malloc(string_pool_size);
+        if (string_pool_size == std::fread(string_pool_ptr, sizeof(u1), string_pool_size, fp))
+        {
+            // do nothing ?
+            u1* s_ptr = string_pool_ptr;
+            *string_ptr = s_ptr;
+            while(s_ptr < ( string_pool_ptr + string_pool_size) ) {
+                if(*s_ptr == '\0') {
+                    string_ptr ++;
+                    if(string_ptr - string_begin < header.item_count)
+                        *string_ptr = s_ptr+1;
+                }
+                s_ptr ++;
+            }
+        }else
+            return -1;
+
+        // check string
+        if(1) {
+            for(int i=0; i< header.item_count; i++) {
+                printf("item=%s\n", string_begin[i]);
+            }
+        }
         //build darts?
         LOG(INFO) << "load dictionary finished " << filename;
         {
             if(fp)
                 std::fclose(fp);
+        }
+        // free all?
+        {
+            free(values_ptr);
+            free(string_pool_ptr);
+            free(string_buf_ptr);
         }
         return 0;
     }
@@ -699,14 +745,18 @@ public:
                         //Check buffer size.
                         CHECK_LT(string_pool_ptr - string_pool + prop_entry.data_len, MAX_ENTRY_DATA) << "entry string data too large, id=" << entry.term_id;
                         memcpy(string_pool_ptr, prop_entry.data, prop_entry.data_len);
+                        //printf("orig data %s\n", prop_entry.data);
                         string_pool_ptr += prop_entry.data_len;
                         *string_pool_ptr = 0;
                     }
                     break;
+                 default:
+                    CHECK(false) << "invalid entry_prop_type." << prop_entry.prop_type;
                 }
             }
         } //end for short
         * (u4*)(data_begin + 4)  = (1<<31) | ( property_map_flags << 16 ) | (data_ptr - data_begin + 8);
+        //printf("string pool is %s\n", string_pool);
         if(string_pool_ptr!=string_pool)
             memcpy(data_ptr, string_pool, string_pool_ptr-string_pool);
         return 0;
@@ -984,6 +1034,8 @@ BaseDict::SetProp(unsigned int term_id,  const char* key, const char* data, int 
                 prop_entry.data_len = data_len;
             }
             break;
+        default:
+           CHECK(false) << "invalid entry_prop_type." << prop_entry.prop_type << "===";
         }
     }
     // add prop_entry -> term_entry.

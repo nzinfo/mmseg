@@ -18,6 +18,7 @@ typedef unsigned int			u4;
 typedef long long			i8;
 typedef unsigned long long		u8;
 
+typedef u1*     u1ptr;
 typedef u4	csr_offset_t;
 /*
 #if U8_AVAILABLE
