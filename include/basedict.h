@@ -54,7 +54,11 @@ public:
     ~BaseDict();
 
 public:
-    int Load(const char* dict_path, char mode); // mode can be 'r', 'n'.  'n' stands for new; 'r' load pre-build dict from disk.
+    // mode can be 'r', 'c'.  'c' stands for combine,
+    // when load with combind, darts idx will not built;
+    // 'r' raw & only work as origin mmseg
+    int Load(const char* dict_path, char mode);
+
     int Save(const char* dict_path, int dict_rev);            // save to disk
     int Build();                                // build trie-tree in memory.
     int Reset();                                // clear all in memory entry (inlcude property's data)

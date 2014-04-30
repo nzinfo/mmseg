@@ -327,12 +327,26 @@ class Keyset : public Darts::Details::Keyset<T>{
 class BaseDictPrivate
 {
 public:
-    // where store items
-    // where store attributes?
-    // where store string pool (hash)
+    BaseDictPrivate():
+        entry_data_(NULL)
+      , entry_key_string_pool_(NULL)
+      , entry_keys_(NULL)
+      , entry_values_(NULL)
+    {
+
+    }
+
+    ~BaseDictPrivate() {
+        if(entry_data_) free(entry_data_);
+        if(entry_key_string_pool_) free(entry_key_string_pool_);
+        if(entry_keys_) free(entry_keys_);
+        if(entry_values_) free(entry_values_);
+    }
 
     // Column Related
     int AddColumn(const std::string& def, u2 idx){
+        if(entry_data_)
+            return -405; //read only dict. method not allow
         //LOG(INFO) << "new column append " << def << " @"<<idx;
         column_by_idx[idx] = def;                          // full_name  -> offset in datapkg.
         column_type_and_idx[def.c_str()+2] = def[0] | (idx<<8);    // raw_name: type
@@ -341,6 +355,8 @@ public:
     }
 
     void ResetColumn() {
+        if(entry_data_)
+            return ; //read only dict.
         column_by_idx.clear();
         column_type_and_idx.clear();
     }
@@ -374,6 +390,8 @@ public:
 
     // Entry Related
     int AddEntry(LemmaEntry& entry) {
+        if(entry_data_)
+            return -405; //read only dict.
         //FIXME: change here if use entry's string pool
         LemmaEntry& origin_entry = entries[entry.term_id];
         if(origin_entry.term_id) {
@@ -392,6 +410,8 @@ public:
     }
 
     int ResetEntry(bool bFreeEntryPropertyData = true) {
+        if(entry_data_)
+            return -405; //read only dict.
         /*
          * 1 free all entry's data_ptr
          * 2 reset hash
@@ -488,8 +508,8 @@ public:
     }
 
     // Save & Load
-    int Load(const char* filename, BaseDict* dict) {
-        LOG(INFO) << "load dictionary begin " << filename;
+    int Load(const char* filename, bool keep_term_data, BaseDict* dict) {
+        LOG(INFO) << "load dictionary begin, " << filename;
 
         u4 total_read_count = 0;
         std::FILE *fp = std::fopen(filename, "rb");
@@ -539,9 +559,9 @@ public:
         //item's values  //must hava a void* to char* [], else cause a compiler type detect error.
         void* string_buf_ptr = malloc(sizeof(u1ptr) * header.item_count); // addtional one space for get char*[] easy.
         u1ptr* string_begin = (u1ptr*)string_buf_ptr;
-        u1ptr* string_ptr = string_begin;
 
         u4* values_ptr = (u4*)malloc(sizeof(u4) * header.item_count);
+        u4* string_length_ptr = (u4*)malloc(sizeof(u4) * header.item_count); //the length of the strings.
         total_read_count += sizeof(u4) * header.item_count;
         if (header.item_count == std::fread(values_ptr, sizeof(u4), header.item_count, fp))
         {
@@ -552,21 +572,16 @@ public:
         //item's strings.
         u4 string_pool_begin_pos = sizeof(mmseg_dict_file_header) + sizeof(u4) + schema_str_length + sizeof(u4) * header.item_count;
         u4 string_pool_size =  header.entry_data_offset - string_pool_begin_pos;
-        u1* string_pool_ptr = (u1*)malloc(string_pool_size);
+        u1* string_pool_ptr = (u1*)malloc(sizeof(u1) * string_pool_size);
         total_read_count += sizeof(u1) * string_pool_size;
         if (string_pool_size == std::fread(string_pool_ptr, sizeof(u1), string_pool_size, fp))
         {
-            // do nothing ?
             u1* s_ptr = string_pool_ptr;
-            *string_ptr = s_ptr;
-            while(s_ptr < ( string_pool_ptr + string_pool_size) ) {
-                if(*s_ptr == '\0') {
-                    string_ptr ++;
-                    if(string_ptr - string_begin < header.item_count)
-                        *string_ptr = s_ptr+1;
-                }
-                s_ptr ++;
-            }
+            for(int i = 0; i < header.item_count; i++) {
+                string_length_ptr[i] = strlen(( char*)s_ptr);
+                string_begin[i] = s_ptr;
+                s_ptr += string_length_ptr[i] + 1;
+            } // end for.
         }else
             return -1;
         // load data
@@ -581,23 +596,30 @@ public:
             return -1;
 
         // check string
-        if(0) {
+        if(1) {
             for(int i=0; i< header.item_count; i++) {
                 printf("item=%s\n", string_begin[i]);
             }
         }
         //build darts?
-        LOG(INFO) << "load dictionary finished " << filename;
+        LOG(INFO) << "load dictionary finished, " << filename;
         {
             if(fp)
                 std::fclose(fp);
         }
         // free all?
+        this->entry_data_ = entry_data;
+        if(!keep_term_data)
         {
+            LOG(INFO) << "build darts index, " << filename;
+            // try build darts
             free(values_ptr);
             free(string_pool_ptr);
             free(string_buf_ptr);
-            free(entry_data);
+        }else{
+            this->entry_key_string_pool_ = string_pool_ptr;
+            this->entry_values_ = values_ptr;
+            this->entry_keys_ = string_begin;
         }
         return 0;
     }
@@ -791,9 +813,17 @@ public:
 
 public:
     Darts::DoubleArray _dict;
+    // in memory
     unordered_map<int, LemmaEntry> entries;    // row uncompress format.
 
-    std::string dict_name_;
+    // from disk
+    u1*         entry_data_;    // 词条的属性数据
+    u1*         entry_key_string_pool_;  // 词条字符串数据的时间存储位置
+    u1ptr*      entry_keys_;    // 对词条的索引, 用于构造 darts
+    u4*         entry_values_;  // 词条实际属性的偏移量，在 entry_data_ 中
+
+    // 通用属性
+    std::string dict_name_;     //
     //u2   _record_row_size;
 protected:
     //unordered_map<std::string, int> column_offset;  // column-> index[2]|offset[2b] in data block
@@ -819,8 +849,12 @@ BaseDict::~BaseDict()
 int
 BaseDict::Load(const char* dict_path, char mode)
 {
-    return _p->Load(dict_path, this);
-    //return 0;
+    // mode : r     raw     ; c combine with many dict.
+    if(mode == 'c')
+        return _p->Load(dict_path, true, this); // keep string keys
+    if(mode == 'r')
+        return _p->Load(dict_path, false, this); // build dart & free raw string.
+    return -405;
 }
 
 int

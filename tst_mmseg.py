@@ -61,7 +61,7 @@ if True:	# Test Dart
 	_mmseg.BaseDict_InitString( dt, schema, len(schema) )
 	_mmseg.BaseDict_SetDictName(dt, "com.coreseek.mm.test")
 	# add entrys
-	terms = [("acc", 10), ("abc", 101), ("abcd", 102), ("ab", 103), ("abgaowei", 104), ]
+	terms = [("acc", 10), ("abc", 101), ("ebcd", 102), ("ab", 103), ("abgaowei", 104), ]
 	_mmseg.BaseDict_Insert(dt, "a", 1, 100, 10)
 	msg = "hello world, abceef"
 	_mmseg.BaseDict_SetProp(dt, 100, "name", msg, len(msg))
@@ -79,7 +79,7 @@ if True:	# Test Dart
 	_mmseg.delete_BaseDict(dt)
 	# load
 	dt =  _mmseg.new_BaseDict()
-	print _mmseg.BaseDict_Load(dt, 'd1.lib', 'n')
+	print _mmseg.BaseDict_Load(dt, 'd1.lib', 'r')
 	_mmseg.delete_BaseDict(dt)
 
 #end of file
