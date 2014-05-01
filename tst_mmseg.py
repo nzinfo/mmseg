@@ -80,6 +80,19 @@ if True:	# Test Dart
 	# load
 	dt =  _mmseg.new_BaseDict()
 	print _mmseg.BaseDict_Load(dt, 'd1.lib', 'r')
+	rs = _mmseg.new_DictMatchResult()
+	print _mmseg.BaseDict_ExactMatch(dt, "abc", 3, rs)
+	length = 0
+	value = 0
+	r = _mmseg.DictMatchResult_GetResult(rs)
+	print r & 0xFFFFFFFF, r >> 32
+
+	n = _mmseg.BaseDict_PrefixMatch(dt, "abcefg", 3, rs)
+	for i in range(0, n):
+		r = _mmseg.DictMatchResult_GetResult(rs, i)
+		print r & 0xFFFFFFFF, r >> 32, '---'
+
+	_mmseg.delete_DictMatchResult(rs)
 	_mmseg.delete_BaseDict(dt)
 
 #end of file

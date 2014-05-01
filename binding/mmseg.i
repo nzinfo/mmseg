@@ -37,7 +37,9 @@
 %ignore mm::LemmaPropertyType; 
 %ignore mm::BaseDict::Init;
 %ignore mm::CharMapper::Transform;
-
+%ignore mm::DictMatchResult::ClearResult;
+%ignore mm::DictMatchResult::AddResult;
+%ignore mm::DictMatchResult::GetResultPtr;
 
 // This section is copied verbatim into the generated source code.
 // Any include files, definitions, etc. need to go here.

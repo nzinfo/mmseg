@@ -41,6 +41,8 @@ using std::unordered_map;
 #define MAX_PROPERTY_COUNT      15          //if fact can not change, the highest bit stands for ID | DATA
 #define MAX_ENTRY_DATA          65535       //64K
 #define MAX_ENTRY_TERM_LENGTH   32768       //2**15 max term length
+#define MAX_PREFIX_SEARCH_RESULT    32      // 前缀搜索 最多返回 32 个结果
+
 
 namespace mm {
 
@@ -149,6 +151,33 @@ protected:
 
 };
 
+class BaseDict;
+class DictMatchResultPrivate;
+class DictMatchResult
+{
+friend class BaseDict;
+
+public:
+    DictMatchResult();
+    ~DictMatchResult();
+
+    /*
+     * 根据编号获取实际的词条ID 和 属性数据
+     */
+    //const u1*   GetEntryData(int value, u4 &id, u4& data_len); //应该由词库提供本功能
+    u8             GetResult();  // 取最后条记录
+    u8             GetResult(int idx); // for script use only.
+    inline void*   GetResultPtr();
+
+    //int             GetResult(u8* );
+    inline void     ClearResult();
+
+    inline int      AddResult(u4 length, u4 value);
+
+protected:
+    DictMatchResultPrivate* _p;
+};
+
 class BaseDict
 {
 public:
@@ -188,6 +217,8 @@ public:
     int LoadRaw(const char* dict_path);
 
     // Search
+    int ExactMatch(const char* buf, size_t key_len, DictMatchResult& rs);
+    int PrefixMatch(const char* buf, size_t key_len, DictMatchResult& rs);
 
 private:
     BaseDictPrivate* _p;

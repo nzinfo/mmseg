@@ -469,6 +469,7 @@ public:
          *  4 call darts build
          *
          *  FIXME: preformace is NOT a consider.
+         *  仅用于内存中创建, 实际代码中, 构造Darts 在词库的 Load 阶段
          */
         std::vector<LemmaEntry> v;
         v.reserve(entries.size());
@@ -549,7 +550,6 @@ public:
             if (std::fseek(fp, (long)0, SEEK_SET) != 0) return -1;
         }
         //process header
-        mmseg_dict_file_header header;
         total_read_count += sizeof(mmseg_dict_file_header);
         if (1 == std::fread(&header, sizeof(mmseg_dict_file_header), 1, fp))
         {
@@ -588,11 +588,16 @@ public:
         u1ptr* string_begin = (u1ptr*)string_buf_ptr;
 
         u4* values_ptr = (u4*)malloc(sizeof(u4) * header.item_count);
-        u4* string_length_ptr = (u4*)malloc(sizeof(u4) * header.item_count); //the length of the strings.
+        std::size_t* string_length_ptr = (std::size_t*)malloc(sizeof(std::size_t) * header.item_count); //the length of the strings.
         total_read_count += sizeof(u4) * header.item_count;
         if (header.item_count == std::fread(values_ptr, sizeof(u4), header.item_count, fp))
         {
-            // do nothing ?
+            //  check value's offset.
+            if(0) {
+                for(int i=0; i< header.item_count; i++) {
+                    printf("item value =%d\n", values_ptr[i]);
+                }
+            }
         }else
             return -1;
 
@@ -623,7 +628,7 @@ public:
             return -1;
 
         // check string
-        if(1) {
+        if ( 0 ) {
             for(int i=0; i< header.item_count; i++) {
                 printf("item=%s\n", string_begin[i]);
             }
@@ -640,6 +645,17 @@ public:
         {
             LOG(INFO) << "build darts index, " << filename;
             // try build darts
+            _dict.clear();
+            const char* const * keys_ptr = (char* const *)string_begin;
+            Darts::DoubleArray::value_type* darts_values_ = (Darts::DoubleArray::value_type*)values_ptr;
+            if(0) {
+                for(int i=0; i< header.item_count; i++) {
+                    printf("key=%s, id=%d\n", keys_ptr[i], darts_values_[i]);
+                }
+            }
+
+            _dict.build(header.item_count, keys_ptr, string_length_ptr, darts_values_ ) ;
+            LOG(INFO) << "dictionary darts index built, " << filename;
             free(values_ptr);
             free(string_pool_ptr);
             free(string_buf_ptr);
@@ -648,6 +664,8 @@ public:
             this->entry_values_ = values_ptr;
             this->entry_keys_ = string_begin;
         }
+        free(string_length_ptr); // free string length buffer. will recalc when dict merge.
+
         return 0;
     }
 
@@ -705,7 +723,9 @@ public:
                 int rs = 0;
                 int entry_data_length = 0;
                 int entry_data_total_length = 0;
-                for(std::vector<LemmaEntry>::iterator it = v.begin(); it != v.end(); ++it) {
+                //
+                *term_prop_idx_ptr = entry_data_total_length;
+                for(std::vector<LemmaEntry>::iterator it = v.begin(); it != v.end(); it++) {
                     // 设置字符串实际值的 string-pool
                     memcpy(term_pool_ptr, it->term.c_str(), it->term.size());
                     term_pool_ptr += it->term.size();
@@ -717,13 +737,22 @@ public:
                     rs = GetEntryData(entry, entry_data, &entry_data_length);
                     if(rs == 0 && entry_data_length) {
                         // inc prop offset.
-                        *term_prop_idx_ptr = entry_data_total_length;
                         term_prop_idx_ptr ++;
+                        entry_data_total_length += entry_data_length;
+                        *term_prop_idx_ptr = entry_data_total_length;
                         // write to...
                         std::fwrite(entry_data, sizeof(u1), entry_data_length, fp);
-                        entry_data_total_length += entry_data_length;
                     } //end if
+                    if(0) {
+                        printf("build key=%s, offset=%d .. %d\n", entry.term.c_str(), *(term_prop_idx_ptr), entry_data_length);
+                        u4* ptr = (u4*)( idx_data + sizeof(mmseg_dict_file_header) + schema_define_len );
+                        for(int i=0; i< v.size(); i++) {
+                            printf("item value===== =%d\n", ptr[i]);
+                        }
+                    }
                 } // end for
+                // update the last ptr
+
                 LOG(INFO) << "save dictionary total entry_data length " << entry_data_total_length << " index block is " << idx_data_len;
                 // rewrite header.
                 {
@@ -747,6 +776,12 @@ public:
                     std::fseek(fp, 0, SEEK_SET);
                     std::fwrite(idx_data, sizeof(u1), idx_data_len, fp);
                     //printf("idx=%d, entry=%d\n", idx_data_len, entry_data_total_length);
+                    if(0) {
+                        term_prop_idx_ptr = (u4*)( idx_data + sizeof(mmseg_dict_file_header) + schema_define_len );
+                        for(int i=0; i< header->item_count; i++) {
+                            printf("item value =%d\n", term_prop_idx_ptr[i]);
+                        }
+                    }
                 }
                 free(entry_data);
                 free(idx_data);
@@ -840,6 +875,7 @@ public:
 
 public:
     Darts::DoubleArray _dict;
+    mmseg_dict_file_header header;
     // in memory
     unordered_map<int, LemmaEntry> entries;    // row uncompress format.
 
@@ -853,6 +889,73 @@ public:
     std::string dict_name_;     //
     BaseDictSchema& _schema;
 };
+
+////////////////////////////////////////////////////////////////////////////////
+class DictMatchResultPrivate
+{
+public:
+    DictMatchResultPrivate() {
+        Reset();
+    }
+
+    inline void Reset() {
+        _reulst_idx = 0;
+        memset(_results, 0, sizeof(_results));
+    }
+
+    Darts::DoubleArray::result_pair_type _results[MAX_PREFIX_SEARCH_RESULT];
+    int _reulst_idx;
+};
+
+DictMatchResult::DictMatchResult()
+{
+    _p = new DictMatchResultPrivate();
+}
+
+DictMatchResult::~DictMatchResult()
+{
+    SafeDelete(_p);
+}
+
+u8
+DictMatchResult::GetResult(){
+    return GetResult(_p->_reulst_idx-1);
+}
+
+u8
+DictMatchResult::GetResult(int idx)
+{
+    u8 v = 0;
+    if(_p->_reulst_idx) {
+        Darts::DoubleArray::result_pair_type & rs = _p->_results[idx];
+        v = rs.value;
+        v = (v << 32) | rs.length;
+    }
+    return v; //offset, length
+    //return _p->_reulst_idx;
+}
+
+inline void*
+DictMatchResult::GetResultPtr()
+{
+    return _p->_results;    // type: Darts::DoubleArray::result_pair_type
+}
+
+inline void
+DictMatchResult::ClearResult()
+{
+    _p->Reset();
+}
+
+inline int
+DictMatchResult::AddResult(u4 value, u4 length){
+    Darts::DoubleArray::result_pair_type & rs = _p->_results[_p->_reulst_idx];
+    rs.length = length;
+    rs.value = value;
+    _p->_reulst_idx ++;
+
+    return _p->_reulst_idx;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// BaseDict
@@ -991,6 +1094,25 @@ BaseDict::SetDictName(const char* dict_name)
 {
     _p->dict_name_.assign(dict_name);
     return 0;
+}
+
+int
+BaseDict::ExactMatch(const char* key, size_t key_len, DictMatchResult& match_rs)
+{
+    // return current result count.
+    Darts::DoubleArray::result_pair_type  rs;
+    _p->_dict.exactMatchSearch(key,rs, key_len);
+    //printf("rs.pos = %d, rs.value=%d\n", rs.length, rs.value);
+    return match_rs.AddResult(rs.length, rs.value);
+}
+
+int
+BaseDict::PrefixMatch(const char* buf, size_t key_len, DictMatchResult& rs)
+{
+    Darts::DoubleArray::result_pair_type* result = ( Darts::DoubleArray::result_pair_type* )rs.GetResultPtr();
+    int num =  _p->_dict.commonPrefixSearch(buf, result, MAX_PREFIX_SEARCH_RESULT, key_len);
+    rs._p->_reulst_idx = num;
+    return num;
 }
 
 int
