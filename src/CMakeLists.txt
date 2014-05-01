@@ -23,6 +23,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 SET(LIBMMSEG_SOURCE
     basedict.cpp
     segmentor.cpp
+    seg_result.c
     utils/utf8_to_16.cpp
     utils/csr_utils.c
     utils/csr_mmap.c

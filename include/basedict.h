@@ -220,6 +220,13 @@ public:
     int ExactMatch(const char* buf, size_t key_len, DictMatchResult& rs);
     int PrefixMatch(const char* buf, size_t key_len, DictMatchResult& rs);
 
+    // EntryData
+    const void* GetEntryData(u4 value, u4& term_id, u4& entry_date_len);
+    // EntryData Script Interface
+    u2  GetEntryPropertyU2(u4 value, const char* key);
+    u4  GetEntryPropertyU4(u4 value, const char* key);
+    u8  GetEntryPropertyU8(u4 value, const char* key);
+
 private:
     BaseDictPrivate* _p;
     BaseDictSchema _schema;
