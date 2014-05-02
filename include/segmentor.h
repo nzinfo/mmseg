@@ -76,6 +76,7 @@ public:
      *
      *  Can load multi-dictionary, but dict_id must be unique.
      */
+    int LoadCharmapDictionary(const char* dict_path, SegmentOptions& opts);                 //  加载字符转化词库
     int LoadTermDictionary(const char* dict_path, int dict_id, SegmentOptions& opts);
     int LoadPharseDictionary(const char* dict_path, int dict_id, SegmentOptions& opts);
     int AddTermDictionary(const mm::BaseDict* dict, int dict_id, SegmentOptions& opts);

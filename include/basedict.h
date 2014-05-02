@@ -35,7 +35,11 @@ using std::unordered_map;
 #include "csr_typedefs.h"
 
 // CharMapper define
-#define MAX_UNICODE_CODEPOINT   65535       // UCS-2's MAX
+#define MAX_UNICODE_CODEPOINT   0x10FFFF      // Unicode Max
+#define UNICODE_MASK            0x1FFFFF      // (2**21-1)
+#define UNICODE_BITS            21            // Unicode's bits count.
+#define UNICODE_PAGE_SIZE       0xFFFF        // 65536
+
 #define MAX_LEMMA_PROPERTY_NAME_LENGTH 64
 #define MAX_LEMMA_ENTRY_ID      2147483648  //2^31
 #define MAX_PROPERTY_COUNT      15          //if fact can not change, the highest bit stands for ID | DATA
@@ -61,10 +65,16 @@ class CharMapper
      * Get char's category number. ascii...
      *
      * 256K in memory by default
+     * Ref: http://www.fmddlmyy.cn/text17.html
+     *      http://www.unicode.org/Public/UNIDATA/
+     *          = Scripts.txt
      */
 public:
     CharMapper(bool default_pass=false):_bDefaultPass(default_pass) {
-        memset(_char_mapping, 0, sizeof(u4)*MAX_UNICODE_CODEPOINT);
+        memset(_char_mapping_base, 0, sizeof(u4)*UNICODE_PAGE_SIZE);
+        memset(_char_mapping_page1, 0, sizeof(u4)*UNICODE_PAGE_SIZE);
+        memset(_char_mapping_page2, 0, sizeof(u4)*UNICODE_PAGE_SIZE);
+        memset(_char_mapping_page14, 0, sizeof(u4)*UNICODE_PAGE_SIZE);
     }
 
 public:
@@ -77,11 +87,22 @@ public:
     int MappingPass(u4 src_begin, u2 tag = 0);
     int MappingRangePass(u4 src_begin, u4 src_end, u2 tag = 0);
 
+    int Tag(u4 icode, u2 tag);
+    int TagRange(u4 src_begin, u4 src_end, u2 tag);
+
     inline u4 Transform(u4 src, u2* out_tag);
     u4 TransformScript(u4 src, u2* out_tag);  // the script side , check for trans
 
+protected:
+    inline u4* GetPage(u4 icode, u4 *page_base);
+
 private:
-    u4   _char_mapping[MAX_UNICODE_CODEPOINT]; // lower bit is trans iCode, higher is category flag.
+    //FIXME: cut down memory consume.
+    u4   _char_mapping_base[UNICODE_PAGE_SIZE];
+    u4   _char_mapping_page1[UNICODE_PAGE_SIZE];
+    u4   _char_mapping_page2[UNICODE_PAGE_SIZE];
+    u4   _char_mapping_page14[UNICODE_PAGE_SIZE];   // page 15, page 16 will be ignored.
+    //u4   _char_mapping[MAX_UNICODE_CODEPOINT]; // lower bit is trans iCode, higher is category flag.  16M, we run code only on server right ?
     bool _bDefaultPass;
 };
 
@@ -221,11 +242,13 @@ public:
     int PrefixMatch(const char* buf, size_t key_len, DictMatchResult& rs);
 
     // EntryData
+    /*
     const void* GetEntryData(u4 value, u4& term_id, u4& entry_date_len);
     // EntryData Script Interface
     u2  GetEntryPropertyU2(u4 value, const char* key);
     u4  GetEntryPropertyU4(u4 value, const char* key);
     u8  GetEntryPropertyU8(u4 value, const char* key);
+    */
 
 private:
     BaseDictPrivate* _p;
