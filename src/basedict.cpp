@@ -87,6 +87,8 @@ CharMapper::Load(const char* filename)
         // do load , skip version now.
         this->_bDefaultPass = _header->flags & MMSEG_CHARMAP_FLAG_DEFAULT_PASS;
     }
+    LOG(INFO) << "load charmap default pass is " << _bDefaultPass;
+
     ptr += sizeof(mmseg_char_map_file_header);
 
     memcpy(_char_mapping_base, ptr, sizeof(_char_mapping_base));
@@ -316,7 +318,8 @@ CharMapper::Tag(u4 src, u2 tag)
         return 0;
     src -= base;
 
-    _char_mapping[src] = (_char_mapping[src] & UNICODE_MASK) | (tag<<UNICODE_BITS);
+    u4 iCode = _char_mapping[src]? _char_mapping[src]:src;
+    _char_mapping[src] = (iCode & UNICODE_MASK) | (tag<<UNICODE_BITS);
     return 0;
 }
 
@@ -334,12 +337,14 @@ CharMapper::TagRange(u4 src_begin, u4 src_end, u2 tag)
         return rs;
     src_begin -= base;
     src_end -= base;
+    u4 iCode = 0;
 
     for(u4 i = src_begin; i<=src_begin; i++) {
         if(_char_mapping[i])
             rs = 1;
         //_char_mapping[i] = i | (tag<<16);
-        _char_mapping[i] = (_char_mapping[i] & UNICODE_MASK) | (tag<<UNICODE_BITS);
+        iCode = _char_mapping[i]? _char_mapping[i]:i;
+        _char_mapping[i] = (iCode & UNICODE_MASK) | (tag<<UNICODE_BITS);
     }
 
     return rs;
