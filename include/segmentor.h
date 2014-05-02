@@ -6,6 +6,8 @@
 
 /*
  *  Segment Options , define switch-set during dictionary loading & segment.
+ *
+ *      - 在此处不使用 西文的词干提取; 在 处理 切分结果的时候进行 ?
  */
 class SegmentOptions {
 public:
@@ -14,6 +16,7 @@ public:
     {}
 
 public:
+    // bool
     bool opt1;
 };
 
@@ -44,7 +47,7 @@ public:
 
     // icode buffer
     u4          icode_buf[SEGMENT_ICODE_BUFFER_LENGTH];        // use UTF-32 save charactor's icode.
-    u4          icode_buf_lower[SEGMENT_ICODE_BUFFER_LENGTH];  // lower case tradtion -> simpl ? [NO!] 繁简转换应该在更高层面处理
+    u4          icode_buf_lower[SEGMENT_ICODE_BUFFER_LENGTH];  // to lower case. Do tradtion -> simpl ? [NO!] 繁简转换应该在更高层面处理
     u1          icode_type[SEGMENT_ICODE_BUFFER_LENGTH];       // char's flag. only lower 64K char have flag.
 
     // seg result.
@@ -70,6 +73,7 @@ public:
      *      char mapping   _char.map
      *      term    append _term.dict
      *      pharse  append _pharse.dict
+     *
      *  Can load multi-dictionary, but dict_id must be unique.
      */
     int LoadTermDictionary(const char* dict_path, int dict_id, SegmentOptions& opts);

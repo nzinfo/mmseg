@@ -2,26 +2,45 @@
 #include "csr_utils.h"
 #include "seg_result.h"
 
+segresult g_seg_result;
+
 segresult*
 segresult_new(u8 taskid_, u4 text_icode_length_, u4 text_crc32_) {
-     // 创建新结果
+    /*
+     *  创建新的 分词结果对象;
+     *  1 检测全局的 结果对象是否 被初始化了.
+     *  2 执行全局对象的初始化
+     *  3 分配新对象的内存
+     *  4 内存复制
+     */
     return  NULL;
 }
 
 void
 segresult_free(segresult* segrs_) {
-    // 释放切分结果
+    /* 释放切分结果
+     *  1 释放 segresult_token_subseq_list
+     *  2 释放 pos_list
+     *  3 释放 annote_list
+     *  4 释放 annote_data_pool
+     */
 }
 
 // 标注 定义有关
 void
 segresult_set_annote_define(segresult* segrs_, const char* define_) {
-    // 定义 结果中, 应该包含那些 annote 类型
+    /* 定义 结果中, 应该包含那些 annote 类型
+     *  传入 用 ; 分割的需要提供 annote 的 名称
+     *  - 部分 annote 直接从 词库中读取
+     *  - 大部分需要使用额外的计算模块
+     */
 }
 
 const char*
 segresult_get_annote_define(segresult* segrs_) {
-    // 读取 定义好的 annote
+    /* 读取 定义好的 annote
+     * 返回字符串形式的 annote 定义
+     */
     return NULL;
 }
 

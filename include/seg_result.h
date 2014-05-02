@@ -63,32 +63,39 @@ typedef struct segresult_token_subseq_
     u8* token_bitmap;
 }segresult_token_subseq;
 
+typedef struct segresult_token_subseq_list_
+{
+    u4   count;                                     // 包括多少条标注信息
+    segresult_token_subseq* seq;                    // 标注的数据
+    struct segresult_token_subseq_list_* _next;     // 下一个记录标注的区域
+}segresult_token_subseq_list;
+
 typedef struct segresult_pos_list_
 {
-    u4   count;                        // 包括多少条词性信息
-    u2*  part_of_speech;                // 词性列表
+    u4   count;                                 // 包括多少条词性信息
+    u2*  part_of_speech;                        // 词性列表
     struct segresult_pos_list_* _next;          // 下一个记录标注信息的区域
 }segresult_pos_list;
 
 typedef struct segresult_annote_list_
 {
-    u4   count;                         // 包括多少条标注信息
-    segresult_annote* note;             // 标注的数据
-    struct segresult_annote_list_* _next;          // 下一个记录标注的区域
+    u4   count;                                 // 包括多少条标注信息
+    segresult_annote* note;                     // 标注的数据
+    struct segresult_annote_list_* _next;       // 下一个记录标注的区域
 }segresult_annote_list;
 
 typedef struct segresult_annote_pool_list_
 {
-    u4   count;                         // 数据的总长度
-    u4   used;                          // 已经分配出的长度
-    u1*  data;                          // 数据的实际地址
+    u4   count;                                 // 数据的总长度
+    u4   used;                                  // 已经分配出的长度
+    u1*  data;                                  // 数据的实际地址
     struct segresult_annote_pool_list_* _next;  // 下一个记录词性信息的区域
 }segresult_annote_pool_list;
 
 
 typedef struct segresult_
 {
-    u8   task_id;                         //  任务编号, 由分词任务直接传入
+    u8   task_id;                         //  任务编号, 由分词任务直接传入, 初始化值 为 200
     u4   text_icode_length;               //  传入的待切分的字符串的 iCode 长度
     u4   text_crc32;                      //  传入数据的 CRC32, 可选, 可以为 0
     u8   time_cost;                       //  切分的总计用时, 可选, 可以为 0
@@ -100,14 +107,14 @@ typedef struct segresult_
     u4   token_total_count;               //  切分出的全部 Token 数量, 包括额外的切分结果部分
     u8*  token_bitmap;                    //  切分结果
     u4   token_subseq_count;              //  对切分结果的额外补充, 某段, 如果没有启动 nbest, 则为 0
-    segresult_token_subseq*  token_subseq;//  额外的切分结果
+    segresult_token_subseq_list*  token_subseq_list;   //  额外的切分结果
 
-    // u2*  part_of_speech;                  //  词性标注的数据, 长度为 token_total_count; 可以为NULL; 词性独立出来,不处理为 Annote 为了压缩
+    // u2*  part_of_speech;               //  词性标注的数据, 长度为 token_total_count; 可以为NULL; 词性独立出来,不处理为 Annote 为了压缩
     segresult_pos_list* pos_list;         //  词性标注的列表数据, 生成结果时使用, 反序列化后, 为 NULL
 
     u4   annote_count;                    //  标注的数量
     u4   annote_data_length;              //  全部已知的 annote 的 annote_data_size 的 SUM
-    // segresult_annote* annotes;            //  需要的标注数量
+    // segresult_annote* annotes;         //  需要的标注数量
     segresult_annote_list* annote_list;   //  运行时 采集 标注信息的结构
     segresult_annote_pool_list* annote_data_pool;   //运行时, annote 实际存数据的...
 
