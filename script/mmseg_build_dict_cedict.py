@@ -52,23 +52,26 @@ if __name__ == "__main__":
     generator = builder.getGenerator()
     #reads = {}
     i = 10
+    keys = {}
     for newEntry in generator:
         simp_key, trad_key, reading = newEntry['HeadwordSimplified'], newEntry['HeadwordTraditional'], newEntry['Reading']
         #print simp_key
-        simp_key = simp_key.encode('utf-8')
-        trad_key = trad_key.encode('utf-8')
-        reading = reading.encode('utf-8')
+        simp_key = simp_key.encode('utf-8').strip()
+        trad_key = trad_key.encode('utf-8').strip()
+        reading = reading.encode('utf-8').strip()
 
+        keys[trad_key] = 1  #  FIXME: check dup in cext  ?
         _mmseg.BaseDict_Insert(dt, trad_key, len(trad_key), i)
-        _mmseg.BaseDict_SetPropInteger(dt, i, "freq", i)
+        #_mmseg.BaseDict_SetPropInteger(dt, i, "freq", i)
+        _mmseg.BaseDict_SetProp(dt, i, "pinyin", reading, len(reading))
+        #print simp_key, trad_key, trad_key != simp_key
         if trad_key != simp_key:
             _mmseg.BaseDict_SetProp(dt, i, "simp", simp_key, len(simp_key))
-        else:
-            #_mmseg.BaseDict_Insert(dt, simp_key, len(simp_key), i)
-            #i += 1  # append simp ?
-            pass
-        #print reading
-        _mmseg.BaseDict_SetProp(dt, i, "pinyin", reading, len(reading))
+            if simp_key not in keys:
+                i += 1
+                _mmseg.BaseDict_Insert(dt, simp_key, len(simp_key), i)
+                _mmseg.BaseDict_SetProp(dt, i, "pinyin", reading, len(reading))
+                keys[simp_key] = 1
         i += 1
 
     _mmseg.BaseDict_Save(dt, dict_fname, 1)  # rev: 1
@@ -77,8 +80,9 @@ if __name__ == "__main__":
     dt =  _mmseg.new_BaseDict()
     _mmseg.BaseDict_Load(dt, dict_fname, 'r')
     if True:
-        term_txt = u"反".encode('utf-8')
+        term_txt = u"中国".encode('utf-8')
         v = _mmseg.BaseDict_ExactMatchScript( dt, term_txt, len(term_txt))
+        print term_txt, v
         #print _mmseg.BaseDict_GetEntryPropertyU4(dt, v, "freq", 0)
         print _mmseg.get_dict_property_string_by_value(dt, v, "pinyin");
         print v

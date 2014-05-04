@@ -1036,6 +1036,7 @@ public:
                         //printf("orig data %s\n", prop_entry.data);
                         string_pool_ptr += prop_entry.data_len;
                         *string_pool_ptr = 0;
+                        string_pool_ptr ++;
                     }
                     break;
                  default:
@@ -1045,7 +1046,7 @@ public:
         } //end for short
         // data_begin + 4: first 4 bytes; 1<<31 mark as a data-block; property_map_flags how may fields; (data_ptr - (data_begin + 8) ) real data size.
         * (u4*)(data_begin + 4)  = (1<<31) | ( property_map_flags << 16 ) | (data_ptr - (data_begin + 8) );
-        *data_size = data_ptr - data_begin;
+        *data_size = data_ptr - data_begin + string_pool_ptr-string_pool; // entry_data = id | flag | len | column_data | string_pool
         //printf("string pool is %s\n", string_pool);
         if(string_pool_ptr!=string_pool)
             memcpy(data_ptr, string_pool, string_pool_ptr-string_pool);
@@ -1154,10 +1155,27 @@ public:
         if(!entry_data_)
             return NULL;
 
+        u2 entry_columen_data_len = 0;
+        {
+            u4* data_ptr = (u4*)data;
+            u4  flag = data_ptr[1];
+            entry_columen_data_len =  flag & 0xFFFF;
+        }
+
         i4 offset = GetOnDiskEntryOffset(data, data_size, key);
         if(offset < 0)
             return NULL;
 
+        if(entry_columen_data_len)
+        {
+            u1* data_ptr = (u1*)data;
+            u2  str_offset =  ((u2*)(data_ptr + offset)) [0];
+            //printf("str offset in pool %d, data len =%d", str_offset, entry_columen_data_len);
+            //printf("val=%s\n", data_ptr+8+entry_columen_data_len + str_offset);
+            const char* prop_val_ptr = (const char* ) (data_ptr+8+entry_columen_data_len + str_offset);
+            *data_len = strlen(prop_val_ptr);
+            return prop_val_ptr;
+        }
         return NULL;
     };
 

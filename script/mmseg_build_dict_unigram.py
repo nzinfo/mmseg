@@ -80,7 +80,7 @@ if __name__ == "__main__":
     _mmseg.BaseDict_Load(dt, dict_fname, 'r')
 
     if True:
-        term_txt = u"反".encode('utf-8')
+        term_txt = u"中国".encode('utf-8')
         v = _mmseg.BaseDict_ExactMatchScript( dt, term_txt, len(term_txt))
         print _mmseg.BaseDict_GetEntryPropertyU4(dt, v, "freq", 0)
 
