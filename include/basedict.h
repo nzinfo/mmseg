@@ -248,6 +248,7 @@ public:
 
     // EntryData
     u4  GetEntryPropertyU4(u4 value, const char* key, u4 def_val);
+    const char* GetEntryProperty(u4 value,  const char* key, int* data_len);  // 读取字符串信息
 
     /*
     const void* GetEntryData(u4 value, u4& term_id, u4& entry_date_len);

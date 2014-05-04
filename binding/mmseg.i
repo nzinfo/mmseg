@@ -53,6 +53,8 @@
 %include Python.i
 
 %newobject get_dict_property_string;
+%newobject get_dict_property_string_by_value;
+
 // Some C-Side Helper
 %inline %{
   char* get_dict_property_string(mm::BaseDict* dict, unsigned int term_id, const char* key)
@@ -72,6 +74,24 @@
   	}
   	return NULL;
   }
+
+  const char* get_dict_property_string_by_value(mm::BaseDict* dict, unsigned int value, const char* key)
+  {
+    int data_len = 0;
+    int rs = 0;
+    const char* buf_ptr = dict->GetEntryProperty ( value, key, &data_len);  // buf == NULL;
+    //printf("get data_len %d\n", data_len);
+    if(buf_ptr && data_len) {
+      char * buf = (char*)malloc(data_len+1); // +1 for whitespace for string.
+      memcpy(buf, buf_ptr, data_len);
+      if(rs == 0) {
+        buf[data_len] = 0;
+        return buf;
+      }
+    }
+    return NULL;
+  }
+
   u8 get_dict_property_number(mm::BaseDict* dict, unsigned int term_id, const char* key) {
   	u8 v = 0;
   	int rs = dict->GetPropInteger ( term_id, key, &v);

@@ -1074,9 +1074,14 @@ public:
         }
     }
 
-    u4 GetOnDiskEntryPropertyU4 (const void* data, u4 data_size, const char* key, u4 def_value){
+    i4 GetOnDiskEntryOffset(const void* data, u4 data_size, const char* key) {
+        /*
+         *  返回 属性 在 Term 的属性数据中的偏移量;
+         *  如果错误 返回 负数
+         */
         if(!entry_data_)
-            return def_value;
+            return -100;
+
         if(entry_data_<=data && data < entry_data_end_)
         {
             // in right data range.
@@ -1085,20 +1090,20 @@ public:
             u1  prop_flag =  (flag >> 16) & 0x7F;
 
             if(key == NULL || strcmp("id", key) == 0)
-                return data_ptr[0]; // get term id.
+                return  0; // default is term id
             if(! (flag >> 31 & 0x1) )
-                return def_value;  // not a def value.
+                return -1;  // no such data, if flag not mark 1 at highest bit, it's next entry's termid.
 
             short prop_idx = _schema.GetColumnIdx(key);
             if(prop_idx < 0)
-                return def_value;
-            //printf("--%d---", flag);
+                return -2; // no such column
+
             short offset = 8;
             for(short i = 0; i <MAX_PROPERTY_COUNT; i++ ) {
                 if(i == prop_idx) {
                     //printf("-----%d---%d\n", prop_flag, i);
                     if (! (prop_flag >> i & 0x1 ) )
-                        return def_value; // not such prop.
+                        return -3; // not such prop.
                 }
                 if ( prop_flag >> i & 0x1 ) {
                     // have prop
@@ -1123,16 +1128,38 @@ public:
                         break;
                         }
                     }
-                }
-            } //  end for.
-            //printf("-----222");
-            CHECK_LT(offset, data_size) << "property offset beyond border.";
-            u1* prop_ptr = (u1*)data;
-            prop_ptr += offset; // FIXME: check offset .
-            return *(u4*)prop_ptr;
+                }// end if
+          } //  end for.
+          CHECK_LT(offset, data_size) << "property offset beyond border.";
+          return offset;
         }else
-            return def_value;
+          return -200; // invalid data pointer.
     }
+
+    u4 GetOnDiskEntryPropertyU4 (const void* data, u4 data_size, const char* key, u4 def_value){
+        if(!entry_data_)
+            return def_value;
+
+        i4 offset = GetOnDiskEntryOffset(data, data_size, key);
+        if(offset < 0)
+            return def_value;
+
+        u1* prop_ptr = (u1*)data;
+        prop_ptr += offset; // FIXME: check offset .
+        return *(u4*)prop_ptr;
+    }
+
+
+    const char* GetOnDiskEntryPropertyString(const void* data, u4 data_size, const char* key, int* data_len){
+        if(!entry_data_)
+            return NULL;
+
+        i4 offset = GetOnDiskEntryOffset(data, data_size, key);
+        if(offset < 0)
+            return NULL;
+
+        return NULL;
+    };
 
 public:
     Darts::DoubleArray _dict;
@@ -1423,6 +1450,23 @@ BaseDict::GetEntryPropertyU4(u4 value, const char* key, u4 def_val)
         //return 1;
     }
     return 0;  // data not found ?
+}
+
+const char*
+BaseDict::GetEntryProperty(u4 value,  const char* key, int* data_len)
+{
+    int data_size = 0;
+    const void* dataptr = _p->GetOnDiskEntryProperty(value, &data_size);
+    if(dataptr && data_size) {
+        if(1) {
+            // check type.
+            char prop_type = _schema.GetColumnType(key);
+            if(prop_type != 's')
+                return NULL; // invalid type.
+        } // end type check.
+        return _p->GetOnDiskEntryPropertyString(dataptr, data_size, key, data_len);
+    }
+    return NULL;
 }
 
 int
