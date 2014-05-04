@@ -37,6 +37,7 @@
 %ignore mm::LemmaPropertyType; 
 %ignore mm::BaseDict::Init;
 %ignore mm::CharMapper::Transform;
+%ignore mm::BaseDictSchema::GetColumnType;
 %ignore mm::DictMatchResult::ClearResult;
 %ignore mm::DictMatchResult::AddResult;
 %ignore mm::DictMatchResult::GetResultPtr;

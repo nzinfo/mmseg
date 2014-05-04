@@ -128,6 +128,8 @@ public:
         column_type_and_idx.clear();
     }
 
+    inline char GetColumnType(int idx);
+
     inline char GetColumnType(const char* column_name) {
         unordered_map<std::string, u2>::iterator it = column_type_and_idx.find(column_name);
         if(it != column_type_and_idx.end() ) {
@@ -241,7 +243,12 @@ public:
     int ExactMatch(const char* buf, size_t key_len, DictMatchResult& rs);
     int PrefixMatch(const char* buf, size_t key_len, DictMatchResult& rs);
 
+    // Script Interface
+    int ExactMatchScript(const char* key, size_t key_len);
+
     // EntryData
+    u4  GetEntryPropertyU4(u4 value, const char* key, u4 def_val);
+
     /*
     const void* GetEntryData(u4 value, u4& term_id, u4& entry_date_len);
     // EntryData Script Interface

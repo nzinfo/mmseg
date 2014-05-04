@@ -484,6 +484,12 @@ BaseDictSchema::AddColumn(const std::string& def, u2 idx){
     return 0;
 }
 
+inline char
+BaseDictSchema::GetColumnType(int idx)
+{
+    return column_by_idx[idx][0]; // 4:id, s:thes
+}
+
 const std::string
 BaseDictSchema::GetSchemaDefine() {
     std::stringstream ss;
@@ -766,6 +772,7 @@ public:
         u4 string_pool_begin_pos = sizeof(mmseg_dict_file_header) + sizeof(u4) + schema_str_length + sizeof(u4) * header.item_count;
         u4 string_pool_size =  header.entry_data_offset - string_pool_begin_pos;
         u1* string_pool_ptr = (u1*)malloc(sizeof(u1) * string_pool_size);
+        LOG(INFO) << "term string pool offset is (read at) " <<  total_read_count;
         total_read_count += sizeof(u1) * string_pool_size;
         if (string_pool_size == std::fread(string_pool_ptr, sizeof(u1), string_pool_size, fp))
         {
@@ -773,6 +780,7 @@ public:
             for(int i = 0; i < header.item_count; i++) {
                 string_length_ptr[i] = strlen(( char*)s_ptr);
                 string_begin[i] = s_ptr;
+                CHECK_NE(string_length_ptr[i], 0) << "string length cannot be 0. @"<<i;
                 s_ptr += string_length_ptr[i] + 1;
             } // end for.
         }else
@@ -802,6 +810,7 @@ public:
         }
         // free all?
         this->entry_data_ = entry_data;
+        this->entry_data_end_ = entry_data + entry_data_length;
         if(!keep_term_data)
         {
             LOG(INFO) << "build darts index, " << filename;
@@ -849,6 +858,8 @@ public:
                     it !=  entries.end(); ++it) {
                 LemmaEntry & entry = it->second;
                 v.push_back(entry);
+                CHECK_EQ( entry.term.length(), strlen(entry.term.c_str())) << "string have \\0. " << entry.term << " term length " << entry.term.length();
+                CHECK_NE( entry.term.length(), 0) << "string length cannot be 0. ";
                 total_string_len += entry.term.length() + 1;    // will append a \0
             } // for
             LOG(INFO) << "total entry count " <<  v.size();
@@ -870,9 +881,11 @@ public:
                 // pointers
                 mmseg_dict_file_header* header = (mmseg_dict_file_header*) idx_data;
                 // 词条属性偏移量的列表, 对应 darts 的 value (定长)
-                u4* term_prop_idx_ptr = (u4*)( idx_data + sizeof(mmseg_dict_file_header) + schema_define_len );
+                u4* term_prop_idx_begin = (u4*)( idx_data + sizeof(mmseg_dict_file_header) + schema_define_len );
+                u4* term_prop_idx_ptr = term_prop_idx_begin;
                 // 词条值的字符串池, \0 标记为结尾
-                u1* term_pool_ptr = idx_data + sizeof(mmseg_dict_file_header) + schema_define_len + sizeof(u4) * v.size();
+                u1* term_pool_begin = idx_data + sizeof(mmseg_dict_file_header) + schema_define_len + sizeof(u4) * v.size();
+                u1* term_pool_ptr = term_pool_begin;
 
                 std::FILE *fp  = std::fopen(filename, "wb");
                 if(!fp)
@@ -885,10 +898,11 @@ public:
                 int entry_data_length = 0;
                 int entry_data_total_length = 0;
                 //
-                *term_prop_idx_ptr = entry_data_total_length;
+                //*term_prop_idx_ptr = entry_data_total_length;
+                LOG(INFO) << "term string pool offset is " <<  term_pool_ptr - idx_data;
                 for(std::vector<LemmaEntry>::iterator it = v.begin(); it != v.end(); it++) {
                     // 设置字符串实际值的 string-pool
-                    memcpy(term_pool_ptr, it->term.c_str(), it->term.size());
+                    memcpy(term_pool_ptr, it->term.c_str(), it->term.length());
                     term_pool_ptr += it->term.size();
                     *term_pool_ptr = 0;
                     term_pool_ptr++;  // append \0
@@ -898,9 +912,11 @@ public:
                     rs = GetEntryData(entry, entry_data, &entry_data_length);
                     if(rs == 0 && entry_data_length) {
                         // inc prop offset.
-                        term_prop_idx_ptr ++;
                         entry_data_total_length += entry_data_length;
-                        *term_prop_idx_ptr = entry_data_total_length;
+                        *term_prop_idx_ptr = entry_data_total_length - entry_data_length;
+                        term_prop_idx_ptr ++;
+                        // at the loop end, term_prop_idx_ptr will point to term_pool_begin
+                        CHECK_LT((const void*)term_prop_idx_ptr, (const void*)(term_pool_begin+1)) << "overwrite to string pool!";
                         // write to...
                         std::fwrite(entry_data, sizeof(u1), entry_data_length, fp);
                     } //end if
@@ -971,6 +987,7 @@ public:
             idx2entry_prop[prop_idx] = ( it - entry.props.begin() ) + 1;    // if 0 means, property not exist, so needs plus 1
             property_map_flags |= 1 << prop_idx;
         }
+        *data_size = 0;
         // if no property data
         if(property_map_flags ==0 ) {
            * ( (u4*) data ) = entry.term_id; // should check data_size
@@ -1026,13 +1043,96 @@ public:
                 }
             }
         } //end for short
-        * (u4*)(data_begin + 4)  = (1<<31) | ( property_map_flags << 16 ) | (data_ptr - data_begin + 8);
+        // data_begin + 4: first 4 bytes; 1<<31 mark as a data-block; property_map_flags how may fields; (data_ptr - (data_begin + 8) ) real data size.
+        * (u4*)(data_begin + 4)  = (1<<31) | ( property_map_flags << 16 ) | (data_ptr - (data_begin + 8) );
+        *data_size = data_ptr - data_begin;
         //printf("string pool is %s\n", string_pool);
         if(string_pool_ptr!=string_pool)
             memcpy(data_ptr, string_pool, string_pool_ptr-string_pool);
         return 0;
     }
 
+
+    const void* GetOnDiskEntryProperty(u4 value, int* data_size) {
+        /*
+         *  返回记录对应的数据区, 如果不存在, 返回 NULL
+         */
+        if(!entry_data_)
+            return  NULL;
+        CHECK_LT(value, entry_data_end_ - entry_data_) << "value[offset] access beyond data border.";  // return NULL ?
+        // data_begin + 4: first 4 bytes; 1<<31 mark as a data-block; property_map_flags how may fields; (data_ptr - (data_begin + 8) ) real data size.
+        u4* data_ptr = (u4*)(entry_data_ +value);
+        u4  flag = data_ptr[1];
+        // check 1st bitflag
+        if(flag >> 31 & 0x1)
+        {
+            *data_size = 8 + flag & 0xFFFF;
+            return data_ptr;
+        }else{
+            *data_size = 4;
+            return data_ptr;
+        }
+    }
+
+    u4 GetOnDiskEntryPropertyU4 (const void* data, u4 data_size, const char* key, u4 def_value){
+        if(!entry_data_)
+            return def_value;
+        if(entry_data_<=data && data < entry_data_end_)
+        {
+            // in right data range.
+            u4* data_ptr = (u4*)data;
+            u4  flag = data_ptr[1];
+            u1  prop_flag =  (flag >> 16) & 0x7F;
+
+            if(key == NULL || strcmp("id", key) == 0)
+                return data_ptr[0]; // get term id.
+            if(! (flag >> 31 & 0x1) )
+                return def_value;  // not a def value.
+
+            short prop_idx = _schema.GetColumnIdx(key);
+            if(prop_idx < 0)
+                return def_value;
+            //printf("--%d---", flag);
+            short offset = 8;
+            for(short i = 0; i <MAX_PROPERTY_COUNT; i++ ) {
+                if(i == prop_idx) {
+                    //printf("-----%d---%d\n", prop_flag, i);
+                    if (! (prop_flag >> i & 0x1 ) )
+                        return def_value; // not such prop.
+                }
+                if ( prop_flag >> i & 0x1 ) {
+                    // have prop
+                    char prop_type = _schema.GetColumnType(i);
+                    if(i == prop_idx)
+                        break;
+                    switch(prop_type) {
+                    case '2': {
+                        offset += 2;
+                        break;
+                        }
+                    case '4': {
+                        offset += 4;
+                        break;
+                        }
+                    case '8': {
+                        offset += 8;
+                        break;
+                        }
+                    case 's':{
+                        offset += 2;
+                        break;
+                        }
+                    }
+                }
+            } //  end for.
+            //printf("-----222");
+            CHECK_LT(offset, data_size) << "property offset beyond border.";
+            u1* prop_ptr = (u1*)data;
+            prop_ptr += offset; // FIXME: check offset .
+            return *(u4*)prop_ptr;
+        }else
+            return def_value;
+    }
 
 public:
     Darts::DoubleArray _dict;
@@ -1042,6 +1142,7 @@ public:
 
     // from disk
     u1*         entry_data_;    // 词条的属性数据
+    u1*         entry_data_end_;
     u1*         entry_key_string_pool_;  // 词条字符串数据的时间存储位置
     u1ptr*      entry_keys_;    // 对词条的索引, 用于构造 darts
     u4*         entry_values_;  // 词条实际属性的偏移量，在 entry_data_ 中
@@ -1275,10 +1376,22 @@ BaseDict::PrefixMatch(const char* buf, size_t key_len, DictMatchResult& rs)
     rs._p->_reulst_idx = num;
     return num;
 }
+int
+BaseDict::ExactMatchScript(const char* key, size_t key_len)
+{
+    Darts::DoubleArray::result_pair_type  rs;
+    _p->_dict.exactMatchSearch(key, rs, key_len);
+    //printf("query key=%s, len=%d, value= %d\n", key, rs.length, rs.value);
+    return rs.value;
+}
+
 
 int
 BaseDict::Insert(const char* term, unsigned int term_length, unsigned int term_id)
 {
+    if(!term_length)
+        return -1;
+
     // build entry.
     LemmaEntry entry;
     entry.term = term;
@@ -1290,6 +1403,26 @@ BaseDict::Insert(const char* term, unsigned int term_length, unsigned int term_i
     //_p->entries[entry.term_id] = entry;
     _p->AddEntry(entry); //copy construct
     return 0;
+}
+
+// EntryData
+u4
+BaseDict::GetEntryPropertyU4(u4 value, const char* key, u4 def_val)
+{
+    int data_size = 0;
+    const void* dataptr = _p->GetOnDiskEntryProperty(value, &data_size);
+    if(dataptr && data_size) {
+        if(1) {
+            // check type.
+            char prop_type = _schema.GetColumnType(key);
+            if(prop_type!='2' && prop_type!='4')
+                return 0; // invalid type.
+        } // end type check.
+        return _p->GetOnDiskEntryPropertyU4(dataptr, data_size, key, def_val);
+        //printf("value=%d, datasize=%d\n", value, data_size);
+        //return 1;
+    }
+    return 0;  // data not found ?
 }
 
 int

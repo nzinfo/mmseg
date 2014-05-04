@@ -19,7 +19,6 @@ def init():
     if 'registerUnicode' in options:
         configuration['registerUnicode'] = options.pop('registerUnicode')
     try:
-        print configuration
         db = dbconnector.DatabaseConnector(configuration)
     except ValueError, e:
         print >> sys.stderr, "Error: %s" % e
@@ -33,7 +32,13 @@ if __name__ == "__main__":
     # pass db make cjklib based code happy, we don't needs database.
     builder = CEDICTBuilder(dbConnectInst=db, useCollation = False, filePath=fname)
     generator = builder.getGenerator()
+    reads = {}
     for newEntry in generator:
-        print newEntry
+        reading = newEntry['Reading']
+        tokes = reading.split()
+        for tok in tokes:
+            reads[tok] = 1
+    print reads
+    print len(reads)
 
 # -*- end of file -*-
