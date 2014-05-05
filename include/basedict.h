@@ -182,7 +182,7 @@ friend class BaseDict;
 
 public:
     DictMatchResult();
-    ~DictMatchResult();
+    virtual ~DictMatchResult();
 
     /*
      * 根据编号获取实际的词条ID 和 属性数据
@@ -205,7 +205,7 @@ class BaseDict
 {
 public:
     BaseDict();
-    ~BaseDict();
+    virtual ~BaseDict();
 
 public:
     // mode can be 'r', 'c'.  'c' stands for combine,
@@ -246,7 +246,7 @@ public:
     // Script Interface
     int ExactMatchScript(const char* key, size_t key_len);
 
-    // EntryData
+    // EntryData, for Scripting..
     u4  GetEntryPropertyU4(u4 value, const char* key, u4 def_val);
     const char* GetEntryProperty(u4 value,  const char* key, int* data_len);  // 读取字符串信息
 
@@ -257,10 +257,25 @@ public:
     u4  GetEntryPropertyU4(u4 value, const char* key);
     u8  GetEntryPropertyU8(u4 value, const char* key);
     */
+protected:
+    static char _head_mgc[5];
+    virtual const char* get_file_head_mgc() {
+        return _head_mgc;
+    }
 
 private:
     BaseDictPrivate* _p;
     BaseDictSchema _schema;
+};
+
+class PharseDict : public BaseDict
+{
+
+protected:
+    static char _head_mgc[5];
+    virtual const char* get_file_head_mgc() {
+        return _head_mgc;
+    }
 };
 
 /*

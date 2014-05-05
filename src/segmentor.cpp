@@ -6,8 +6,15 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <glog/logging.h>
+
 #include "segmentor.h"
 #include "basedict.h"
+
+////////////////////////////////////////////////////////////////////////////////
+/// TermDartsIndex
+///     用于同时查找多个词条的索引
+////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
 SegmentStatus::SegmentStatus()
@@ -66,8 +73,10 @@ Segmentor::LoadDictionaries(const char* dict_path, SegmentOptions &opts)
      */
     std::string fname; fname.reserve(255);
     std::string unichar;        // 如果没有 base.chr 但是有另外一个 chr 扩展名的文件?  ... 目前如果没有, 则 crash
-    std::vector<std::string> term_dicts;
-    std::vector<std::string> pharse_dicts;
+
+    std::vector<std::string> charmap_dicts;         charmap_dicts.reserve(10);
+    std::vector<std::string> term_dicts;            term_dicts.reserve(30);
+    std::vector<std::string> pharse_dicts;          pharse_dicts.reserve(10);
 
     DIR *dir;
     struct stat filestat;
@@ -80,17 +89,51 @@ Segmentor::LoadDictionaries(const char* dict_path, SegmentOptions &opts)
           fname +=ent->d_name;
           if (stat( fname.c_str(), &filestat )) continue;
           if (S_ISDIR( filestat.st_mode ))         continue;
-          {
-                printf ("%s\n", ent->d_name);
+
+          if( std::string::npos != fname.rfind(".uni", fname.length() - 4, 4) ) {
+              term_dicts.push_back(fname);
+          }
+          if( std::string::npos != fname.rfind(".phs", fname.length() - 4, 4) ) {
+              pharse_dicts.push_back(fname);
+          }
+          if( std::string::npos != fname.rfind(".chr", fname.length() - 4, 4) ) {
+              charmap_dicts.push_back(fname);
           }
       } // end while
       closedir (dir);
     } else {
       return -404;
     }
+    // sort
+    std::sort(term_dicts.begin(), term_dicts.end());
+    std::sort(pharse_dicts.begin(), pharse_dicts.end());
+    std::sort(charmap_dicts.begin(), charmap_dicts.end());
+
+    // check
+    CHECK_GT(charmap_dicts.size(), 0) << "charmap file not found.";
+    CHECK_GT(term_dicts.size(), 0) << "should have at lease on term dictionary.";
 
     // load unichar
+    {
+        /*
+         * 1 if base.chr exist, load it
+         * 2 if not, load the 1st
+         */
+        std::string char_map_fname = "base.chr";
+        std::vector<std::string>::iterator it = find(charmap_dicts.begin(), charmap_dicts.end(), "base.chr");
+        if(it == charmap_dicts.end()) {
+            // not found
+            char_map_fname = *it;
+        }
+        LOG(INFO) << " load charmap " << char_map_fname;
+    }
     // load term
+    {
+        for(std::vector<std::string>::iterator it = term_dicts.begin(); it != term_dicts.end(); ++it) {
+            //printf("tok=%s\t", it->key);
+
+        }
+    }
     // load pharse
     return 0;
 }

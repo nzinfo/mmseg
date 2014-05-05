@@ -839,7 +839,7 @@ public:
         return 0;
     }
 
-    int Save(const char* filename, int dict_rev) {
+    int Save(const char* file_mgc, const char* filename, int dict_rev) {
         /*
          *  In Save & Load, I do NOT care about dup term.
          *  Raw File Format:
@@ -934,7 +934,7 @@ public:
                 // rewrite header.
                 {
                     // header schema_length:u4; schema offset_list; string_pool, entry_data
-                    memcpy(header->mg, basedict_head_mgc, 4);
+                    memcpy(header->mg, file_mgc, 4);
                     header->version = 1;
                     header->flags = 0;
                     memcpy(header->dictname, dict_name_.c_str(), dict_name_.size());
@@ -1266,7 +1266,8 @@ DictMatchResult::AddResult(u4 value, u4 length){
 
 ////////////////////////////////////////////////////////////////////////////////
 /// BaseDict
-////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+char BaseDict::_head_mgc[5] =  "TERM";
 
 BaseDict::BaseDict()
 {
@@ -1331,7 +1332,7 @@ BaseDict::Save(const char* dict_path, int dict_rev){
      *  raw_data = data_len, fixdata, strings,  opt for easy transfer via network.
      *
      */
-    return _p->Save(dict_path, dict_rev);
+    return _p->Save(get_file_head_mgc(), dict_path, dict_rev);
     return 0;
 }
 
@@ -1600,6 +1601,11 @@ BaseDict::Properties(const char* term, LemmaPropertyEntry** entries){
     return 0;
 }
 */
+
+////////////////////////////////////////////////////////////////////////////////
+/// PharseDict
+////////////////////////////////////////////////////////////////////////////////
+char PharseDict::_head_mgc[5] =  "PHSD";
 
 ////////////////////////////////////////////////////////////////////////////////
 
