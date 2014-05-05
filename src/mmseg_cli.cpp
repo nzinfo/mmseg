@@ -79,7 +79,8 @@ int main(int argc, char **argv) {
     // load basic diction only -> for system booting up.
     {
         SegmentOptions opts;
-        rs = seg.LoadTermDictionary(resolved_dict_path, 0, opts);
+        rs = seg.LoadDictionaries(resolved_dict_path, opts);
+        //rs = seg.LoadTermDictionary(resolved_dict_path, 0, opts);
     }
     rs = segment(out_file, seg, bQuite);
 

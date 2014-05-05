@@ -76,17 +76,18 @@ public:
      *
      *  Can load multi-dictionary, but dict_id must be unique.
      */
-    int LoadCharmapDictionary(const char* dict_path, SegmentOptions& opts);                 //  加载字符转化词库
-    int LoadTermDictionary(const char* dict_path, int dict_id, SegmentOptions& opts);
-    int LoadPharseDictionary(const char* dict_path, int dict_id, SegmentOptions& opts);
-    int AddTermDictionary(const mm::BaseDict* dict, int dict_id, SegmentOptions& opts);
-    int AddPharseDictionary(const mm::BaseDict* dict, int dict_id, SegmentOptions& opts);
+    int LoadDictionaries(const char* dict_path, SegmentOptions& opts);
+    int LoadCharmapDictionary(const char* dict_file, SegmentOptions& opts);                 //  加载字符转化词库
+    int LoadTermDictionary(const char* dict_file, int dict_id, SegmentOptions& opts);
+    int LoadPharseDictionary(const char* dict_file, int dict_id, SegmentOptions& opts);
+    //int AddTermDictionary(const mm::BaseDict* dict, int dict_id, SegmentOptions& opts);
+    //int AddPharseDictionary(const mm::BaseDict* dict, int dict_id, SegmentOptions& opts);
 
     /*
      *      reload new dictionary from disk, double memory usage while loading.
      */
     int ReloadDictionary(int dict_id);  //used only dict_id -> dict load from file
-    int ReplaceDictionary(const mm::BaseDict* dict, int dict_id); // both working.
+    //int ReplaceDictionary(const mm::BaseDict* dict, int dict_id); // both working.
 
     int Tokenize(SegmentStatus* stat, const char *utf8_string, u4 utf8_string_len, SegmentOptions& opts);
 };
