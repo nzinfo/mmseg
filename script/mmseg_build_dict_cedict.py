@@ -59,8 +59,13 @@ if __name__ == "__main__":
         simp_key = simp_key.encode('utf-8').strip()
         trad_key = trad_key.encode('utf-8').strip()
         reading = reading.encode('utf-8').strip()
+        if simp_key == '燮' or trad_key=='燮':
+            print  simp_key, trad_key, reading
 
         keys[trad_key] = 1  #  FIXME: check dup in cext  ?
+        if trad_key not in keys:
+            continue
+            
         _mmseg.BaseDict_Insert(dt, trad_key, len(trad_key), i)
         #_mmseg.BaseDict_SetPropInteger(dt, i, "freq", i)
         _mmseg.BaseDict_SetProp(dt, i, "pinyin", reading, len(reading))

@@ -1404,6 +1404,16 @@ BaseDict::SetDictName(const char* dict_name)
     return 0;
 }
 
+const std::string&
+BaseDict::GetDictName() {
+    return _p->dict_name_;
+}
+
+u4
+BaseDict::GetDictRev() {
+    return _p->header.dict_rev;
+}
+
 int
 BaseDict::ExactMatch(const char* key, size_t key_len, DictMatchResult& match_rs)
 {
@@ -1593,6 +1603,19 @@ BaseDict::GetPropInteger(unsigned int term_id, const char* key, u8* v)
     if(rs == 0)
         *v = * ( (u8*)buf );
     return rs;
+}
+
+int
+BaseDict::GetOnDiskDictionaryRawData(u4& nSize, u1ptr* & keys, u4* & values)
+{
+
+    if(! _p->entry_data_)
+        return -1; // not a disk dict.
+
+    nSize = _p->header.item_count;
+    keys = _p->entry_keys_; // array of char *
+    values = _p->entry_values_;
+    return 0;
 }
 
 /*

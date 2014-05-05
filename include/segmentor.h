@@ -4,6 +4,9 @@
 #include "csr_typedefs.h"
 #include "basedict.h"
 
+#define MM_SEGMENTOR_MAX_TERM_DICTIONARY   24   // the left 2  reversed by sys
+#define MM_SEGMENTOR_MAX_PHARSE_DICTIONARY 6
+#define MM_SEGMENTOR_MAX_DICTIONARY (MM_SEGMENTOR_MAX_TERM_DICTIONARY + MM_SEGMENTOR_MAX_PHARSE_DICTIONARY)     // cant't larger than 32
 /*
  *  Segment Options , define switch-set during dictionary loading & segment.
  *
@@ -62,11 +65,13 @@ class Token
     int GetTokenOrigin();       // origin
 };
 
+class TermDartsIndex ;
+
 class Segmentor
 {
 public:
     Segmentor();
-    ~Segmentor();
+    virtual ~Segmentor();
 
 public:
     /*
@@ -76,12 +81,15 @@ public:
      *
      *  Can load multi-dictionary, but dict_id must be unique.
      */
-    int LoadDictionaries(const char* dict_path, SegmentOptions& opts);
+    int LoadDictionaries(const char* dict_path, SegmentOptions& opts);  // support this func only?
     int LoadCharmapDictionary(const char* dict_file, SegmentOptions& opts);                 //  加载字符转化词库
     int LoadTermDictionary(const char* dict_file, int dict_id, SegmentOptions& opts);
     int LoadPharseDictionary(const char* dict_file, int dict_id, SegmentOptions& opts);
     //int AddTermDictionary(const mm::BaseDict* dict, int dict_id, SegmentOptions& opts);
     //int AddPharseDictionary(const mm::BaseDict* dict, int dict_id, SegmentOptions& opts);
+    // optimization
+    int  BuildIndex();
+
 
     /*
      *      reload new dictionary from disk, double memory usage while loading.
@@ -90,6 +98,18 @@ public:
     //int ReplaceDictionary(const mm::BaseDict* dict, int dict_id); // both working.
 
     int Tokenize(SegmentStatus* stat, const char *utf8_string, u4 utf8_string_len, SegmentOptions& opts);
+
+protected:
+    int LoadDictionaries(const char* dict_path, mm::CharMapper* mapper, mm::BaseDict** terms, mm::BaseDict** pharses);
+    void Reset();   // clear all in memory loaded
+
+protected:
+    mm::CharMapper*     _char_mapper;
+    mm::BaseDict*       _term_dicts[MM_SEGMENTOR_MAX_TERM_DICTIONARY];
+    mm::PharseDict*     _pharse_dicts[MM_SEGMENTOR_MAX_PHARSE_DICTIONARY];
+
+private:
+   TermDartsIndex*      _term_index;
 };
 
 #endif // SEGMENTOR_H

@@ -225,6 +225,8 @@ public:
      */
     int InitString(const char* prop_define, int str_define_len);    // use string define property, for scripting interface.
     int SetDictName(const char* dict_name);
+    const std::string& GetDictName();
+    u4 GetDictRev();
 
     int Insert(const char* term, unsigned int term_length, unsigned int term_id); // add new term -> dict, pos = char[4]
 
@@ -257,6 +259,10 @@ public:
     u4  GetEntryPropertyU4(u4 value, const char* key);
     u8  GetEntryPropertyU8(u4 value, const char* key);
     */
+
+    // internal use
+    int GetOnDiskDictionaryRawData(u4& nSize, u1ptr* & keys, u4* & values);   //读取从磁盘中加载的词库的原始数据.
+
 protected:
     static char _head_mgc[5];
     virtual const char* get_file_head_mgc() {
