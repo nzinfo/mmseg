@@ -33,7 +33,7 @@ Coreseek MMSeg Tokenizer
 
 其中 增量 | 用户自定义 | 上下文新词 被系统保留
 
-系统使用 CRF 进行未登录词识别; 可能同时使用多个 CRF 模型
+系统使用 CRF 进行未登录词识别; 可能同时使用多个 CRF 模型; CRF 模型, 依赖基本的MMSEG预处理分词法
 
 Build On Mac with brew
 ===============================

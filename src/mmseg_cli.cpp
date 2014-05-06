@@ -10,21 +10,14 @@
 #include <map>
 #include  <stdlib.h>
 #include <stdio.h>
-
 #include <gflags/gflags.h>
-
-/*
-#ifdef WIN32
-#include "bsd_getopt_win.h"
-#else
-#include "bsd_getopt.h"
-#endif
-*/
 
 #define MMSEG_DEBUG 1
 
+#include "csr_typedefs.h"
+
 // mmseg includes
-#include "segmentor.h"
+//#include "segmentor.h"
 
 /*
 void usage(const char* argv_0) {
@@ -39,7 +32,7 @@ void usage(const char* argv_0) {
 
 DEFINE_string(dict_path, ".", "where to load dictionary");
 
-int segment(const char* file, Segmentor& seg, u1 b_quit);
+//int segment(const char* file, Segmentor& seg, u1 b_quit);
 
 int main(int argc, char **argv) {
 
@@ -49,7 +42,7 @@ int main(int argc, char **argv) {
     u1 bQuite = 0;
     int rs = 0;
 
-    Segmentor seg;
+    //Segmentor seg;
     ::google::SetUsageMessage("segment Chinese text.\n mmseg -dict_path <the_path> <file_to_process>\n");
     ::google::ParseCommandLineFlags(&argc, &argv, true);
 
@@ -95,6 +88,7 @@ int main(int argc, char **argv) {
     printf("dict=%s; file=%s\n", resolved_dict_path, out_file);
 #endif
 
+    /*
     // load basic diction only -> for system booting up.
     {
         SegmentOptions opts;
@@ -102,11 +96,12 @@ int main(int argc, char **argv) {
         //rs = seg.LoadTermDictionary(resolved_dict_path, 0, opts);
     }
     rs = segment(out_file, seg, bQuite);
+    */
 
     return 0;
 }
 
-
+#if 0
 int segment(const char* utf8_file, Segmentor& seg, u1 b_quit) {
     /*
      *  1 load all text from disk, file must encode in utf8
@@ -150,5 +145,6 @@ int segment(const char* utf8_file, Segmentor& seg, u1 b_quit) {
     }
     return 0;
 }
+#endif
 
 /* end of file */
