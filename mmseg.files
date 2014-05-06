@@ -52,3 +52,5 @@ src/mmseg_cli.cpp
 src/tst_lua.cpp
 include/bak.seg_result.h
 src/seg_result.c
+include/mm_charmap.h
+src/mm_charmap.cc

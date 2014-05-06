@@ -1,4 +1,4 @@
-#include "basedict.h"
+//#include "basedict.h"
 #include <stdio.h>
 
 int main() {

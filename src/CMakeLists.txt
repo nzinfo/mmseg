@@ -21,6 +21,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 
 SET(LIBMMSEG_SOURCE
+    mm_charmap.cc
     #basedict.cpp
     #segmentor.cpp
     #seg_result.c
