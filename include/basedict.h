@@ -223,8 +223,8 @@ public:
      *  property_name:type;
      *  Default: id:u4; comunicate with external system?
      */
-    int InitString(const char* prop_define, int str_define_len);    // use string define property, for scripting interface.
-    int SetDictName(const char* dict_name);
+    int InitString(const char* dict_name, const char* prop_define, int str_define_len);    // use string define property, for scripting interface.
+
     const std::string& GetDictName();
     u4 GetDictRev();
 

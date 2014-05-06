@@ -1385,7 +1385,7 @@ BaseDict::Init(const LemmaPropertyDefine* props, int prop_count)
 }
 
 int
-BaseDict::InitString(const char* prop_define, int str_define_len)
+BaseDict::InitString(const char *dict_name, const char* prop_define, int str_define_len)
 {
     /*
      * assume prop_define in right format.
@@ -1394,14 +1394,8 @@ BaseDict::InitString(const char* prop_define, int str_define_len)
      * 2 else
      *      - if no id in prop_define, append it.
      */
-    return _schema.InitString(prop_define, str_define_len);
-}
-
-int
-BaseDict::SetDictName(const char* dict_name)
-{
     _p->dict_name_.assign(dict_name);
-    return 0;
+    return _schema.InitString(prop_define, str_define_len);
 }
 
 const std::string&

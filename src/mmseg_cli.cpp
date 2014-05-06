@@ -11,17 +11,22 @@
 #include  <stdlib.h>
 #include <stdio.h>
 
+#include <gflags/gflags.h>
+
+/*
 #ifdef WIN32
 #include "bsd_getopt_win.h"
 #else
 #include "bsd_getopt.h"
 #endif
+*/
 
 #define MMSEG_DEBUG 1
 
 // mmseg includes
 #include "segmentor.h"
 
+/*
 void usage(const char* argv_0) {
     printf("Coreseek COS(tm) MMSeg 2.0\n");
     printf("Copyright By Coreseek.com All Right Reserved.\n");
@@ -30,20 +35,31 @@ void usage(const char* argv_0) {
     printf("-h            print this help and exit\n");
     return;
 }
+*/
+
+DEFINE_string(dict_path, ".", "where to load dictionary");
 
 int segment(const char* file, Segmentor& seg, u1 b_quit);
 
 int main(int argc, char **argv) {
 
     char resolved_dict_path[255];
-    int c;
     const char* dict_path = NULL;
     const char* out_file = NULL;
     u1 bQuite = 0;
     int rs = 0;
 
     Segmentor seg;
+    ::google::SetUsageMessage("segment Chinese text.\n mmseg -dict_path <the_path> <file_to_process>\n");
+    ::google::ParseCommandLineFlags(&argc, &argv, true);
 
+    if(argc < 2) {
+        ::google::ShowUsageWithFlags(argv[0]);
+        return -1;
+    }
+    //printf("%d, %s\n",argc,argv[1]);
+    //return 0;
+    /*
     if(argc < 2){
         usage(argv[0]);
         exit(0);
@@ -69,7 +85,10 @@ int main(int argc, char **argv) {
     if(optind < argc) {
         out_file = argv[optind];
     }
+    */
+    out_file = argv[1]; // file to be process
 
+    dict_path = FLAGS_dict_path.c_str();
     realpath(dict_path, resolved_dict_path);
 
 #if MMSEG_DEBUG

@@ -11,6 +11,7 @@
  *  Segment Options , define switch-set during dictionary loading & segment.
  *
  *      - 在此处不使用 西文的词干提取; 在 处理 切分结果的时候进行 ?
+ *
  */
 class SegmentOptions {
 public:

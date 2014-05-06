@@ -236,7 +236,7 @@ public:
                 //printf("push .. key=%s, value=%d, dict=%d\n", item._key, item._value, item._dict_id);
                 que.push(item);
             }
-
+            u4 total_value_offset = 0;
             for(int i=0; i< iTotalSize && !que.empty(); i++){
                 // on each term.
                 TermDartsIndexDictItem item  = que.top();
@@ -248,16 +248,18 @@ public:
                 if(strcmp((char*)item._key, (char*)darts_keys_ptr[0]) == 0) {
                     // existed term
                     entries.back().AddDict(item._dict_id, item._value);
+                    *darts_values_ptr = total_value_offset + entries.back().GetSize(); //update if this is last term.
                 }else{
                     //printf("pop key=%s, value=%d, dict=%d, que size = %d\n", item._key, item._value, item._dict_id, que.size());
                     TermDartsIndexValueEntry entry;
                     // new term
-                    *darts_values_ptr = entries.back().GetSize();
+                    *darts_values_ptr = total_value_offset + entries.back().GetSize();
                     // move to next entry
                     darts_keys_ptr ++;
                     darts_values_ptr ++;
                     *darts_keys_ptr = item._key;
-                    *darts_values_ptr = 0;
+                    *darts_values_ptr = total_value_offset;
+                    total_value_offset +=  entries.back().GetSize();
 
                     entries.push_back(entry);
                     entries.back().AddDict(item._dict_id, item._value);

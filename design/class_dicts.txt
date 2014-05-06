@@ -1,0 +1,171 @@
+定义系统的词库接口
+-------------------------
+
+[类]
+  - CharMapper
+  - BaseDictSchema
+  - BaseDict
+  - DictMatchResult
+  - UpdatableDict
+  	可以更新的词典，
+  - UserDict
+  	用户相关的词条， 在 Sass 模式下，为具体某个应用程序使用的专门的词典；绑定到用户编号上
+  	CRF 等模块发现的新词，也使用本格式
+  - PharseDict
+  - EntryProperty
+  - DictionaryMgr
+
+[CharMapper]
+  定义字符的类型， 小写形式。 字符类型特指 Unicode 的 Script Type； 
+  - Load
+  - Save
+
+  - Mapping
+  - MappingRange
+  - MappingPass
+  - MappingRangePass
+
+  - Tag
+  - TagRange
+
+  - Transform
+  - TransformScript
+  	便于被脚本调用的 转换函数 
+
+[BaseDictSchema]
+  管理词库的属性字段类型
+  term_id: 用于跟踪词条的属性，可以在外部数据库中再额外存储信息， 系统不强制要求 term_id 唯一
+
+  - InitString(prop_define:string):int
+  	使用字符串初始化 词库的 Schema
+  
+  - ResetColumn
+  	清空全部 Column
+
+  - GetSchemaDefine
+  	得到字符串形式的 Schema 定义
+
+  - AddColumn
+  	增加新的 Column
+
+  - GetColumn()
+  	根据名称，得到 Column 的序号 | 类型：[2 4 8 s]
+
+  - GetColumnType
+  	脚本使用，得到 Column 类型
+  - GetColumnIndex
+  	脚本使用，得到 Column 序号， Column 的序号是使用 ColumnName 的字母顺序排列的
+
+  - SetDefault(props:EntryProperty)
+  	定义属性的缺省值，这样可以对属性进行一定程度的压缩
+
+[BaseDict]
+  基础词条的词典
+  - Init(dict_name:string, schema_define:string)
+  - Save(filename, rev)
+  - Load(filename, opt)	opt = 'c' ， 都不在加载时构建索引，改为统一由 segmentor 构造
+  - Reset()
+  	清除全部词条
+
+  - Insert(term:string, termid:u4, props:EntryProperty)
+  	增加新词条, 当词条的属性发生变化时， 如果 props.GetSize() 发生变化， 这需要从 values 中分配新的数据区
+
+  - ExactMatch(key:string, rs)
+  - PrefixMatch(key:string, rs)
+
+  - GetProperty(key:string)  #得到词条的属性信息， 可以更新
+
+  - NewStringPoolString(key:string)
+
+  # 调试接口
+  - SaveRaw
+  	保存原始的 darts 索引
+
+  - LoadRaw
+  	加载原始的 darts 索引
+
+  %成员变量%
+  - property_string_pool
+  	定义在属性中被使用的字符串
+  	std::map<string, offset> 索引， 定义 字符串 与偏移量的关系
+  	string_pool 			 字符串信息的缓冲
+  	集中存储可以使用压缩算法进行压缩
+
+  - property_pool EntryProperty 的缓冲
+
+[PharseDict]
+  从BaseDict下继承，额外增加切分与标注结果
+
+[EntryProperty]
+  定义词条对应的属性, 编码为二进制 & 从二进制中读取， 依赖 BaseDictSchema
+  - EntryProperty（Schema， base_offset)
+  - inline GetSchemaMask():u2
+  	根据已经存在的属性值，得到
+  - GetColumnIndex(column_name:string)
+  	根据属性名称，得到
+  - GetSize()
+  - GetOffset()
+
+  - Bind（）
+  	绑定 Entry 到某个词典上
+  - Dump(buf:u1ptr, max_size:u4)
+  	写入 EntryProperty　的数据缓冲池
+  - Load(buf:u1ptr, data_length:u4)
+  	从　EntryProperty 的数据缓冲池中，读取
+
+  # GetValue
+  - GetValueU2(column_idx:u2)
+  - GetValueU4(column_idx:u2)
+  - GetValueU8(column_idx:u2)
+  - GetValueStr(column_idx:u2)
+
+  # SetValue
+  - SetValueU2(column_idx:u2, v:u2)
+  - SetValueU4(column_idx:u2, v:u4)
+  - SetValueU8(column_idx:u2, v:u8)
+  - SetValueStr(column_idx:u2, v:string)
+
+  %成员变量%
+  - mask
+  - values[sizeof(u8)*15], 15 max of column count.
+
+[DictMatchResult]
+  处理检索的结果
+
+[UpdatableDict]
+  可以更新的词库接口，可以更新多个词典的信息， 作为内部类包括在 DictionaryMgr 中
+
+[DictionaryMgr]
+  词库管理的接口， 从磁盘中加载词典；更新词条；将更新的词条合并到磁盘上
+  - LoadDicionaries
+  	从目录中加载词典
+  
+  - GetDictionary(dict_name:string)
+  
+  - BuildIndex
+  	构造|重新构造词典的唯一索引； 实际分词，查询 全局索引|UpdatableDict的索引|用户自定义词典的索引
+  
+  - LoadIndexCache
+  	可能因为词库改变失效
+
+  - SaveIndexCache
+  	可能因为文件系统只读失败
+  
+  - ReloadDictionary
+  	从磁盘重新加载
+
+  - Reset
+  	清空已经加载的词典信息
+  
+  - AddEntry(dict_name:string, term:string, term_id:u4, props:EntryProperty)
+  	增加新的词条, 此处为全局的增加；
+  
+  - Merge
+  	将更新的词条合并到磁盘文件中
+  	* 需要注意备份原始的词库文件， origin_name.timestamp.bak
+  	* 当确定更新成功时，可以删除（由选项控制）；备份不可关闭
+
+
+/* -- end of file -- */
+
+

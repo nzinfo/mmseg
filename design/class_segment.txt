@@ -1,0 +1,85 @@
+定义系统的分词接口
+-------------------------
+分词法
+
+https://github.com/benoitc/uzmq  使用本模块，同时使用 libuv & zmq
+
+[类]
+
+  - Segmentor
+  
+  - SegmentOptions
+  	切分过程中使用的选项
+  	* 用户自定义词典也从此处传入
+
+  - SegmentWindow
+  	脚本使用的分词上下文接口，被 Segmentor 作为私有成员使用； 同时持有 Segmentor & SegmentStatus 的引用
+  
+  - SegmentStatus
+  	保存当前切分的状态，切分结果， 标引信息
+  	用于脚本访问前后的上下文 (字符|短语)，
+  
+  - SegResult
+  	类似 Writer， 保存分词结果，对分词结果进行格式转化
+  
+  - SegScript
+  	与 LUA 脚本的接口；从磁盘文件中加载，注册回调
+  	* 当词库与 LUA 脚本不匹配， LUA 脚本应该能得到通知
+
+[Segmentor]
+  - Segmentor(dict_mgr:DictionaryMgr)
+  - Tokenizer(stat:SegmentStatus, text:string, )
+
+  %成员%
+  DictionaryMgr
+  
+
+[SegmentWindow]
+  供脚本使用的分词法接口
+  - GetCharAndCharType(idx:i2);
+    以当前字符为0 ， 前后窗口的字符
+
+  - ExistCharIn（iCodeChar:u4[], i2 begin, i2 end);
+  	在指定范围内，是否存在字符(s)
+  	返回第一个符合条件的 pos（相对 begin），没找到  -1
+  
+  - GetToken(idx:i2)
+  	以当前为词条为0， 前后窗口的词条 （Term, TermID, property）
+  
+  - FindToken(i2 begin, i2 end, prop_name:string, value)
+  	查询属性值 prop_name == value 的
+  
+  - FindTokenDict(i2 begin, i2 end, dict_id:u2, i2* rs, rs_len)
+  	在指定范围内，查询 dict_id 中出现的词
+  
+  - FindTokenDict(i2 begin, i2 end, dict_name:string, i2* rs, rs_len)
+  	使用词典名字的等价方法
+
+[SegmentStatus]
+  当前的分词结果
+
+[SegmentOptions]
+  - GetOptionInt(key:string)
+  - GetOptionBool(key:string)
+  - GetUserDictionary()
+  - GetScript():SegScript
+  	适用于当前分词进程的脚本
+  - Annotes()
+  	当前接收的 Annote， Annote 不同于 词库的属性；
+  	存在几个固定的 Annote Key; 余下的可以自行定义
+
+[SegScript]
+  % 从脚本到 C %
+  - AddAnnote()
+
+  - SetSegTag() 
+  	设置字的分词法标签
+
+  % 回叫接口 %
+  - CallbackOnChar(c:char, func)
+  - CallbackOnTerm(term:string, func) // 暂时不支持词语触发对， 逻辑结构太复杂
+  - CallbackOnDict(dict_name:string, func) // 
+  - CallbackOnProp(prop_name:string, val:, func) // 当词条的某个属性值为 val 时
+
+
+

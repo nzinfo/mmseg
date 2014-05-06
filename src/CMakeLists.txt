@@ -32,11 +32,12 @@ SET(LIBMMSEG_SOURCE
 ADD_LIBRARY(mmseg_c STATIC ${LIBMMSEG_SOURCE} )
 
 ADD_EXECUTABLE(mmseg mmseg_cli.cpp )
-target_link_libraries(mmseg mmseg_c glog pthread)
+target_link_libraries(mmseg mmseg_c glog pthread gflags)
 
+include_directories(${PROJECT_SOURCE_DIR}/third_party/)
 include_directories(${PROJECT_SOURCE_DIR}/third_party/glog/src)
 ADD_EXECUTABLE(tst_cmake tst_cmake.cpp )
-target_link_libraries(tst_cmake glog pthread)
+target_link_libraries(tst_cmake glog pthread gflags)
 #target_link_libraries(tst_tut )
 ADD_EXECUTABLE(tst_dict tst_dict.cpp )
 
