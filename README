@@ -39,6 +39,9 @@ Build On Mac with brew
 ===============================
 cmake .. -DPYTHON_LIBRARY=/usr/local/Cellar/python/2.7.6/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib
 
+Build on Win32
+===============================
+cmake .. -DPYTHON_LIBRARY=\Python27\libs\python27.lib -DPYTHON_INCLUDE_DIR=\Python27\include -G "NMake Makefiles"
 
 Design
 ================================

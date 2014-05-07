@@ -46,6 +46,9 @@
 #define UNICODE_BITS            21            // Unicode's bits count.
 #define UNICODE_PAGE_SIZE       0xFFFF        // 65536
 
+#define SafeDelete(_arg)		{ if ( _arg ) delete ( _arg );		(_arg) = NULL; }
+#define SafeDeleteArray(_arg)	{ if ( _arg ) delete [] ( _arg );	(_arg) = NULL; }
+
 namespace mm {
 
 class CharMapper
@@ -98,6 +101,7 @@ private:
 public:
     // function status code
     const static int STATUS_OK = 200;
+    const static int STATUS_FILE_NOT_FOUND = -404;
 };
 
 } // namespace mm
