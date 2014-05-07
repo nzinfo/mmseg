@@ -1,8 +1,8 @@
-include_directories(${PROJECT_SOURCE_DIR}/third_party)
+#include_directories(${PROJECT_SOURCE_DIR}/third_party)
 
-ADD_SUBDIRECTORY(glog)
-ADD_SUBDIRECTORY(gtest-1.7.0)
-ADD_SUBDIRECTORY(gflags)
+#ADD_SUBDIRECTORY(glog)
+#ADD_SUBDIRECTORY(gtest-1.7.0)
+#ADD_SUBDIRECTORY(gflags)
 
 ADD_SUBDIRECTORY(luajit)
 
