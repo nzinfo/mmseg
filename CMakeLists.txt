@@ -23,6 +23,9 @@ endif("${CMAKE_BUILD_TYPE}" STREQUAL "")
 set(CMAKE_COLOR_MAKEFILE ON)
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
+IF (WIN32)
+  add_definitions( -D_CRT_SECURE_NO_WARNINGS )  
+ENDIF (WIN32)
 
 add_subdirectory (third_party)
 
