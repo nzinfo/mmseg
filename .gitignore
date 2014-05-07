@@ -7,9 +7,16 @@
 *.user
 *.autosave
 
+# Mac & IDE
 .DS_Store
 .idea/
 *.egg-info/
+
+# Win32
+*.log
+*.ncb
+*.suo
+Debug/
 
 ext/*.cpp
 

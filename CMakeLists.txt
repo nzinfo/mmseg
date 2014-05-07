@@ -65,6 +65,11 @@ IF(USE_CLANG)
    ENDIF()
 ENDIF(USE_CLANG)
 
+# Windows Block
+#IF (WIN32)
+#  add_definitions( "/W3 /D_CRT_SECURE_NO_WARNINGS /wd4548 /wd4005 /wd4996 /nologo" )  
+#ENDIF (WIN32)
+
 # Add log library
 include_directories(${PROJECT_SOURCE_DIR})
 

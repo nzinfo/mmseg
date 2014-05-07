@@ -34,6 +34,9 @@ endfunction()
 
 #------------------------------------------------------------------------------
 if ( PYTHON_BINDINGS )
+  find_package ( PythonInterp )
+  find_package ( PythonLibs 2.7 REQUIRED)
+
   # workaround for cmake bug #0013449
   if ( NOT DEFINED CMAKE_FIND_ROOT_PATH )
     find_package ( SWIG )
@@ -45,8 +48,6 @@ if ( PYTHON_BINDINGS )
     endif ()
   endif ()
   #
-  find_package ( PythonInterp )
-  find_package ( PythonLibs )
 endif ()
 
 if ( SWIG_FOUND AND PYTHONINTERP_FOUND )
