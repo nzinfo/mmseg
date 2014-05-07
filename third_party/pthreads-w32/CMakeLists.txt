@@ -5,6 +5,11 @@ INCLUDE_DIRECTORIES(include)
 # TODO(keir): This doesn't work for some reason.
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4996")
 
+# build dll mode
+IF (WIN32)
+add_definitions( -DPTW32_BUILD )  
+ENDIF (WIN32)
+
 # This will build pthread.dll, which you probably want to put in
 # $ENV{SystemRoot}\system. Unfortunately, statically linking doesn't work well
 # because then you have to manually initialize the pthreads library (which
