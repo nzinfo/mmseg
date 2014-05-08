@@ -57,6 +57,9 @@ IF (WIN32)
   add_definitions( -D_CRT_SECURE_NO_WARNINGS )  
 ENDIF (WIN32)
 
+set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
+set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
+
 add_subdirectory (third_party)
 
 # Setup GTest
@@ -74,8 +77,8 @@ if(${CMAKE_BUILD_TYPE} STREQUAL Debug)
 endif(${CMAKE_BUILD_TYPE} STREQUAL Debug)
 
 #include the subdirectory containing our libs
-#add_subdirectory (src)
-#include_directories(src)
+add_subdirectory (src)
+
 
 #build language binding
 #add_subdirectory (binding)

@@ -10,10 +10,13 @@ ffi.cdef[[
         char val[255];
     }token_ctx;
     //typedef int (*charlevel_callback_proto)(const char*, int);
+
     typedef int (__stdcall *charlevel_callback_proto)(token_ctx* ctx, const char*, int n);
     int must_call_callback(charlevel_callback_proto func, const char* msg);
-	int barfunc(int foo);
+	  
+    int barfunc(int foo);
 ]]
+
 local barreturn = ffi.C.barfunc(253)
 io.write(barreturn)
 io.write('\n')

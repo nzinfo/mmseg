@@ -1,7 +1,6 @@
-python
+third_party/
 include
+include/win32
 src
 src/css
-src/iniparser
 src/utils
-third_party/glog/src

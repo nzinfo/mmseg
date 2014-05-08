@@ -8,9 +8,16 @@
 #include <cstdio>
 #include <algorithm>
 #include <map>
-#include  <stdlib.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <gflags/gflags.h>
+
+extern "C" {
+#if WIN32
+#include "win32/dirent.h"
+#include "win32/realpath_win32.h"
+#endif
+} // end extern C
 
 #define MMSEG_DEBUG 1
 

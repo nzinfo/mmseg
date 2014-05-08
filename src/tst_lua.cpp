@@ -1,8 +1,11 @@
 #if defined(WIN32)
-#define STDCALL __stdcall
+    #define STDCALL __stdcall
+    #define LUAAPI   __declspec( dllexport )
 #elif defined (__GNUG__)     /*  gcc  IIRC */
-#define STDCALL
+    #define STDCALL
+    #define LUAAPI
 #endif
+
 
 extern "C" {
 #include <lua.h>
@@ -13,7 +16,7 @@ extern "C" {
 #include <stdio.h>
 
     // expose c's API
-    int barfunc(int foo)
+    LUAAPI int barfunc(int foo)
     {
         /* a dummy function to test with FFI */
         return foo + 1;
@@ -28,7 +31,7 @@ extern "C" {
     // must replace with __stdcall in ffi define. compat for windows
     typedef int (STDCALL *charlevel_callback_proto)(token_ctx*, const char*, int);
     //typedef int (*charlevel_callback_proto)(const char*, int);
-    int must_call_callback(charlevel_callback_proto func, const char* msg){
+    LUAAPI int must_call_callback(charlevel_callback_proto func, const char* msg){
         if(func) {
             return (func)(NULL, msg, 100);
         }

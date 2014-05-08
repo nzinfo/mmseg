@@ -1,6 +1,24 @@
 # ==== unittest TFoo ====
 #set(GTEST_ROOT ${PROJECT_SOURCE_DIR}/gmock-1.6.0/gtest)
 
+#FIXME: How to reuse this block?
+IF (WIN32)
+  INCLUDE_DIRECTORIES( BEFORE
+    ${PROJECT_SOURCE_DIR}/third_party/glog/src/windows
+     ${PROJECT_SOURCE_DIR}/third_party/msinttypes
+  )
+ELSE (WIN32)
+  #INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/third_party/glog/src/posix)
+  IF(APPLE)
+    INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/third_party/glog/src/mac)
+  ENDIF(APPLE)
+  
+  IF(UNIX AND NOT APPLE)
+    INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/third_party/glog/src/unix)
+  ENDIF(UNIX AND NOT APPLE)
+
+ENDIF (WIN32)
+
 # FIX LUAJIT @MAC
 IF(APPLE)
     SET(CMAKE_EXE_LINKER_FLAGS "-pagezero_size 10000 -image_base 100000000 ${CMAKE_EXE_LINKER_FLAGS}")
@@ -17,8 +35,12 @@ IF(WIN32) # Check if we are on Windows
   endif()
 ENDIF()
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+IF (WIN32)
+ELSE (WIN32)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
+ENDIF (WIN32)
+
 
 SET(LIBMMSEG_SOURCE
     mm_charmap.cc
