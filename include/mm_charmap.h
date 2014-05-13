@@ -100,8 +100,8 @@ private:
 
 public:
     // function status code
-    const static int STATUS_OK = 200;
-    const static int STATUS_FILE_NOT_FOUND = -404;
+    static int STATUS_OK;
+    static int STATUS_FILE_NOT_FOUND;
 };
 
 } // namespace mm

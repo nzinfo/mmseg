@@ -33,6 +33,10 @@
 
 namespace mm {
 
+// define the error code.
+int CharMapper::STATUS_OK = 200;
+int CharMapper::STATUS_FILE_NOT_FOUND = -404;
+
 ////////////////////////////////////////////////////////////////////////////////
 /// CharMapper: Map Unicode Char -> Unicode Char in search form.
 ///

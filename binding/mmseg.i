@@ -31,6 +31,8 @@
 /* Create some functions for working with "int *" */
 %pointer_functions(u2, ushortp);
 
+%ignore mm::CharMapper::STATUS_OK; 
+%ignore mm::CharMapper::STATUS_FILE_NOT_FOUND; 
 /*
 // Global Tweaks to basedict
 %ignore mm::LemmaPropertyEntry; 
@@ -47,7 +49,7 @@
 // This section is copied verbatim into the generated source code.
 // Any include files, definitions, etc. need to go here.
 %{
-//#include <basedict.h>
+#include <mm_charmap.h>
 %}
 
 // Language Specific Sections
@@ -70,4 +72,4 @@ namespace std
 %include stl.i
  
 /* Wrapper并生成代码 */
-//%include "basedict.h"
+%include "mm_charmap.h"

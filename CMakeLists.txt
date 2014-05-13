@@ -81,7 +81,7 @@ add_subdirectory (src)
 
 
 #build language binding
-#add_subdirectory (binding)
+add_subdirectory (binding)
 
 
 
