@@ -3,15 +3,15 @@
 
 [类]
   - CharMapper
-  - BaseDictSchema
+  - DictSchema
   - BaseDict
   - DictMatchResult
-  - UpdatableDict
+  - DictUpdatable
   	可以更新的词典，
-  - UserDict
+  - DictUser
   	用户相关的词条， 在 Sass 模式下，为具体某个应用程序使用的专门的词典；绑定到用户编号上
   	CRF 等模块发现的新词，也使用本格式
-  - PharseDict
+  - DictPharse
   - EntryProperty
   - DictionaryMgr
 
@@ -32,7 +32,7 @@
   - TransformScript
   	便于被脚本调用的 转换函数 
 
-[BaseDictSchema]
+[DictSchema]
   管理词库的属性字段类型
   term_id: 用于跟踪词条的属性，可以在外部数据库中再额外存储信息， 系统不强制要求 term_id 唯一
 

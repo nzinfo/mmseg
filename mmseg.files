@@ -1,3 +1,5 @@
+design/class_dicts.txt
+design/class_segment.txt
 include/win32/dirent.h
 include/bak.basedict.h
 include/bak.seg_result.h

@@ -6,7 +6,7 @@
 *.pyc
 *.user
 *.autosave
-
+*.~*
 # Mac & IDE
 .DS_Store
 .idea/
