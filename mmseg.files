@@ -7,6 +7,7 @@ include/bak.segmentor.h
 include/csr_typedefs.h
 include/darts.h
 include/mm_charmap.h
+include/stringpool_memory.h
 src/css/ICorpusReader.h
 src/css/mmthunk.cpp
 src/css/mmthunk.h
@@ -43,6 +44,7 @@ src/utils/utf8_to_16.h
 src/basedict.cpp
 src/config.win.h
 src/mm_charmap.cc
+src/stringpool_memory.cc
 src/mmseg_cli.cpp
 src/mmseg_main.cpp
 src/seg_result.c
@@ -53,3 +55,4 @@ src/tst_lua.cpp
 tests/tst_gtest.cpp
 README
 include/win32/realpath_win32.h
+src/CMakeLists.txt

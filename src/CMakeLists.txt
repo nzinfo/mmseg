@@ -44,9 +44,7 @@ ENDIF (WIN32)
 
 SET(LIBMMSEG_SOURCE
     mm_charmap.cc
-    #basedict.cpp
-    #segmentor.cpp
-    #seg_result.c
+    stringpool_memory.cc
     utils/utf8_to_16.cpp
     utils/csr_utils.c
     utils/csr_mmap.c
@@ -59,10 +57,12 @@ target_link_libraries(mmseg mmseg_c glog pthread gflags)
 
 include_directories(${PROJECT_SOURCE_DIR}/third_party/)
 include_directories(${PROJECT_SOURCE_DIR}/third_party/glog/src)
+include_directories(${PROJECT_SOURCE_DIR}/third_party/gtest-1.7.0/include)
 ADD_EXECUTABLE(tst_cmake tst_cmake.cpp )
 target_link_libraries(tst_cmake glog pthread gflags)
 #target_link_libraries(tst_tut )
 ADD_EXECUTABLE(tst_dict tst_dict.cpp )
+target_link_libraries(tst_dict mmseg_c glog pthread gflags gtest)
 
 include_directories(${PROJECT_SOURCE_DIR}/third_party/luajit/src)
 # FIXME: should be build_dir

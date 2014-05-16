@@ -1,9 +1,20 @@
-//#include "basedict.h"
 #include <stdio.h>
+#include <gtest/gtest.h>
 
-int main() {
-    printf("hello world.\n");
-    return 0;
+#include "stringpool_memory.h"
+
+int main(int argc, char** argv) {
+    testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
+}
+
+TEST(StringPoolTest, AllocStringTest)
+{
+    mm::StringPoolMemory sp;
+    i4 offset =  sp.AllocString("hello", 5);
+    EXPECT_EQ(offset, 0);
+    offset =  sp.AllocString(" world", 6);
+    EXPECT_EQ(offset, 5+2);
 }
 
 /* -- end of file --  */

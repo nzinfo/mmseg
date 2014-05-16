@@ -33,6 +33,11 @@
 
 %ignore mm::CharMapper::STATUS_OK; 
 %ignore mm::CharMapper::STATUS_FILE_NOT_FOUND; 
+%ignore MAX_UNICODE_CODEPOINT;
+%ignore UNICODE_MASK;
+%ignore UNICODE_BITS;
+%ignore UNICODE_PAGE_SIZE;
+
 /*
 // Global Tweaks to basedict
 %ignore mm::LemmaPropertyEntry; 
