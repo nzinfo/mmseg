@@ -43,7 +43,7 @@ DEFINE_string(dict_path, ".", "where to load dictionary");
 
 int main(int argc, char **argv) {
 
-    char resolved_dict_path[255];
+    char resolved_dict_buf[255];
     const char* dict_path = NULL;
     const char* out_file = NULL;
     u1 bQuite = 0;
@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
     out_file = argv[1]; // file to be process
 
     dict_path = FLAGS_dict_path.c_str();
-    realpath(dict_path, resolved_dict_path);
+    const char* resolved_dict_path = realpath(dict_path, resolved_dict_buf);
 
 #if MMSEG_DEBUG
     printf("dict=%s; file=%s\n", resolved_dict_path, out_file);

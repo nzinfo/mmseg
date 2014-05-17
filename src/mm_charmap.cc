@@ -171,43 +171,6 @@ CharMapper::Save(const char* filename)
     return 0;
 }
 
-inline u4*
-CharMapper::GetPage(u4 icode, u4* page_base)
-{
-    /*
-     *
-平面	始末字符值	中文名称	英文名称
-0号平面	U+0000 - U+FFFF	基本多文种平面	Basic Multilingual Plane,简称BMP
-1号平面	U+10000 - U+1FFFF	多文种补充平面	Supplementary Multilingual Plane,简称SMP
-2号平面	U+20000 - U+2FFFF	表意文字补充平面	Supplementary Ideographic Plane,简称SIP
-3号平面	U+30000 - U+3FFFF	表意文字第三平面（未正式使用[1]）	Tertiary Ideographic Plane,简称TIP
-4号平面
-至
-13号平面	U+40000 - U+DFFFF	（尚未使用）
-14号平面	U+E0000 - U+EFFFF	特别用途补充平面	Supplementary Special-purpose Plane,简称SSP
-15号平面	U+F0000 - U+FFFFF	保留作为私人使用区（A区）[2]	Private Use Area-A,简称PUA-A
-16号平面	U+100000 - U+10FFFF	保留作为私人使用区（B区）[2]	Private Use Area-B,简称PUA-B
-    Ref: http://zh.wikipedia.org/wiki/Unicode%E5%AD%97%E7%AC%A6%E5%B9%B3%E9%9D%A2%E6%98%A0%E5%B0%84
-     */
-    if( (icode <= 0xFFFF) ) {
-        *page_base = 0;
-        return this->_char_mapping_base;
-    }
-    if( (0x10000 <= icode) && (icode <= 0x1FFFF) ) {
-        *page_base = 0x10000;
-        return this->_char_mapping_page1;
-    }
-    if( (0x20000 <= icode) && (icode <= 0x2FFFF) ) {
-        *page_base = 0x20000;
-        return this->_char_mapping_page2;
-    }
-    if( (0xE0000 <= icode) && (icode <= 0xEFFFF) ) {
-        *page_base = 0xE0000;
-        return this->_char_mapping_page14;
-    }
-    return NULL;
-}
-
 // mapping opt, not support A..Z/2 , should be done @ script side.
 int
 CharMapper::Mapping(unsigned int src, unsigned int dest, unsigned short tag)
@@ -357,29 +320,6 @@ u4
 CharMapper::TransformScript(u4 src, u2* out_tag)
 {
     return Transform(src, out_tag);
-}
-
-u4
-CharMapper::Transform(u4 src, u2* out_tag)
-{
-    CHECK_LT(src, MAX_UNICODE_CODEPOINT) << "src out of range(Unicode)!";
-
-    u4 base = 0;
-    u4* _char_mapping = GetPage(src, &base);
-    if(!_char_mapping) // should ignore
-        return 0;
-    src -= base;
-
-    if(_char_mapping[src]) {
-        if(out_tag)
-            *out_tag = _char_mapping[src] >> UNICODE_BITS;
-        return _char_mapping[src] & UNICODE_MASK;
-    }
-    // dictionary based lookup return 0.
-    if(_bDefaultPass)
-        return src;
-    else
-        return 0;
 }
 
 } // namespace mm

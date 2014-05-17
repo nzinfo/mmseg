@@ -1,4 +1,6 @@
 third_party/
+third_party/gtest-1.7.0/include
+third_party/glog/src/unix
 include
 include/win32
 src
