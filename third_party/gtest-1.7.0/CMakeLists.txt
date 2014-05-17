@@ -63,6 +63,9 @@ link_directories(${gtest_BINARY_DIR}/src)
 #
 # Defines the gtest & gtest_main libraries.  User tests should link
 # with one of them.
+IF (WIN32)
+  add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
+ENDIF (WIN32)
 
 # Google Test libraries.  We build them using more strict warnings than what
 # are used for other targets, to ensure that gtest can be compiled by a user

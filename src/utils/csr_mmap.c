@@ -60,7 +60,7 @@ mmap_file(const char *filename, int prot, unsigned char bLoadMem)
 	memset(mm,0,sizeof(csr_mmap_t));
 	if(bLoadMem){
 		mm->bLoadMem = bLoadMem;
-		if ((fd = open(filename, O_RDONLY)) < 0)
+		if ((fd = _open(filename, O_RDONLY)) < 0)
 			//csr_exit_perror(filename);
 			return NULL;
 		if (fstat(fd, &st) < 0)
@@ -68,10 +68,10 @@ mmap_file(const char *filename, int prot, unsigned char bLoadMem)
 			return NULL;
 		mm->size = st.st_size;
 		mm->map = malloc(mm->size);
-		if (read(fd, mm->map, mm->size) < 0)
+		if (_read(fd, mm->map, mm->size) < 0)
 			//csr_exit_perror(filename);
 			return NULL;
-		close(fd);
+		_close(fd);
 		return mm;
 	}
 #if !defined HAVE_MMAP && defined HAVE_WINDOWS_H

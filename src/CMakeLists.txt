@@ -61,6 +61,12 @@ include_directories(${PROJECT_SOURCE_DIR}/third_party/gtest-1.7.0/include)
 ADD_EXECUTABLE(tst_cmake tst_cmake.cpp )
 target_link_libraries(tst_cmake glog pthread gflags)
 #target_link_libraries(tst_tut )
+
+# the following use gtest
+IF (WIN32)
+  add_definitions(-DGTEST_HAS_TR1_TUPLE=0)
+ENDIF (WIN32)
+
 ADD_EXECUTABLE(tst_dict tst_dict.cpp )
 target_link_libraries(tst_dict mmseg_c glog pthread gflags gtest)
 

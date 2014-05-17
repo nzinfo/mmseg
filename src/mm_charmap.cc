@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -82,7 +82,7 @@ CharMapper::Load(const char* filename)
         }
 
         std::ifstream::pos_type pos = ifs.tellg();
-        ptr_length = pos;
+        ptr_length = (u4)pos;
 
         ptr = new u1[ptr_length];
         ifs.seekg(0, std::ios::beg);

@@ -28,6 +28,7 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
 IF (WIN32)
   ADD_LIBRARY(glog
+              SHARED
               logging.cc
               windows/port.cc
               raw_logging.cc

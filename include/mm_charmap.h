@@ -41,10 +41,10 @@
 #include "csr_typedefs.h"
 
 // CharMapper define
-#define MAX_UNICODE_CODEPOINT   0x10FFFF      // Unicode Max
-#define UNICODE_MASK            0x1FFFFF      // (2**21-1)
-#define UNICODE_BITS            21            // Unicode's bits count.
-#define UNICODE_PAGE_SIZE       0xFFFF        // 65536
+#define MAX_UNICODE_CODEPOINT   0x10FFFFu      // Unicode Max
+#define UNICODE_MASK            0x1FFFFFu      // (2**21-1)
+#define UNICODE_BITS            21u            // Unicode's bits count.
+#define UNICODE_PAGE_SIZE       0xFFFFu        // 65536
 
 #define SafeDelete(_arg)		{ if ( _arg ) delete ( _arg );		(_arg) = NULL; }
 #define SafeDeleteArray(_arg)	{ if ( _arg ) delete [] ( _arg );	(_arg) = NULL; }

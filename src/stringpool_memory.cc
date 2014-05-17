@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -67,7 +67,7 @@ i4 StringPoolMemory::AllocString(const char* buf, u2 length){
     if(length >= STRING_POOL_ENTRY_DATA_SIZE - 2)
         return STATUS_STRING_TOO_BIG;
     // check current pool size.
-    if(_current->_size - _current->_used < length + 2) {
+    if((u2)(_current->_size - _current->_used) < length + 2) {
         // create new entry.
         MakeNewEntry();
     }
