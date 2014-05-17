@@ -18,6 +18,7 @@
 #include "mm_dict_schema.h"
 #include "iface_stringpool.h"
 #include "mm_entry_datapool.h"
+#include "mm_match_result.h"
 
 namespace mm {
 
@@ -73,7 +74,7 @@ public:
     // return the entrydata corrosponding to the term.
     EntryData* GetEntryData(const char* term);
 	// if term_offset beyone the range, a system assert will be raised.
-	EntryData& GetEntryData(i4 term_offset);
+    //EntryData& GetEntryData(i4 term_offset);
 
 	// Set the dictionary of this dicionary in the current Dictmgr, whom loaded the dictionary.
 	void SetDictionaryId(u2 dict_id_of_mgr);

@@ -15,11 +15,13 @@
 #if !defined(_DICTMATCHRESULT_H)
 #define _DICTMATCHRESULT_H
 
+#include "csr_typedefs.h"
+
 namespace mm {
 
 class DictMatchEntry {
 public:
-    u4 _value;
+    u4 _value;  //the dataentry's offset.
     u2 _dict_id;
     u2 _len;
 };
@@ -34,7 +36,7 @@ public:
 	u2 Match(u2 dict_id, u2 len, u4 value);
     int SetData(u1* ptr, u4 len);   // do NOT alloc _matches, reuse the ptr.
 private:
-	int _max_match:u2;
+    u2 _max_match;
 	DictMatchEntry* _matches;
 };
 

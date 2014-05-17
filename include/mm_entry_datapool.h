@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -16,6 +16,8 @@
 #define _ENTRYDATAPOOL_H
 
 namespace mm {
+
+class EntryData;
 
 class EntryDataPoolEntry {
     /*
@@ -55,8 +57,7 @@ public:
 
 protected:
 	// Record Entry's index and offset in real databuffer's mapping.
-	map<id, offset> _entries;
-	EntryDataPoolEntry _data;
+    //map<id, offset> _entries;
     bool _updatable;
 	EntryDataPoolEntry *_data;
 };

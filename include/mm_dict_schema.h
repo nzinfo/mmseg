@@ -14,12 +14,33 @@
 
 #if !defined(_DICTSCHEMA_H)
 #define _DICTSCHEMA_H
+#include <string>
+#include <vector>
 #include "csr_typedefs.h"
-#include "mm_dict_schema_column.h"
 
 namespace mm {
 
 class EntryData;
+
+class DictSchemaColumn {
+public:
+    DictSchemaColumn(const char* column_name, short column_idx, char column_type)
+        :_name(column_name), _idx(column_idx), _type(column_type){
+
+    }
+
+public:
+    inline const char* GetName() {
+        return _name;
+    }
+
+    inline short GetIndex() { return _idx; }
+    inline const char GetType() { return _type; }
+private:
+    const char* _name;
+    short       _idx;
+    char        _type;
+};
 
 class DictSchema {
 public:
@@ -33,7 +54,7 @@ public:
 
 	// if some column missing, @return will >0, the count is the missing columns.
     // if no suite column found, will return 0; the mask used by select data, eg. select id, pinyin from dictionary ...
-	int GetFieldMask(string columns, u2* mask);
+    int GetFieldMask(const char* columns, u2* mask);
 
 protected:
     std::vector<DictSchemaColumn> _columns;

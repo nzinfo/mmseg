@@ -11,30 +11,26 @@
  *    and/or other materials provided with the distribution.
  */
 
-#if !defined(_DICTSCHEMACOLUMN_H)
-#define _DICTSCHEMACOLUMN_H
+#include "mm_dict_updatable.h"
 
 namespace mm {
 
-class DictSchemaColumn {
-public:
-    DictSchemaColumn(const char* column_name, short column_idx, char column_type)
-        :_name(column_name), _idx(column_idx), _type(column_type){
+DictUpdatable::DictUpdatable(DictMgr* mgr) {
 
-    }
+}
 
-public:
-    inline const char* GetName() {
-        return _name;
-    }
+int DictUpdatable::Insert(u2 dict_id, const char* term, u2 term_len) {
+    return 0;
+}
 
-    inline short GetIndex() { return _idx; }
-    inline const char GetType() { return _type; }
-private:
-    const char* _name;
-    short       _idx;
-    char        _type;
-};
+int DictUpdatable::Remove(u2 dict_id, const char* term, u2 term_len) {
+    return 0;
+}
+
+int DictUpdatable::Remove(const char* term, u2 term_len) {
+    return 0;
+}
 
 } // namespace mm
-#endif  //_DICTSCHEMACOLUMN_H
+
+/* -- end of file -- */

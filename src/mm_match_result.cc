@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -12,28 +12,29 @@
  *
  */
 
-
-#if !defined(_DICTUPDATABLE_H)
-#define _DICTUPDATABLE_H
-
-#include "mm_dict_base.h"
-#include "mm_dict_mgr.h"
-
+#include "mm_match_result.h"
 namespace mm {
 
-// The delta terms of DictMgr @runtime.
-// if value of on term is 0, means delete.
-// 
-class DictUpdatable : public DictBase {
-public:
-    DictUpdatable(DictMgr* mgr);
+DictMatchResult::DictMatchResult(u2 max_match) {
 
-public:
-    int Insert(u2 dict_id, const char* term, u2 term_len);
-    int Remove(u2 dict_id, const char* term, u2 term_len);  // 删除某个词典中的词条
-    int Remove(const char* term, u2 term_len);              // 删除全部的词条
-};
+}
+
+DictMatchResult::~DictMatchResult() {
+
+}
+
+void DictMatchResult::Reset() {
+
+}
+
+u2 DictMatchResult::Match(u2 dict_id, u2 len, u4 value) {
+    return 0;
+}
+
+int DictMatchResult::SetData(u1* ptr, u4 len) {
+    return 0;
+}
 
 } //mm namespace
 
-#endif  //_DICTUPDATABLE_H
+/* -- end of file -- */

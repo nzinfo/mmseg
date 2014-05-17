@@ -15,9 +15,13 @@
 #if !defined(_DICTMGR_H)
 #define _DICTMGR_H
 
+#include "mm_dict_base.h"
+
+#define MAX_TERM_DICTIONARY 32
+
 namespace mm {
 
-#include "DictUpdatable.h"
+class DictUpdatable;
 
 // The global term index's format.
 // 
@@ -32,25 +36,30 @@ namespace mm {
 // }
 class DictMgr {
 public:
-	DictTerm* term_dictionaries;
-	DictUpdatable delta_dictionary;
-	DictPharse* pharse_dictionaries;
-	int Load(string dict_path);
-	DictBase& GetDictionary(string dict_name);
-	DictBase& GetDictionary(u2 dict_id);
-	u2 GetDictionaryIdx(string dict_name);
-	// Build 
-	int LoadIndexCache(string fname);
-	int SaveIndexCache(string fname);
+    //DictTerm* term_dictionaries[MAX_TERM_DICTIONARY];
+    DictUpdatable* delta_dictionary;
+    //DictPharse* pharse_dictionaries;
+
+    int Load(const char* dict_path);
+    DictBase* GetDictionary(const char* dict_name);
+    DictBase* GetDictionary(u2 dict_id);
+    u2 GetDictionaryIdx(const char* dict_name);
+
+    // Build
+    int LoadIndexCache(const char* fname);
+    int SaveIndexCache(const char* fname);
 	int BuildIndex();
 	int Reload();
 	void UnloadAll();
 	int VerifyIndex();
+
 	// As we have many dictionary, each diction might contain same term.
 	// Even a single term might case multi hit-entry, so we needs MatchResult here.
 	int ExactMatch(const char* q, u2 len, DictMatchResult* rs);
 	int PrefixMatch(const char* q, u2 len, DictMatchResult* rs);
-	DictUpdatable& GetUpdatableDictionary();
+    DictUpdatable* GetUpdatableDictionary() {
+        return delta_dictionary;
+    }
 };
 
 } // namespace mm
