@@ -36,6 +36,7 @@ IF(WIN32) # Check if we are on Windows
 ENDIF()
 
 IF (WIN32)
+    add_definitions(-DWIN32)    # how about x64?
 ELSE (WIN32)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
@@ -44,7 +45,7 @@ ENDIF (WIN32)
 
 SET(LIBMMSEG_SOURCE
     mm_charmap.cc
-    stringpool_memory.cc
+    mm_stringpool.cc
     utils/utf8_to_16.cpp
     utils/csr_utils.c
     utils/csr_mmap.c
