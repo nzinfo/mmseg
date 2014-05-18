@@ -42,6 +42,15 @@ protected:
 };
 
 class EntryDataPool {
+public:
+	/*
+	 * 因为在初始化的时刻，可以通过 Schema 得到 Entry 不压缩的尺寸。但是不知道是从磁盘加载还是直接内存分配。此刻并不实际初始化内存。
+	 * 当 SetData 或 NewEntry 被调用时，再次判断
+	 */
+
+	EntryDataPool(u2 entry_size_uncompressed):
+		_entry_size_uncompressed(entry_size_uncompressed) {}
+	virtual ~EntryDataPool();
 
 public:
 	EntryData* NewEntry();
@@ -60,6 +69,7 @@ protected:
     //map<id, offset> _entries;
     bool _updatable;
 	EntryDataPoolEntry *_data;
+	u2	_entry_size_uncompressed;
 };
 
 } // namespace mm

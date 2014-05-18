@@ -19,12 +19,17 @@
 
 namespace mm {
 
-class DictMatchEntry {
-public:
-    u4 _value;  //the dataentry's offset.
-    u2 _dict_id;
-    u2 _len;
-};
+/* 
+ * 这个类定义，仅供参考， 实际定义为一个 u8 的 union
+ */
+typedef union DictMatchEntry {
+	struct {
+		u2 _dict_id;
+		u2 _len;
+		u4 _value;
+	}match;
+	u8 v;
+}DictMatchEntry;
 
 // An object keep match of PrefixMatch ( ExactMatch return the offset, value instead).
 // 
@@ -33,7 +38,7 @@ public:
     DictMatchResult(u2 max_match);  // max of match result.
 	~DictMatchResult();
 	void Reset();
-	u2 Match(u2 dict_id, u2 len, u4 value);
+	u2 Match(DictMatchEntry entry);
     int SetData(u1* ptr, u4 len);   // do NOT alloc _matches, reuse the ptr.
 private:
     u2 _max_match;

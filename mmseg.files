@@ -5,6 +5,7 @@ include/win32/realpath_win32.h
 include/csr_typedefs.h
 include/darts.h
 include/iface_stringpool.h
+include/mm_hashmap.h
 include/mm_charmap.h
 include/mm_stringpool.h
 include/mm_entrydata.h
@@ -14,6 +15,8 @@ include/mm_match_result.h
 include/mm_dict_base.h
 include/mm_dict_updatable.h
 include/mm_dict_mgr.h
+include/utils/pystring.h
+include/utils/cityhash.h
 src/mm_charmap.cc
 src/mm_stringpool.cc
 src/mm_entrydata.cc
@@ -25,6 +28,8 @@ src/mm_dict_updatable.cc
 src/mm_match_result.cc
 src/mmseg_cli.cpp
 src/mmseg_main.cpp
+src/utils/pystring.cc
+src/utils/cityhash.cc
 src/tst_cmake.cpp
 src/tst_dict.cpp
 src/tst_lua.cpp

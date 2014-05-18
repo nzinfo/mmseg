@@ -43,6 +43,9 @@ namespace mm {
 
 class DictBase {
 public:
+	DictBase() {}
+
+public:
     int Load(const char* fname);
     int Save(const char* fname, u4 rev);
     int Init(const char* dict_name, const char* schema_define); // dict_name like Java's classname.
@@ -82,9 +85,9 @@ public:
 
 protected:
 
-    IStringPool* _string_pool;
-	DictSchema _schema;
-	EntryDataPool _entries;
+    IStringPool*	_string_pool;
+	DictSchema		_schema;
+	EntryDataPool*	_entry_pool;
     /*
 	TermMap<string, u4> _terms;
 	u2 _dict_id;

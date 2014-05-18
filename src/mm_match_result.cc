@@ -27,7 +27,7 @@ void DictMatchResult::Reset() {
 
 }
 
-u2 DictMatchResult::Match(u2 dict_id, u2 len, u4 value) {
+u2 DictMatchResult::Match(DictMatchEntry entry) {
     return 0;
 }
 

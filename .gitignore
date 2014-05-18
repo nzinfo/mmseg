@@ -4,7 +4,7 @@
 *.lib
 *.so
 *.pyc
-*.user
+*.user*
 *.autosave
 *.~*
 # Mac & IDE

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *  
  * Redistribution and use in source and binary forms, with or without
@@ -19,8 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "csr_typedefs.h"
+#include "mm_hashmap.h"
 
-#define STRING_POOL_ENTRY_DATA_SIZE     65536
+#define STRING_POOL_ENTRY_DATA_SIZE     65535u
 
 namespace mm {
 
@@ -36,12 +37,21 @@ typedef struct StringPoolMemoryEntry
         _size = STRING_POOL_ENTRY_DATA_SIZE;
         memset(_ptr, 0, STRING_POOL_ENTRY_DATA_SIZE);
     }
+	
+	StringPoolMemoryEntry(u1* ptr, u4 size) : _ptr(ptr), _size(size), _used(size), _next(NULL)
+	{
+		// 用于从磁盘加载
+	}
+
     int push_string(const char* ptr, u2 len) {
-        //FIXME: check the buffer size ?
+        if( _used + len > _size )
+			return -1; // this pool is full.
+		//FIXME: check the buffer size ?
         u2* ptru2 = (u2*) (_ptr+_used);
         *ptru2 = len;
         _used += sizeof(u2);
         memcpy(_ptr+_used, ptr, len);
+		_used += len;
         return 0;
     }
 
@@ -58,27 +68,29 @@ public:
 public:
     virtual i4 AllocString(const char* buf, u2 length);
 	// return the string's ptr by string 's offset
-	virtual const char* GetString(u4 offset, u4* data_length);
-	virtual u4 GetSize();
+	virtual const char* GetString(u4 offset, u2* data_length);
+	virtual u4 GetSize() { return _total_size; }  // 返回连续存储需要的大小。
 
 public:
 	int Dump(u1* ptr, u4 size);
+	int Load(u1* ptr, u4 size);
+	int Reset();
 
 protected:
     StringPoolMemoryEntry* _begin;
     StringPoolMemoryEntry* _current;
 
-    u4  _total_size;
+	unordered_map<u8, u4> _string_entries;	// 系统已知的 string 值，为了省内存，保存的是数据的 hash code， 而不是数据本身。会造成部分冲突，在词典的应用中，足够了。
+    u4  _total_size;	// the total size of string data entry, 
 
-    void MakeNewEntry() {
-        _current->_next = new StringPoolMemoryEntry();
-        _current = _current->_next;
-    }
+protected:
+    void MakeNewEntry();
 
 public:
     // function status code
     static int STATUS_OK;
     static int STATUS_STRING_TOO_BIG;
+	static int STATUS_INSUFFICIENT_BUFFER;
 };
 
 } // namespace mm

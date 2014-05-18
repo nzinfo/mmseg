@@ -49,9 +49,12 @@ SET(LIBMMSEG_SOURCE
     mm_entry_datapool.cc
     mm_entrydata.cc
     mm_match_result.cc
+    mm_dict_schema.cc
     mm_dict_base.cc
     mm_dict_mgr.cc
     mm_dict_updatable.cc
+    utils/pystring.cc
+    utils/cityhash.cc
     utils/utf8_to_16.cpp
     utils/csr_utils.c
     utils/csr_mmap.c

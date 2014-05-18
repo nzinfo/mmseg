@@ -17,6 +17,10 @@
 
 namespace mm {
 
+EntryDataPool::~EntryDataPool() {
+
+}
+
 EntryData* EntryDataPool::NewEntry() {
     return NULL;
 }
