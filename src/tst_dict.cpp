@@ -7,6 +7,8 @@
 
 #include "mm_stringpool.h"
 #include "mm_dict_schema.h"
+#include "mm_entry_datapool.h"
+#include "mm_entrydata.h"
 
 int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);
@@ -47,7 +49,7 @@ TEST(StringPoolTest, GetStringNewPoolTest)
 		// make lots of string.
 		char buffer [256];
 		int cx;
-		for(int i=0; i < 65536; i ++ ) {
+		for(int i=0; i < 15536; i ++ ) {
 			cx = snprintf( buffer, 256, "The number of %d", i ); //avoid the hash working.
 			sp.AllocString(buffer, cx);
 			total_size += sizeof(u2) + cx;
@@ -78,6 +80,8 @@ TEST(StringPoolTest, GetStringNewPoolTest)
 	EXPECT_EQ(sp.GetSize(), total_size);
 }
 
+//////////////////////////////////////////////////////////////////////////
+
 TEST(DictSchemaTest, SchemaDefineTest)
 {
     mm::DictSchema schema;
@@ -88,6 +92,8 @@ TEST(DictSchemaTest, SchemaDefineTest)
 	EXPECT_EQ(schema.GetColumnCount(), 4);
     // check EntryDataSize
 	EXPECT_EQ(schema.GetEntryDataSize(), 14);
+    // Check Offset
+    EXPECT_EQ(schema.GetColumn("thres")->GetOffset(), 10);  // 8 + mask
 }
 
 TEST(DictSchemaTest, SchemaDefineTooManyColumnTest)
@@ -115,5 +121,39 @@ TEST(DictSchemaTest, SchemaDefineFieldMaskTest)
 	EXPECT_EQ(mask, 5); // 0b101
 }
 
+//////////////////////////////////////////////////////////////////////////
+TEST(EntryPoolTest, IsEntryDataPODTest)
+{
+    /*
+     *  测试 Entry 是否为简单对象类型，是否可以强制转换
+     */
+    EXPECT_EQ((int)sizeof(mm::EntryData), (int)sizeof(u1)); // pass, as EntryData is alias of _data_ptr, test how to pass the parameter
+	char* val = (char*)malloc(7);
+	memcpy(val, "hello", 5);
+	val[5] = 0;
+	{
+		// pointer of entry  == pointer of entry's _data_ptr ( type is &u1*)
+		mm::EntryData* entryptr = (mm::EntryData*)val;  // a bit trick....
+		EXPECT_EQ(strncmp( (char*)GET_ENTRY_DATA(entryptr), "hello", 5), 0);
+	}
+	free(val);
+}
+
+TEST(EntryPoolTest, NewEntryTest)
+{
+	/*
+	 * 测试创建新的 Entry;
+	 * Entry 用于存储词条的属性信息， 使用 StringPool 存储字符串信息
+	 */
+	mm::DictSchema schema;
+	schema.InitString("id:4;pinyin:s;thres:s;pos:2");
+
+	mm::EntryDataPool pool(schema.GetEntryDataSize());
+	mm::StringPoolMemory sp;
+
+	mm::EntryData* entryptr = pool.NewEntry();
+	mm::EntryData* entryptr2 = pool.NewEntry();
+	EXPECT_EQ(GET_ENTRY_DATA(entryptr2) - GET_ENTRY_DATA(entryptr), schema.GetEntryDataSize());
+}
 
 /* -- end of file --  */

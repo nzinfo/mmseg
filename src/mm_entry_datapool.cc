@@ -17,12 +17,52 @@
 
 namespace mm {
 
-EntryDataPool::~EntryDataPool() {
+EntryData* EntryDataPoolEntry::NewEntry(u4 entry_size)
+{
+    //u1* ptr = (_data_ptr+_used);
+    EntryData* entry_ptr = (mm::EntryData*) &_data_ptr[_used];
+    _used += entry_size;
 
+    // mark as uncompresed.
+    entry_ptr->SetAsUnCompressed();
+    return entry_ptr;
+}
+
+EntryDataPool::~EntryDataPool() {
+	Reset();
+}
+
+int EntryDataPool::Dump(u1* ptr, u4 size)
+{
+	return 0;
+}
+
+int EntryDataPool::Load(u1* ptr, u4 size)
+{
+	return 0;
+}
+
+int EntryDataPool::Reset()
+{
+	return 0;
 }
 
 EntryData* EntryDataPool::NewEntry() {
-    return NULL;
+	/*
+     * Alloca a block of memory, return.
+	 */
+    if(_current == NULL) {
+        // uninit pool.
+        EntryDataPoolEntry* entry = new EntryDataPoolEntry(_entry_size_uncompressed, MAX_ENTRYPOOL_SIZE);
+        _begin = _current = entry;
+    }
+    EntryData* entry_ptr = _current->NewEntry(_entry_size_uncompressed);
+    if(entry_ptr == NULL) {
+        // current pool is full.
+        MakeNewEntryPool();
+		entry_ptr = _current->NewEntry(_entry_size_uncompressed);
+    }
+    return entry_ptr;
 }
 
 int EntryDataPool::Compat() {
@@ -35,6 +75,14 @@ void EntryDataPool::SetData(u1* ptr, u4 len) {
 
 EntryData* EntryDataPool::CloneEntry(const EntryData* entry) {
     return NULL;
+}
+
+int EntryDataPool::MakeNewEntryPool() {
+    EntryDataPoolEntry* entry = new EntryDataPoolEntry(_entry_size_uncompressed, MAX_ENTRYPOOL_SIZE);
+
+    _current->_next = entry;
+    _current = entry;
+    return 0;
 }
 
 } // mm namespace

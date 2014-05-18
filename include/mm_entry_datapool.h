@@ -15,24 +15,35 @@
 #if !defined(_ENTRYDATAPOOL_H)
 #define _ENTRYDATAPOOL_H
 
+#define MAX_ENTRYPOOL_SIZE  65535u      // 最多 65535 条？ 如果是压缩，可能比这个多。
+
 namespace mm {
 
-class EntryData;
+struct EntryData;
+class EntryDataPool;
 
 class EntryDataPoolEntry {
     /*
      *  维持一个链表, 用于存储 entry's pool
-     *  MaxCount: 65536
+     *  MaxCount: 65535
      *  Two type,
      *  - Compat: Load From disk, each entry are compat.
      *  - Normal: Only Normal type can alloc NewEntry.
      */
+friend class EntryDataPool;
+
 public:
     EntryDataPoolEntry()
         :_size(0), _used(0),_entry_count(0), _data_ptr(NULL), _next(NULL) {}
 
+    EntryDataPoolEntry(u2 entry_size, u4 entry_count)
+        :_entry_count(entry_count), _used(0), _next(NULL){
+        _size = entry_size * entry_count;
+        _data_ptr = (u1*)malloc(_size);
+    }
+
     // return NULL if no space for new entry.
-    EntryData* NewEntry(u4* offset);
+    EntryData* NewEntry(u4 entry_size);
 protected:
     u4  _size;
     u4  _used;
@@ -49,11 +60,17 @@ public:
 	 */
 
 	EntryDataPool(u2 entry_size_uncompressed):
-		_entry_size_uncompressed(entry_size_uncompressed) {}
+		_entry_size_uncompressed(entry_size_uncompressed) {
+			_begin = NULL;
+			_current = NULL;
+			_updatable = true;
+	}
+
 	virtual ~EntryDataPool();
 
 public:
-	EntryData* NewEntry();
+    EntryData* NewEntry();
+	EntryData* GetEntry(u4 offset);
 	// Compat EntryDataPool , 
 	// Update the _entries mapping;
 	// return DataPool's real size (compat size)
@@ -63,12 +80,21 @@ public:
 	// if origin entry is compat, and _updatable == true, return a newly uncompat engry.
 	// if _updatable == false, return NULL.
     EntryData* CloneEntry(const EntryData* entry);
+	
+	// EntryPool Related
+    int MakeNewEntryPool(); // create a new EntryDataPoolEntry 追加到当前的列表上.
+
+public:
+	int Dump(u1* ptr, u4 size);
+	int Load(u1* ptr, u4 size); //此处应该是 const, 实际也不会修改。但是为了能够 复用代码...
+	int Reset();
 
 protected:
 	// Record Entry's index and offset in real databuffer's mapping.
     //map<id, offset> _entries;
     bool _updatable;
-	EntryDataPoolEntry *_data;
+	EntryDataPoolEntry *_begin;
+	EntryDataPoolEntry *_current;
 	u2	_entry_size_uncompressed;
 };
 

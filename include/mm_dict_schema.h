@@ -27,12 +27,13 @@
 
 namespace mm {
 
-class EntryData;
+struct EntryData;
 
 class DictSchemaColumn {
 public:
     DictSchemaColumn(const char* column_name, short column_idx, char column_type)
         :_name(column_name), _idx(column_idx), _type(column_type) {
+        _uncompress_offset = 0;
     }
 
 public:
@@ -40,9 +41,9 @@ public:
         return _name;
     }
 
-    inline short GetIndex() { return _idx; }
-    inline const char GetType() { return _type; }
-	inline u1	 GetSize() {
+    inline short GetIndex() const { return _idx; }
+    inline const char GetType() const { return _type; }
+    inline u1	 GetSize() const {
 		switch(_type) {
 		case '2':
 			return 2;
@@ -56,10 +57,14 @@ public:
 		// unsupported type.
 		return 0;
 	}
+    inline void SetOffset(u2 u) { _uncompress_offset = u; }
+    inline u2   GetOffset() const { return _uncompress_offset; }
+
 private:
     const char* _name;
     short       _idx;
     char        _type; // name\0_type
+    u2          _uncompress_offset;
 };
 
 class DictSchema {
@@ -78,9 +83,9 @@ public:
      */
     int InitString(const char* schema_define);
     std::string GetColumnDefine();
-    const DictSchemaColumn& GetColumn(u2 idx);
+    const DictSchemaColumn& GetColumn(u2 idx) const;
     void SetDefault(const EntryData& entry_default);
-    const DictSchemaColumn* GetColumn(const char* column_name);
+    const DictSchemaColumn* GetColumn(const char* column_name) const;
     u4 GetSize();   // 用于持久化, 缺少 Load & Save
     u2 GetEntryDataSize();  //定义的 EntryData 的最大尺寸, 实际根据定义 应该 u1 即可。
 	u2 GetColumnCount() {   return _columns.size(); }
@@ -88,12 +93,22 @@ public:
 	// if some column missing, @return will >0, the count is the missing columns.
     // if no suite column found, will return 0; the mask used by select data, eg. select id, pinyin from dictionary ...
     int GetFieldMask(const char* columns, u2* mask);
+    inline u2  GetCompressedOffset(u2 idx, u2 mask) const {
+        /*
+         *  调用本函数之前，需要保证 idx 对应的 mask 位 有值。如果没有, 返回 0
+         */
+        u2 offset_idx = ((1<<idx) - 1) & mask;
+        return _mask_offset_lookup[offset_idx];
+    }
 
 protected:
     std::vector<DictSchemaColumn> _columns;		// use copy construct, as build schema do not care about preformace, just let it be.
     unordered_map<std::string, u2> _column_by_name;  // idx -> column name
     char*   _schema_define;
 	u2		_data_entry_size;
+
+    // 用于压缩存储 EntryData 时，快速计算 offset 的速查表。因为最多 15个字段， 最长 32768, 1char
+    u1 _mask_offset_lookup[32768];
 };
 
 } // namespace mm

@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -56,8 +56,24 @@ int DictSchema::InitString(const char* schema_define) {
 	_data_entry_size  = 0; // update entry's size.
 	for(std::vector<DictSchemaColumn>::iterator it = _columns.begin();
 		it != _columns.end(); ++it) {
+            it->SetOffset(_data_entry_size + sizeof(u2)); // the offset include mask. so that 0 can mark as a mistake.
 			_data_entry_size += it->GetSize();
 	}
+
+    // pollute mask_offset_lookup. might slow...
+    {
+        // max execute time 32768 * 15
+        memset(_mask_offset_lookup, 0, sizeof(_mask_offset_lookup));
+        for(int i=0; i< ( 1<< _columns.size() ); i++ ) {
+            // enum every mask condition might meet.
+            u2 mask = i;
+            for(u1 j = 0; j<15; j++) {
+                if( (mask>>j) & 1) {
+                    _mask_offset_lookup[i] += _columns[j].GetSize();
+                }
+            } //end for j
+        } // end for i
+    }
 
     if(DEBUG_MM_SCHEMA)
     {
@@ -78,7 +94,7 @@ std::string DictSchema::GetColumnDefine() {
     return oss.str();
 }
 
-const DictSchemaColumn& DictSchema::GetColumn(u2 idx) {
+const DictSchemaColumn& DictSchema::GetColumn(u2 idx) const {
 	// check is in columns
     CHECK_LT(idx, _columns.size()) << "no such column @ position " << idx;
     return _columns[idx];
@@ -90,11 +106,11 @@ void DictSchema::SetDefault(const EntryData& entry_default) {
 }
 */
 
-const DictSchemaColumn* DictSchema::GetColumn(const char* column_name) {
+const DictSchemaColumn* DictSchema::GetColumn(const char* column_name) const {
 	/*
-	 * ÀíÂÛÉÏ£¬ Èç¹ûÔö¼ÓÁËĞÂµÄ Column£¬ ÔòÕâ¸ö pointer ÊÇ²»ÎÈ¶¨µÄ¡£ µ«ÊÇÊµ¼ÊÉè¼ÆÖĞ£¬ column Ò»´Î¶¨Òå£¬²»ÔÙĞŞ¸Ä¡£
+	 * ç†è®ºä¸Šï¼Œ å¦‚æœå¢åŠ äº†æ–°çš„ Columnï¼Œ åˆ™è¿™ä¸ª pointer æ˜¯ä¸ç¨³å®šçš„ã€‚ ä½†æ˜¯å®é™…è®¾è®¡ä¸­ï¼Œ column ä¸€æ¬¡å®šä¹‰ï¼Œä¸å†ä¿®æ”¹ã€‚
 	 */
-	unordered_map<std::string, u2>::iterator it = _column_by_name.find(column_name);
+	unordered_map<std::string, u2>::const_iterator it = _column_by_name.find(column_name);
 	if(it != _column_by_name.end() ) {
 		return & (_columns[it->second]);
 	}
@@ -103,9 +119,9 @@ const DictSchemaColumn* DictSchema::GetColumn(const char* column_name) {
 
 u4 DictSchema::GetSize() {
 	/*
-	 * ¼ÆËã¶Ô Schema ³Ö¾Ã»¯ĞèÒªµÄ¿Õ¼ä
+	 * è®¡ç®—å¯¹ Schema æŒä¹…åŒ–éœ€è¦çš„ç©ºé—´
 	 *  schema_define + default_data_entry.
-	 *  ²»Æô¶¯ default_data_entry, Õû¸ö entry ³ØÖĞ£¬ µÚ 0 ¸ö entry ¼´Îª default value.
+	 *  ä¸å¯åŠ¨ default_data_entry, æ•´ä¸ª entry æ± ä¸­ï¼Œ ç¬¬ 0 ä¸ª entry å³ä¸º default value.
 	 */
 	return GetColumnDefine().length() + 2; // with 2 byte save the string's length.
 }
@@ -116,9 +132,9 @@ u2 DictSchema::GetEntryDataSize() {
 
 int DictSchema::GetFieldMask(const char* columns, u2* mask) {
 	/*
-	 * ´Ë´¦ÓëÀàĞÍ¶¨Òå²»Í¬£¬ Ö»ĞèÒª´«Èë FieldName ¼´¿É
+	 * æ­¤å¤„ä¸ç±»å‹å®šä¹‰ä¸åŒï¼Œ åªéœ€è¦ä¼ å…¥ FieldName å³å¯
 	 *  eg. id;pinyin;thres
-	 */
+	 */ 
 	u2 column_mask = 0;
 	int column_missing = 0;
 	{
