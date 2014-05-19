@@ -28,8 +28,7 @@
 #include "csr_typedefs.h"
 
 
-#include "Utf8_16.h"
-#include "StringTokenizer.h"
+#include "utf8_to_16.h"
 
 /*
 #ifdef WIN32

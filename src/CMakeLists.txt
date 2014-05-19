@@ -55,8 +55,8 @@ SET(LIBMMSEG_SOURCE
     utils/cityhash.cc
     utils/utf8_to_16.cpp
     utils/csr_utils.c
-    utils/csr_mmap.c
 )
+
 #SET(LIBRARY_OUTPUT_PATH ../../lib/)
 ADD_LIBRARY(mmseg_c STATIC ${LIBMMSEG_SOURCE} )
 
