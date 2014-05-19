@@ -28,6 +28,22 @@
 
 namespace mm {
 
+typedef struct _mmseg_dict_file_header{
+    char mg[4];
+    u4   version;              // 词库文件的版本号，目前统一为 2012
+    short flags;                // 标记 darts 索引的类型； darts ? cedar ?; entry 数据是否压缩
+    char dictname[128];         // 对应词典的名称
+    u8   dict_rev;              // dictionay reversion.
+    u8   timestamp;             // create_at ?
+    u4   entry_count;           // 多少词条
+    u4   schema_size;           // Schema 字符串定义的尺寸
+    u4   string_pool_size;      // 词库中用到的字符串长度的尺寸
+    u4   entry_pool_size;       // 词条的属性数据的存储空间占用
+    u4   key_pair_size;         // 当使用 darts 时， 用于记录原始的 key-> entry_offset 的关系  == sizeof(u4+u4)*entry_count, 如果为 0, 则必须为 cedar
+    u4   index_size;            // darts 索引占用的的空间
+    u4   crc32;                 // 整个文件，除头部外的校验码。 目前保留为 0.
+}mmseg_dict_file_header;
+
 // The Dictionary file format:
 // ------------------------------------------
 // header
@@ -94,6 +110,9 @@ public:
 	// Set the dictionary of this dicionary in the current Dictmgr, whom loaded the dictionary.
 	void SetDictionaryId(u2 dict_id_of_mgr);
     u8 GetReversion();
+
+protected:
+    int Load_201200(std::FILE *fp, const mmseg_dict_file_header* header);
 
 protected:
 

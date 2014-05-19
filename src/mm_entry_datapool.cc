@@ -65,7 +65,12 @@ int EntryDataPool::Dump(u1* ptr, u4 size)
 
 int EntryDataPool::Load(u1* ptr, u4 size)
 {
-	return 0;
+    Reset();
+    if(_begin == NULL) {
+        _begin = new EntryDataPoolEntry(ptr, size);
+        _current = _begin;
+    }
+    return STATUS_OK;
 }
 
 int EntryDataPool::Reset()
@@ -76,7 +81,7 @@ int EntryDataPool::Reset()
     while(ptr) {
         prev = ptr;
         ptr = ptr->_next;
-        delete ptr;
+        delete prev;
     }
     _begin = _current = NULL;
     _updatable = true;

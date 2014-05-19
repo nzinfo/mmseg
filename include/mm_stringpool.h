@@ -44,6 +44,12 @@ typedef struct StringPoolMemoryEntry
 		// 用于从磁盘加载
 	}
 
+    virtual ~StringPoolMemoryEntry() {
+        if(_ptr)
+            free(_ptr);
+        _ptr = NULL;
+    }
+
     int push_string(const char* ptr, u2 len) {
         if( _used + len > _size )
 			return -1; // this pool is full.

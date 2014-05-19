@@ -36,6 +36,8 @@ int DictSchema::InitString(const char* schema_define) {
         std::vector<std::string> column_exprs;
         pystring::split(_schema_define, column_exprs, ";");
         for(std::vector<std::string>::iterator it = column_exprs.begin(); it != column_exprs.end(); ++it) {
+			if(it->length() == 0)
+				continue;
 			// check type
 			column_type = _schema_define[column_len + it->length() -1];
 			bool is_valid_type =  ( column_type == '2' ||  column_type == '4' || column_type == '8' || column_type == 's');

@@ -42,8 +42,15 @@ public:
         _data_ptr = (u1*)malloc(_size);
     }
     EntryDataPoolEntry(u1* ptr, u4 len)
-        :_data_ptr(ptr), _size(len), _used(len) {}
-
+        :_data_ptr(ptr), _size(len), _used(len), _next(NULL) {
+        _entry_count = 0;
+    }
+	
+	virtual ~EntryDataPoolEntry() {
+		if(_data_ptr)
+			free(_data_ptr);
+		_data_ptr = NULL;
+	}
     // return NULL if no space for new entry.
     EntryData* NewEntry(u4 entry_size);
     EntryData* GetEntry(u4 offset);

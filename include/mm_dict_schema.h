@@ -23,7 +23,7 @@
 #define MAX_COLUMN_COUNT	   15u  // the highest field use as a flag of compress or not.
 
 // Debug Schema
-#define DEBUG_MM_SCHEMA 1
+#define DEBUG_MM_SCHEMA 0
 
 namespace mm {
 

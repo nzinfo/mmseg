@@ -28,25 +28,11 @@
 #define DICT_FLAG_IDX_CEDAR         2
 #define DICT_FLAG_COMPRESS_ENTRY    4       // 目前版本的 entry 均不压缩， 以降低目前实现的复杂性
 
+#define DICT_VERSION                201200u  // 目前词库文件格式的版本号
+
 namespace mm {
 
 const char basedict_head_mgc[] = "mmdt";    // mmseg's common dictionary. 词典格式通用，不同仅仅是 Schema 的定义，有些是预制的
-
-typedef struct _mmseg_dict_file_header{
-    char mg[4];
-    short version;              // 词库文件的版本号，目前统一为 2012
-    short flags;                // 标记 darts 索引的类型； darts ? cedar ?; entry 数据是否压缩
-    char dictname[128];         // 对应词典的名称
-    u8   dict_rev;              // dictionay reversion.
-    u8   timestamp;             // create_at ?
-    u4   entry_count;           // 多少词条
-    u4   schema_size;           // Schema 字符串定义的尺寸
-    u4   string_pool_size;      // 词库中用到的字符串长度的尺寸
-    u4   entry_pool_size;       // 词条的属性数据的存储空间占用
-    u4   key_pair_size;         // 当使用 darts 时， 用于记录原始的 key-> entry_offset 的关系  == sizeof(u4+u4)*entry_count, 如果为 0, 则必须为 cedar
-    u4   index_size;            // darts 索引占用的的空间
-    u4   crc32;                 // 整个文件，除头部外的校验码。 目前保留为 0.
-}mmseg_dict_file_header;
 
 class CedarDoubleArray : public cedar::da<int> {};
 class DartsDoubleArray : public Darts::DoubleArray {};
@@ -68,6 +54,7 @@ DictBase::DictBase() {
     _darts_idx   = NULL;
     _cedar_idx   = NULL;
 	_string_pool = NULL;
+	_entry_pool = NULL;
     Reset();
 }
 
@@ -81,15 +68,88 @@ DictBase::~DictBase() {
 }
 
 int DictBase::Load(const char* fname) {
+    /*
+     *  从文件系统加载
+     */
+    int rs = 0;
+    std::FILE *fp = std::fopen(fname, "rb");
+    if (!fp) return -1; // file not found.
+
+    Reset();
+
+    // read header
+    mmseg_dict_file_header header;
+    std::fread(&header, sizeof(header), 1, fp);
+    if(header.version == 201200)
+        rs = Load_201200(fp, &header);
+    std::fclose(fp);
+    return rs;
+}
+
+int DictBase::Load_201200(std::FILE *fp, const mmseg_dict_file_header* header) {
+    // FIXME: should check each read amount.
+    u4 file_offset = sizeof(mmseg_dict_file_header);
+	u4 nwrite = 0;
+	// load schema
+    {
+        char schema[4096];
+		LOG(INFO) << "read schema @"<<file_offset;
+        nwrite = std::fread(schema, header->schema_size, 1, fp);
+		file_offset += nwrite * header->schema_size;
+        schema[header->schema_size] = 0;
+        _schema.InitString(schema);
+    }
+    // load string pool
+    {
+        u1* ptr = (u1*)malloc(header->string_pool_size);
+		LOG(INFO) << "read string pool @"<<file_offset;
+        nwrite = std::fread(ptr, header->string_pool_size, 1, fp);
+		file_offset += nwrite * header->string_pool_size;
+        _string_pool->Load(ptr, header->string_pool_size); // the ptr's owner ship pass to string_pool , so no free here.
+    }
+    // load entry pool
+    {
+		// init entry pool
+		if(_entry_pool == NULL)
+			_entry_pool = new EntryDataPool(_schema.GetEntryDataSize()); 
+        u1* ptr = (u1*)malloc(header->entry_pool_size);
+		LOG(INFO) << "entry pool @"<<file_offset;
+        nwrite = std::fread(ptr, header->entry_pool_size, 1, fp);
+		file_offset += nwrite * header->entry_pool_size;
+        _entry_pool->Load(ptr, header->entry_pool_size);
+        _entry_count = header->entry_count;
+    }
+    // ignore mapping
+    if(header->flags & DICT_FLAG_IDX_DARTS)
+    {
+        // these data will be used when support in dict update.
+		LOG(INFO) << "read(seek) idmap @"<<file_offset;
+        std::fseek(fp, header->key_pair_size, SEEK_CUR);
+		file_offset += header->key_pair_size;
+    }
+    // load darts
+    if(header->flags & DICT_FLAG_IDX_DARTS)  //FIXME: how too load cedar ?
+    {
+        u1* ptr = (u1*)malloc(header->index_size);
+		LOG(INFO) << "read darts @"<<file_offset;
+        nwrite = std::fread(ptr, header->index_size, 1, fp);
+		file_offset += header->index_size;
+        _darts_idx->set_array(ptr, header->index_size);
+    }
     return 0;
 }
 
 int DictBase::Save(const char* fname, u8 rev) {
-    _reversion = rev;
+    u4 file_offset = 0;
+    u4 nwrite = 0;
 
+    _reversion = rev;
+	// check entry_pool
+	if(_entry_pool == NULL) 
+		return -1; // no item
     mmseg_dict_file_header header;
     memcpy(header.mg, basedict_head_mgc, 4);
-    header.version = 2012;
+    header.version = DICT_VERSION;
     header.crc32 = 0;
 
 #if USE_CEDAR
@@ -130,7 +190,7 @@ int DictBase::Save(const char* fname, u8 rev) {
 #if USE_CEDAR
         assert(0); // givme cedar index!!!
 #else
-		header.index_size = _darts_idx->size();
+		header.index_size = _darts_idx->size() * _darts_idx->unit_size();
 #endif
     }
     header.key_pair_size = 0;
@@ -139,19 +199,26 @@ int DictBase::Save(const char* fname, u8 rev) {
 
     LOG(INFO) << "build entry index done";
     // write ...
-    std::fwrite(&header, sizeof(header), 1, fp); //header
-    std::fwrite(schema_str.c_str(), sizeof(char), schema_str.length(), fp); // scheam
+    nwrite = std::fwrite(&header, sizeof(header), 1, fp); //header
+	file_offset += sizeof(header);
+	LOG(INFO) << "write schema @"<<file_offset;
+    nwrite = std::fwrite(schema_str.c_str(), sizeof(char), schema_str.length(), fp); // scheam
+	file_offset += sizeof(char)*schema_str.length();
 	{
 		u1* ptr = (u1*)malloc(header.string_pool_size);
 		_string_pool->Dump(ptr, header.string_pool_size);
-		std::fwrite(ptr, header.string_pool_size, 1, fp); // string pool
+		LOG(INFO) << "write string pool @"<<file_offset;
+		nwrite = std::fwrite(ptr, header.string_pool_size, 1, fp); // string pool
+		file_offset += header.string_pool_size;
 		free(ptr);
 	}
 	
 	{
 		u1* ptr = (u1*)malloc(header.entry_pool_size);
 		_entry_pool->Dump(ptr, header.entry_pool_size);
-		std::fwrite(ptr, header.entry_pool_size, 1, fp); // entry pool
+		LOG(INFO) << "write entry pool @"<<file_offset;
+		nwrite = std::fwrite(ptr, header.entry_pool_size, 1, fp); // entry pool
+		file_offset += header.entry_pool_size;
 		free(ptr);
 	}
 
@@ -159,6 +226,7 @@ int DictBase::Save(const char* fname, u8 rev) {
 	{
         // build darts's only string offset, id's mapping.
         // string offset -> id , unsort order, coder(me) is lazy...
+		LOG(INFO) << "write idmap @"<<file_offset;
         for(unordered_map<std::string, u4>::iterator it = _key2id.begin();
                 it !=  _key2id.end(); ++it) {
             // use a string_pool's feature, each unique string exist only one copy.
@@ -168,11 +236,14 @@ int DictBase::Save(const char* fname, u8 rev) {
             u4 entry_offset = _id2entryoffset[it->second];
             std::fwrite(&entry_offset, sizeof(u4), 1, fp);
         }// end for
+		file_offset += header.key_pair_size;
 	}
     // the darts part, in prev version (inner version) of mmseg, there is no dart
     if(header.flags & DICT_FLAG_IDX_DARTS)
     {
-        std::fwrite(_darts_idx->array(), _darts_idx->size(), 1, fp);
+		LOG(INFO) << "write darts @"<<file_offset;
+        nwrite = std::fwrite(_darts_idx->array(), _darts_idx->unit_size(), _darts_idx->size(), fp);
+		file_offset += _darts_idx->size();
     }
     std::fclose(fp);
     LOG(INFO) << "save dictionary done " << fname;
@@ -192,8 +263,15 @@ void DictBase::Reset() {
     _schema.Reset();
 
     SafeDelete(_string_pool);
+	SafeDelete(_entry_pool);
     _entry_pool  = NULL;
     _string_pool = new StringPoolMemory();
+
+    //clear index
+    if(_darts_idx )
+        _darts_idx->clear();
+    if( _cedar_idx )
+        _cedar_idx->clear();
 
     //clear all data;
     _updatable = true;
@@ -284,7 +362,7 @@ int DictBase::LoadRaw(const char* fname) {
 }
 
 int DictBase::MakeUpdatable() {
-    _updatable = true;
+    _updatable = true;  //FIXME: updatable dict is a optional feature.
     return 0;
 }
 
@@ -298,7 +376,9 @@ IStringPool* DictBase::GetStringPool() {
 
 EntryData* DictBase::Insert(const char* term, u2 len)
 {
-    if(_entry_pool == NULL) return NULL;
+    if(_entry_pool == NULL) 
+		_entry_pool = new EntryDataPool(_schema.GetEntryDataSize()); 
+
     /*
      * 增加新的词条
      * 1 检查是否已经存在
@@ -355,6 +435,7 @@ i4  DictBase::GetEntryOffset(const char* term, u2 len){
 }
 
 EntryData* DictBase::GetEntryData(i4 term_offset) {
+	if(_entry_pool == NULL) return NULL;
     return _entry_pool->GetEntry(term_offset);
 }
 

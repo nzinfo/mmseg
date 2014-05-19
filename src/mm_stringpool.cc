@@ -144,8 +144,6 @@ int StringPoolMemory::Reset() {
 	StringPoolMemoryEntry* entry_ptr = _begin;
 	if(entry_ptr) {
 		do {
-			if(entry_ptr->_ptr)
-				free(entry_ptr->_ptr);
 			StringPoolMemoryEntry* prev_ptr = entry_ptr;
 			entry_ptr = entry_ptr->_next;
 			delete prev_ptr;

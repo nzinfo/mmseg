@@ -105,6 +105,23 @@ TEST(DictBaseTest, DictSaveLoadTest)
 		dict.Save("_tst_dict_saveload.bin", 2012 );  // rev = 2012
 		dict.Load("_tst_dict_saveload.bin");
 	}
+	// check search
+	{
+		cx = snprintf( buffer, 256, "term_%d", 2 );
+		buffer[cx] = 0;
+		int rs = dict.ExactMatch(buffer, cx);
+		EXPECT_GE(rs, 0);
+
+		// get property data.
+		entry = dict.GetEntryData(rs);
+		EXPECT_NE(entry, (mm::EntryData*)NULL); 
+		EXPECT_EQ(entry->GetU4(dict.GetSchema(), 0 ), 2); // id
+
+		u2 data_len = 0;
+		const char* sptr = (const char*)entry->GetData(dict.GetSchema(), dict.GetStringPool(), 1, &data_len);
+		EXPECT_EQ(data_len, cx);
+		EXPECT_EQ(strncmp( sptr, buffer, cx ), 0);
+	}
 }
 
 /* -- end of file --  */
