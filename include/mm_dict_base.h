@@ -22,6 +22,8 @@
 #include "mm_hashmap.h"
 #include "mm_entrydata.h"
 
+#define	MAX_PREFIX_SEARCH_RESULT	256u	// prefix 最多出现的结果。
+
 //FIXME: move the define -> some common header.
 #define SafeDelete(_arg)		{ if ( _arg ) delete ( _arg );		(_arg) = NULL; }
 #define SafeDeleteArray(_arg)	{ if ( _arg ) delete [] ( _arg );	(_arg) = NULL; }

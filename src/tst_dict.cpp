@@ -88,7 +88,7 @@ TEST(DictBaseTest, DictSaveLoadTest)
 
     //for(int i = 0; i < 100000; i++)
     mm::EntryData* entry = NULL;
-    for(int i = 0; i < 100; i++)        // simple & fast @develop stage.
+    for(int i = 0; i < 200; i++)        // simple & fast @develop stage.
     {
         cx = snprintf( buffer, 256, "term_%d", i );
         buffer[cx] = 0;
@@ -121,6 +121,15 @@ TEST(DictBaseTest, DictSaveLoadTest)
 		const char* sptr = (const char*)entry->GetData(dict.GetSchema(), dict.GetStringPool(), 1, &data_len);
 		EXPECT_EQ(data_len, cx);
 		EXPECT_EQ(strncmp( sptr, buffer, cx ), 0);
+	}
+	// check prefix match
+	{
+		u1 buf[4096];
+		mm::DictMatchResult rs(buf, 4096/sizeof(mm::DictMatchEntry));
+		cx = snprintf( buffer, 256, "term_%d", 111);
+		buffer[cx] = 0;
+		int num = dict.PrefixMatch(buffer, cx, &rs);
+		EXPECT_GE(num, 3);
 	}
 }
 

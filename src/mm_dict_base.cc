@@ -338,7 +338,18 @@ int DictBase::ExactMatch(const char* q, u2 len) {
 }
 
 int DictBase::PrefixMatch(const char* q, u2 len, DictMatchResult* rs) {
-    return 0;
+	Darts::DoubleArray::result_pair_type result[MAX_PREFIX_SEARCH_RESULT];
+	DictMatchEntry mrs;
+	mrs.match._dict_id = _dict_id;
+	int num = _darts_idx->commonPrefixSearch(q, result, MAX_PREFIX_SEARCH_RESULT, len);
+	if(rs) {
+		for(int i=0; i<num; i++) {
+			mrs.match._len = result[i].length;
+			mrs.match._value = result[i].value;
+			rs->Match(mrs); //might be full (return -1 ), just ignore .
+		}
+	}
+	return num;
 }
 
 int DictBase::SaveRaw(const char* fname) {

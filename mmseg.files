@@ -26,7 +26,6 @@ src/mm_dict_schema.cc
 src/mm_dict_base.cc
 src/mm_dict_mgr.cc
 src/mm_dict_updatable.cc
-src/mm_match_result.cc
 src/mmseg_cli.cpp
 src/mmseg_main.cpp
 src/utils/pystring.cc

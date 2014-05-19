@@ -47,7 +47,6 @@ SET(LIBMMSEG_SOURCE
     mm_charmap.cc
     mm_stringpool.cc
     mm_entry_datapool.cc
-    mm_match_result.cc
     mm_dict_schema.cc
     mm_dict_base.cc
     mm_dict_mgr.cc

@@ -1,4 +1,4 @@
-/*
+ï»¿/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -14,13 +14,15 @@
 
 #if !defined(_DICTMATCHRESULT_H)
 #define _DICTMATCHRESULT_H
+#include <stdlib.h>
+#include <string.h>
 
 #include "csr_typedefs.h"
 
 namespace mm {
 
 /* 
- * Õâ¸öÀà¶¨Òå£¬½ö¹©²Î¿¼£¬ Êµ¼Ê¶¨ÒåÎªÒ»¸ö u8 µÄ union
+ * ä»…ä¾›å‚è€ƒ å®šä¹‰ä¸ºä¸€ä¸ª u8 çš„ union
  */
 typedef union DictMatchEntry {
 	struct {
@@ -35,12 +37,23 @@ typedef union DictMatchEntry {
 // 
 class DictMatchResult {
 public:
-    DictMatchResult(u2 max_match);  // max of match result.
-	~DictMatchResult();
-	void Reset();
-	u2 Match(DictMatchEntry entry);
-    int SetData(u1* ptr, u4 len);   // do NOT alloc _matches, reuse the ptr.
+    DictMatchResult(u1* ptr, u2 max_match)  // max of match result. ptr's size = sizeof(DictMatchEntry==u8) * max_match
+		:_pos(0), _max_match(max_match), _matches((DictMatchEntry*)ptr) {}
+		
+	void Reset() {
+		memset(_matches, 0, sizeof(DictMatchEntry));
+	}
+	inline int Match(DictMatchEntry& entry) {
+		// æ·»åŠ  æ–°çš„å‘½ä¸­ï¼Œ å¦‚æœå·²æ»¡ï¼Œåˆ™è¿”å› -1
+		if(_pos<_max_match) {
+			_matches[_pos].v = entry.v; // basic type op, ignore default copy construct
+			_pos ++;
+			return _pos;
+		}
+		return -1;
+	}
 private:
+	u2 _pos;
     u2 _max_match;
 	DictMatchEntry* _matches;
 };
