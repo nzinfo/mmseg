@@ -87,6 +87,7 @@ public:
 
     // return the entrydata corrosponding to the term.
     EntryData*   GetEntryData(const char* term, u2 len, bool bAppendIfNotExist = false);
+    i4           GetEntryOffset(const char* term, u2 len);
 	// if term_offset beyone the range, a system assert will be raised.
     EntryData*   GetEntryData(i4 term_offset);
 

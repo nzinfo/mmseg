@@ -24,9 +24,9 @@
 #include "utils/cedar.h"  //FIXME: license comflict. GPLv2 | LGPLv2.1
 #include "utils/darts.h"
 
-#define DICT_FLAG_IDX_DARTS         0
-#define DICT_FLAG_IDX_CEDAR         1
-#define DICT_FLAG_COMPRESS_ENTRY    2       // 目前版本的 entry 均不压缩， 以降低目前实现的复杂性
+#define DICT_FLAG_IDX_DARTS         1
+#define DICT_FLAG_IDX_CEDAR         2
+#define DICT_FLAG_COMPRESS_ENTRY    4       // 目前版本的 entry 均不压缩， 以降低目前实现的复杂性
 
 namespace mm {
 
@@ -67,6 +67,7 @@ DictBase::DictBase() {
     _dict_id     = 0;
     _darts_idx   = NULL;
     _cedar_idx   = NULL;
+	_string_pool = NULL;
     Reset();
 }
 
@@ -105,7 +106,7 @@ int DictBase::Save(const char* fname, u8 rev) {
     header.entry_count = _key2id.size();
 
     LOG(INFO) << "save dictionary begin " << fname;
-    std::FILE *fp = std::fopen(fname, "rb");
+    std::FILE *fp = std::fopen(fname, "wb");
 
     // deal with schema
     const std::string& schema_str = _schema.GetColumnDefine();
@@ -125,38 +126,54 @@ int DictBase::Save(const char* fname, u8 rev) {
     LOG(INFO) << "build entry index begin";
     {
         // build the darts | cedar index
+        BuildIndex();
 #if USE_CEDAR
         assert(0); // givme cedar index!!!
 #else
-        if(_darts_idx == NULL)
-            _darts_idx = new DartsDoubleArray();
-        // this code will be fucking slow.
-        std::vector<DartsEntry> v;
-        DartsEntry entry;
-        for(unordered_map<std::string, u4>::iterator it = _key2id.begin();
-                it !=  _key2id.end(); ++it) {
-            entry.term = it->first;
-            entry.id = _id2entryoffset[it->second];
-            v.push_back(entry);
-        }
-        // sort in alphabet order
-        std::sort(v.begin(), v.end(), EntryAscOrderCmp);
-		// build darts's key & value pair.
-		std::vector <Darts::DoubleArray::key_type *> key;
-		std::vector <Darts::DoubleArray::value_type> value;
-		for(std::vector<DartsEntry>::iterator it = v.begin(); it != v.end(); ++it) {
-			char* ptr = &( it->term[0] );
-			key.push_back(ptr);
-			value.push_back(it->id);
-		}
-        _darts_idx->build(key.size(), &key[0], 0, &value[0] ) ;
+		header.index_size = _darts_idx->size();
 #endif
     }
-    header.entry_pool_size = _darts_idx->size();
+    header.key_pair_size = 0;
+    if(header.flags & DICT_FLAG_IDX_DARTS)
+        header.key_pair_size = ( sizeof(u4) + sizeof(i4) ) * _key2id.size();
 
     LOG(INFO) << "build entry index done";
+    // write ...
+    std::fwrite(&header, sizeof(header), 1, fp); //header
+    std::fwrite(schema_str.c_str(), sizeof(char), schema_str.length(), fp); // scheam
+	{
+		u1* ptr = (u1*)malloc(header.string_pool_size);
+		_string_pool->Dump(ptr, header.string_pool_size);
+		std::fwrite(ptr, header.string_pool_size, 1, fp); // string pool
+		free(ptr);
+	}
+	
+	{
+		u1* ptr = (u1*)malloc(header.entry_pool_size);
+		_entry_pool->Dump(ptr, header.entry_pool_size);
+		std::fwrite(ptr, header.entry_pool_size, 1, fp); // entry pool
+		free(ptr);
+	}
 
-    // write darts...
+	if(header.flags & DICT_FLAG_IDX_DARTS)
+	{
+        // build darts's only string offset, id's mapping.
+        // string offset -> id , unsort order, coder(me) is lazy...
+        for(unordered_map<std::string, u4>::iterator it = _key2id.begin();
+                it !=  _key2id.end(); ++it) {
+            // use a string_pool's feature, each unique string exist only one copy.
+            i4 string_offset = _string_pool->AllocString(it->first.c_str(), it->first.length());
+            assert(string_offset>=0);
+            std::fwrite(&string_offset, sizeof(i4), 1, fp);\
+            u4 entry_offset = _id2entryoffset[it->second];
+            std::fwrite(&entry_offset, sizeof(u4), 1, fp);
+        }// end for
+	}
+    // the darts part, in prev version (inner version) of mmseg, there is no dart
+    if(header.flags & DICT_FLAG_IDX_DARTS)
+    {
+        std::fwrite(_darts_idx->array(), _darts_idx->size(), 1, fp);
+    }
     std::fclose(fp);
     LOG(INFO) << "save dictionary done " << fname;
     return 0;
@@ -196,11 +213,50 @@ u4 DictBase::EntryCount() {
 }
 
 u4 DictBase::BuildIndex() {
-    return 0;
+#if USE_CEDAR
+    assert(0); // givme cedar index!!!
+#else
+    if(_darts_idx == NULL)
+        _darts_idx = new DartsDoubleArray();
+    _darts_idx->clear();
+    // this code will be fucking slow.
+    std::vector<DartsEntry> v;
+    DartsEntry entry;
+    for(unordered_map<std::string, u4>::iterator it = _key2id.begin();
+            it !=  _key2id.end(); ++it) {
+        entry.term = it->first;
+        entry.id = _id2entryoffset[it->second];
+        v.push_back(entry);
+    }
+    // sort in alphabet order
+    std::sort(v.begin(), v.end(), EntryAscOrderCmp);
+    // build darts's key & value pair.
+    std::vector <Darts::DoubleArray::key_type *> key;
+    std::vector <Darts::DoubleArray::value_type> value;
+    for(std::vector<DartsEntry>::iterator it = v.begin(); it != v.end(); ++it) {
+        char* ptr = &( it->term[0] );
+        key.push_back(ptr);
+        value.push_back(it->id);
+    }
+    return _darts_idx->build(key.size(), &key[0], 0, &value[0] ) ;
+#endif
 }
 
 int DictBase::ExactMatch(const char* q, u2 len) {
-    return 0;
+    /*
+     * return term_offset if found. else -1 not found.
+     */
+#if USE_CEDAR
+    assert(0); // givme cedar index!!!
+#else
+    if(_darts_idx == NULL)
+        BuildIndex(); // assume always true.
+
+    Darts::DoubleArray::result_pair_type  rs;
+    _darts_idx->exactMatchSearch(q, rs, len);
+    // check unmatch.
+    return rs.value;
+#endif
 }
 
 int DictBase::PrefixMatch(const char* q, u2 len, DictMatchResult* rs) {
@@ -208,11 +264,23 @@ int DictBase::PrefixMatch(const char* q, u2 len, DictMatchResult* rs) {
 }
 
 int DictBase::SaveRaw(const char* fname) {
+#if USE_CEDAR
+    assert(0); // givme cedar index!!!
+#else
+    if(_darts_idx == NULL)
+        BuildIndex(); // assume always true.
+    _darts_idx->save(fname);
     return 0;
+#endif
 }
 
 int DictBase::LoadRaw(const char* fname) {
+#if USE_CEDAR
+    assert(0); // givme cedar index!!!
+#else
+    _darts_idx->open(fname);
     return 0;
+#endif
 }
 
 int DictBase::MakeUpdatable() {
@@ -265,7 +333,7 @@ EntryData* DictBase::GetEntryData(const char* term, u2 len, bool bAppendIfNotExi
 		u4 offset = _id2entryoffset[it->second]; // because I certanly sure about key exist in the map.
 		return GetEntryData((i4)offset);
     }
-    //FIXME: check in darts.
+    //FIXME: check in darts.  目前不需要
 
     // append
     if(bAppendIfNotExist) {
@@ -274,6 +342,17 @@ EntryData* DictBase::GetEntryData(const char* term, u2 len, bool bAppendIfNotExi
     return NULL;
 }
 
+i4  DictBase::GetEntryOffset(const char* term, u2 len){
+    if(_entry_pool == NULL) return -1;
+
+    std::string key(term, len);
+    unordered_map<std::string, u4>::iterator it = _key2id.find(key);
+    if(it != _key2id.end() ) {
+        // exist , lookup for offset
+        return (i4)_id2entryoffset[it->second]; // because I certanly sure about key exist in the map.
+    }
+    return -1;
+}
 
 EntryData* DictBase::GetEntryData(i4 term_offset) {
     return _entry_pool->GetEntry(term_offset);

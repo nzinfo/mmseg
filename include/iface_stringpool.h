@@ -33,6 +33,9 @@ public:
 	// return the string's ptr by string 's offset
     virtual const char* GetString(u4 offset, u2* data_length) = 0;
 	virtual u4 GetSize() = 0;
+
+    virtual int Dump(u1* ptr, u4 size) = 0;
+    virtual int Load(u1* ptr, u4 size) = 0;
 };
 
 } // namespace mm

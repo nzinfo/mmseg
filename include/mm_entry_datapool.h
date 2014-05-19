@@ -105,6 +105,12 @@ protected:
 	EntryDataPoolEntry *_current;
 	u2	_entry_size_uncompressed;
     u4  _entry_next_offset;
+
+public:
+    // function status code
+    static int STATUS_OK;
+    //static int STATUS_STRING_TOO_BIG;
+    static int STATUS_INSUFFICIENT_BUFFER;
 };
 
 } // namespace mm

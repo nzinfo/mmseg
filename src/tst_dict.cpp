@@ -58,6 +58,17 @@ TEST(DictBaseTest, NewTermTest)
 		const char* sptr = (const char*)entry->GetData(dict.GetSchema(), dict.GetStringPool(), 1, &data_len);
 		EXPECT_EQ(data_len, cx);
 		EXPECT_EQ(strncmp( sptr, buffer, cx ), 0);
+	} 
+	// test exactly match
+	{
+		int rs = dict.ExactMatch(buffer, cx);
+		int eoff = dict.GetEntryOffset(buffer, cx);
+		EXPECT_EQ(rs, eoff);
+
+		// test mismatch
+		buffer[0] = 'w';
+		rs = dict.ExactMatch(buffer, cx);
+		EXPECT_EQ(rs, -1);
 	}
 }
 

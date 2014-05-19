@@ -17,6 +17,9 @@
 
 namespace mm {
 
+int EntryDataPool::STATUS_OK = 0;
+int EntryDataPool::STATUS_INSUFFICIENT_BUFFER = -413;
+
 EntryData* EntryDataPoolEntry::NewEntry(u4 entry_size)
 {
     //u1* ptr = (_data_ptr+_used);
@@ -47,7 +50,17 @@ int EntryDataPool::Dump(u1* ptr, u4 size)
     /*
      *  此处可以通过写入文件句柄, 但是为了实现简化起见，处理为写入内存。
      */
-	return 0;
+    if (size < GetSize() )
+        return STATUS_INSUFFICIENT_BUFFER;
+
+    EntryDataPoolEntry* pool_ptr = _begin;
+    u1* current_ptr = ptr;
+    while(pool_ptr) {
+        memcpy(current_ptr, pool_ptr->_data_ptr, pool_ptr->_used);
+        current_ptr += pool_ptr->_used;
+        pool_ptr = pool_ptr->_next;
+    }
+    return STATUS_OK;
 }
 
 int EntryDataPool::Load(u1* ptr, u4 size)

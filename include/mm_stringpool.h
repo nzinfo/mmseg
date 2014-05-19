@@ -74,9 +74,9 @@ public:
 	virtual u4 GetSize() { return _total_size; }  // 返回连续存储需要的大小。
 
 public:
-	int Dump(u1* ptr, u4 size);
-	int Load(u1* ptr, u4 size);
-	int Reset();
+    virtual int Dump(u1* ptr, u4 size);
+    virtual int Load(u1* ptr, u4 size);
+    virtual int Reset();
 
 protected:
     StringPoolMemoryEntry* _begin;
