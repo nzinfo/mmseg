@@ -76,6 +76,13 @@ public:
         if(_schema_define) { free(_schema_define); _schema_define = NULL; }
     }
 
+
+	void Reset() {
+		if(_schema_define) { free(_schema_define); _schema_define = NULL; }
+		_data_entry_size = 0;
+		_columns.clear();
+		_column_by_name.clear();
+	}
 public:
     /*
      *  The Schema Define format:

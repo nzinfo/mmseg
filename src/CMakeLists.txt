@@ -79,6 +79,10 @@ ENDIF (WIN32)
 ADD_EXECUTABLE(tst_dict tst_dict.cpp )
 target_link_libraries(tst_dict mmseg_c glog pthread gflags gtest)
 
+ADD_EXECUTABLE(tst_dict_comp tst_dict_component.cpp )
+target_link_libraries(tst_dict_comp mmseg_c glog pthread gflags gtest)
+
+
 include_directories(${PROJECT_SOURCE_DIR}/third_party/luajit/src)
 # FIXME: should be build_dir
 include_directories(${PROJECT_BINARY_DIR}/third_party/luajit)

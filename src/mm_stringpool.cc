@@ -99,17 +99,17 @@ const char* StringPoolMemory::GetString(u4 offset, u2* data_length){
      *  offset 处指示的格式
      *  数据长度[2b] 实际数据
      */
-	StringPoolMemoryEntry* pool_ptr = _begin;
-	while(pool_ptr) {
-		if(offset > pool_ptr->_used ) {
-			offset -= pool_ptr->_used;
-		} else {
-			// meet the actually pool
-			*data_length = *( (u2*)(pool_ptr->_ptr + offset) );
-			return (char*)pool_ptr->_ptr + offset + sizeof(u2);	// skip the length.
-		}
-		pool_ptr = pool_ptr->_next;
-	}
+    StringPoolMemoryEntry* pool_ptr = _begin;
+    while(pool_ptr) {
+        if(offset > pool_ptr->_used ) {
+            offset -= pool_ptr->_used;
+        } else {
+            // meet the actually pool
+            *data_length = *( (u2*)(pool_ptr->_ptr + offset) );
+            return (char*)pool_ptr->_ptr + offset + sizeof(u2);	// skip the length.
+        }
+        pool_ptr = pool_ptr->_next;
+    }
 	*data_length = 0; // no such item.
     return NULL;
 }

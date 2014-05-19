@@ -3,7 +3,8 @@ design/class_segment.txt
 include/win32/dirent.h
 include/win32/realpath_win32.h
 include/csr_typedefs.h
-include/darts.h
+include/utils/darts.h
+include/utils/cedar.h
 include/iface_stringpool.h
 include/mm_hashmap.h
 include/mm_charmap.h
@@ -32,6 +33,7 @@ src/utils/pystring.cc
 src/utils/cityhash.cc
 src/tst_cmake.cpp
 src/tst_dict.cpp
+src/tst_dict_component.cpp
 src/tst_lua.cpp
 src/utils/assert.c
 src/utils/csr.h

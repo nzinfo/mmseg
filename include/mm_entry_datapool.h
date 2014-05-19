@@ -41,13 +41,17 @@ public:
         _size = entry_size * entry_count;
         _data_ptr = (u1*)malloc(_size);
     }
+    EntryDataPoolEntry(u1* ptr, u4 len)
+        :_data_ptr(ptr), _size(len), _used(len) {}
 
     // return NULL if no space for new entry.
     EntryData* NewEntry(u4 entry_size);
+    EntryData* GetEntry(u4 offset);
+
 protected:
     u4  _size;
     u4  _used;
-    u4  _entry_count;
+    u4  _entry_count; // 目前没用到
     u1* _data_ptr;
     EntryDataPoolEntry* _next;
 };
@@ -64,13 +68,16 @@ public:
 			_begin = NULL;
 			_current = NULL;
 			_updatable = true;
+            _entry_next_offset = 0;
 	}
 
 	virtual ~EntryDataPool();
 
 public:
     EntryData* NewEntry();
+    u4         NewEntryOffset();
 	EntryData* GetEntry(u4 offset);
+
 	// Compat EntryDataPool , 
 	// Update the _entries mapping;
 	// return DataPool's real size (compat size)
@@ -88,6 +95,7 @@ public:
 	int Dump(u1* ptr, u4 size);
 	int Load(u1* ptr, u4 size); //此处应该是 const, 实际也不会修改。但是为了能够 复用代码...
 	int Reset();
+    u4  GetSize() { return _entry_next_offset; }
 
 protected:
 	// Record Entry's index and offset in real databuffer's mapping.
@@ -96,6 +104,7 @@ protected:
 	EntryDataPoolEntry *_begin;
 	EntryDataPoolEntry *_current;
 	u2	_entry_size_uncompressed;
+    u4  _entry_next_offset;
 };
 
 } // namespace mm

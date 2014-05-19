@@ -185,7 +185,7 @@ public:
     }
 
     // the pool must be extactly the same whom pass to SetData
-    inline const u1* GetData(const DictSchema* schema, int idx, IStringPool* pool, u2* v_size) {
+    inline const u1* GetData(const DictSchema* schema, IStringPool* pool, int idx, u2* v_size) {
         u1* ptr = GetDataPtr(schema, idx);
         if(ptr == NULL)
             return NULL;

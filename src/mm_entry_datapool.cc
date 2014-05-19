@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -28,12 +28,25 @@ EntryData* EntryDataPoolEntry::NewEntry(u4 entry_size)
     return entry_ptr;
 }
 
+EntryData* EntryDataPoolEntry::GetEntry(u4 offset)
+{
+    // FIXME: check the offset 's range?
+    if(offset < _size) {
+        EntryData* entry_ptr = (mm::EntryData*) &_data_ptr[offset];
+        return entry_ptr;
+    }
+    return NULL;
+}
+
 EntryDataPool::~EntryDataPool() {
 	Reset();
 }
 
 int EntryDataPool::Dump(u1* ptr, u4 size)
 {
+    /*
+     *  此处可以通过写入文件句柄, 但是为了实现简化起见，处理为写入内存。
+     */
 	return 0;
 }
 
@@ -44,6 +57,17 @@ int EntryDataPool::Load(u1* ptr, u4 size)
 
 int EntryDataPool::Reset()
 {
+
+    EntryDataPoolEntry * ptr = _begin;
+    EntryDataPoolEntry * prev = NULL;
+    while(ptr) {
+        prev = ptr;
+        ptr = ptr->_next;
+        delete ptr;
+    }
+    _begin = _current = NULL;
+    _updatable = true;
+    _entry_next_offset = 0;
 	return 0;
 }
 
@@ -62,7 +86,32 @@ EntryData* EntryDataPool::NewEntry() {
         MakeNewEntryPool();
 		entry_ptr = _current->NewEntry(_entry_size_uncompressed);
     }
+
+    _entry_next_offset += _entry_size_uncompressed;
     return entry_ptr;
+}
+
+u4 EntryDataPool::NewEntryOffset() {
+   EntryData* ptr =  NewEntry();
+   if(ptr) {
+        return _entry_next_offset - _entry_size_uncompressed;
+   }
+   assert(false); // should never happen.
+   return 0;
+}
+
+EntryData* EntryDataPool::GetEntry(u4 offset) {
+    EntryDataPoolEntry* pool_ptr = _begin;
+    while(pool_ptr) {
+        if(offset > pool_ptr->_used ) {
+            offset -= pool_ptr->_used;
+        } else {
+            // meet the actually pool
+            return pool_ptr->GetEntry(offset);
+        }
+        pool_ptr = pool_ptr->_next;
+    }
+    return NULL;
 }
 
 int EntryDataPool::Compat() {
@@ -70,7 +119,10 @@ int EntryDataPool::Compat() {
 }
 
 void EntryDataPool::SetData(u1* ptr, u4 len) {
+    Reset();
 
+    EntryDataPoolEntry* entry = new EntryDataPoolEntry(ptr, len);
+    _begin = _current = entry;
 }
 
 EntryData* EntryDataPool::CloneEntry(const EntryData* entry) {
