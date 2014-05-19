@@ -88,7 +88,7 @@ public:
     const DictSchemaColumn* GetColumn(const char* column_name) const;
     u4 GetSize();   // 用于持久化, 缺少 Load & Save
     u2 GetEntryDataSize();  //定义的 EntryData 的最大尺寸, 实际根据定义 应该 u1 即可。
-	u2 GetColumnCount() {   return _columns.size(); }
+	u2 GetColumnCount() const {   return _columns.size(); } 
 
 	// if some column missing, @return will >0, the count is the missing columns.
     // if no suite column found, will return 0; the mask used by select data, eg. select id, pinyin from dictionary ...

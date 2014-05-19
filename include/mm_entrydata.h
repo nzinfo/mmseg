@@ -14,6 +14,7 @@
 
 #if !defined(_ENTRYDATA_H)
 #define _ENTRYDATA_H
+#include <assert.h>
 
 #include "csr_typedefs.h"
 #include "mm_dict_schema.h"
@@ -58,7 +59,7 @@ public:
          return !! ( ( *mask_ptr ) & ( 1 << 15 ) );
     }
 
-    inline bool HaveColumn(u2 idx) {
+    inline bool HaveColumn(int idx) {
          u2* mask_ptr = (u2*)this;
          // this trick disable warning C4800
          return !! ( ( *mask_ptr ) & ( 1 << idx ) );
@@ -88,11 +89,11 @@ public:
     inline int SetData(const DictSchema* schema, IStringPool* pool, const char* prop, const u1* v, u2 v_size) {
         const DictSchemaColumn* column = schema->GetColumn(prop);
         if(!column) return -1;
-        return SetData(schema, column->GetIndex(), pool, v, v_size);
+        return SetDataIdx(schema, pool, column->GetIndex(), v, v_size);
     }
 
     // set prop by index.
-    inline int SetU2(const DictSchema* schema, u2 idx, u2 v){
+    inline int SetU2(const DictSchema* schema, int idx, u2 v){
         if(!IsUnCompressed()) return -1;
         u2 offset = schema->GetColumn(idx).GetOffset();
         u1* ptr = (u1*)this;
@@ -105,7 +106,7 @@ public:
         return 0;
     }
 
-    inline int SetU4(const DictSchema* schema, u2 idx, u4 v) {
+    inline int SetU4(const DictSchema* schema, int idx, u4 v) {
         if(!IsUnCompressed()) return -1;
         u2 offset = schema->GetColumn(idx).GetOffset();
         u1* ptr = (u1*)this;
@@ -119,7 +120,7 @@ public:
         return 0;
     }
 
-    inline int SetU8(const DictSchema* schema, u2 idx, u8 v){
+    inline int SetU8(const DictSchema* schema, int idx, u8 v){
         if(!IsUnCompressed()) return -1;
         u2 offset = schema->GetColumn(idx).GetOffset();
         u1* ptr = (u1*)this;
@@ -134,13 +135,14 @@ public:
         return 0;
     }
 
-    inline int SetData(const DictSchema* schema, u2 idx, IStringPool* pool, const u1* v, u2 v_size){
+    inline int SetDataIdx(const DictSchema* schema, IStringPool* pool, int idx, const u1* v, u2 v_size){
         if(!IsUnCompressed()) return -1;
 
         u4 v_offset = pool->AllocString((char*)v, v_size);
         return SetU4(schema, idx, v_offset);
     }
 
+    // should NOT be called outside the EntryData
     inline u1* GetDataPtr(const DictSchema* schema, u2 idx) {
         // check column exist.
         if(!HaveColumn(idx))
@@ -161,21 +163,21 @@ public:
         return ptr;
     }
 
-    u2 GetU2(const DictSchema* schema, u2 idx, u2 default_v = 0) {
+    inline u2 GetU2(const DictSchema* schema, int idx, u2 default_v = 0) {
         u1* ptr = GetDataPtr(schema, idx);
         if(ptr == NULL)
             return default_v;
         return *(u2*)ptr;
     }
 
-    u4 GetU4(const DictSchema* schema, u2 idx, u4 default_v = 0) {
+    inline u4 GetU4(const DictSchema* schema, int idx, u4 default_v = 0) {
         u1* ptr = GetDataPtr(schema, idx);
         if(ptr == NULL)
             return default_v;
         return *(u4*)ptr;
     }
 
-    u8 GetU8(const DictSchema* schema, u2 idx, u8 default_v = 0) {
+    inline u8 GetU8(const DictSchema* schema, int idx, u8 default_v = 0) {
         u1* ptr = GetDataPtr(schema, idx);
         if(ptr == NULL)
             return default_v;
@@ -183,7 +185,7 @@ public:
     }
 
     // the pool must be extactly the same whom pass to SetData
-    const u1* GetData(const DictSchema* schema, u2 idx, IStringPool* pool, u4* v_size) {
+    inline const u1* GetData(const DictSchema* schema, int idx, IStringPool* pool, u2* v_size) {
         u1* ptr = GetDataPtr(schema, idx);
         if(ptr == NULL)
             return NULL;
@@ -191,16 +193,47 @@ public:
         return (const u1*)pool->GetString(offset, v_size);
     }
 
-    u4 GetCompatSize();
-    u4 GetSize();
-    int Dump(u1* ptr, u2 size, u2 fieldmask, IStringPool* pool);     // 根据字符掩码，将数据Dump到指定的内存区域， 返回实际写入的值, 包括字符串的？
+    inline u4 GetCompatSize(const DictSchema* schema) {
+        // 得到压缩后，需要占用的存储空间, 此处不记录字符串的长度，字符串长度有 stringpool 处理
+        // 如果尺寸没有变化，应该转为未压缩的形式存储。
+        u4 size = 0;
+        u2 mask = * ( (u2*)this );
+        for(u1 j = 0; j< schema->GetColumnCount(); j++)
+            if( (mask>>j) & 1)
+                size += schema->GetColumn(j).GetSize();
+        return size;
+    }
+
+    // 如果是得到 Entry的未压缩　Size 查询 Schema 即可
+    /*
+    u4 GetSize() {
+        return 0;
+    }
+    */
+    // 根据字符掩码，将数据Dump到指定的内存区域， 返回实际写入的值, 包括字符串。返回实际写入的数据量
+    int Dump(const DictSchema* schema, u1* ptr, u2 size, u2 fieldmask, IStringPool* pool){
+        /*
+         * TODO:
+         */
+        u1* current_ptr = ptr;
+        u2* mask_ptr = (u2*)ptr;
+        u2 mask = * ( (u2*)this );
+        fieldmask = fieldmask & mask; // the dump mask.
+        *mask_ptr = fieldmask & ((1<<15) -1); // default compress way. highest bit is 0
+        // FIXME: how to speed up? unfolder the loop  ?
+        for(u1 j = 0; j< schema->GetColumnCount(); j++) {
+            // check each column
+        } // end for.
+        assert(false);
+        //CHECK(false) << "function dump unimplement!";
+    }
 
 public:
     //u2      _mask;       // if in memory the highest bit of _mask is 1; else (on disk) it's 0
     //u1*       _data_ptr;     // the first 2byte is the mask.
     u1        _data;  // a ungly trick. I want this class act as a pointer to data_pool, EntryData* == u1*
     //u1      _is_compat;
-}EntryData;
+} EntryData;
 
 } //namespace mm
 

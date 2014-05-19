@@ -154,6 +154,18 @@ TEST(EntryPoolTest, NewEntryTest)
 	mm::EntryData* entryptr = pool.NewEntry();
 	mm::EntryData* entryptr2 = pool.NewEntry();
 	EXPECT_EQ(GET_ENTRY_DATA(entryptr2) - GET_ENTRY_DATA(entryptr), schema.GetEntryDataSize());
+    // EntryData* 实际是异化的 u1*
+    entryptr->SetU4(&schema, 0, 165536);
+    entryptr->SetDataIdx(&schema, &sp, 1, (const u1*)"hello", 5);
+    entryptr->SetDataIdx(&schema, &sp, 2, (const u1*)" world", 6);
+    entryptr->SetU2(&schema, 3, 65535);
+    EXPECT_EQ(entryptr->GetU4(&schema, 0), 165536);
+    EXPECT_EQ(entryptr->GetU2(&schema, 3), 65535);
+    {
+        u2 vsize = 0;
+        const char* sptr = (const char*)entryptr->GetData(&schema, 2, &sp, &vsize);
+        EXPECT_EQ(strncmp( sptr, " world", 6 ), 0);
+    }
 }
 
 /* -- end of file --  */

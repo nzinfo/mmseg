@@ -68,7 +68,8 @@ i4 StringPoolMemory::AllocString(const char* buf, u2 length){
 	}
 
 	// check current pool have enough space..  [size(u2), data]
-    if( (_current->_size - _current->_used) < length + 2) {
+	// FIX: warning C4018
+    if( _current->_size < ( _current->_used + length + 2) ) {
         // create new entry.
         MakeNewEntry(); //will update _current
     }

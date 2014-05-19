@@ -36,13 +36,6 @@ u2 EntryData::Save(u1* ptr, u2 size) {
 }
 */
 
-u4 EntryData::GetCompatSize() {
-    return 0;
-}
-
-u4 EntryData::GetSize() {
-    return 0;
-}
 
 int EntryData::Dump(u1* ptr, u2 size, u2 fieldmask, IStringPool* pool) {
     return 0;

@@ -29,9 +29,9 @@ public:
 	// The string pool format
 	// length:u4, data:u1
 	// 
-	virtual u4 AllocString(const char* buf, u2 length) = 0;
+	virtual i4 AllocString(const char* buf, u2 length) = 0;
 	// return the string's ptr by string 's offset
-	virtual const char* GetString(u4 offset, u4* data_length) = 0;
+    virtual const char* GetString(u4 offset, u2* data_length) = 0;
 	virtual u4 GetSize() = 0;
 };
 

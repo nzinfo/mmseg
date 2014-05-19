@@ -20,6 +20,7 @@
 #include <string.h>
 #include "csr_typedefs.h"
 #include "mm_hashmap.h"
+#include "iface_stringpool.h"
 
 #define STRING_POOL_ENTRY_DATA_SIZE     65535u
 
@@ -60,7 +61,8 @@ typedef struct StringPoolMemoryEntry
 // A string pool is a linked list of 64K bytes.
 //   { size, used, next, ptr_begin, ptr }
 // 
-class StringPoolMemory {
+class StringPoolMemory: public IStringPool {
+
 public:
 	StringPoolMemory();
 	virtual ~StringPoolMemory();
