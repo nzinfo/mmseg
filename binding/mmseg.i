@@ -20,6 +20,7 @@
 
 %{
 #include <csr_typedefs.h>
+#include "mm_entrydata.h"
 %}
 
 // apply type mapping
@@ -55,7 +56,7 @@
 // Any include files, definitions, etc. need to go here.
 %{
 #include "mm_charmap.h"
-#include "mm_entrydata.h"
+#include "mm_entrydata_script.h"
 #include "mm_match_result.h"
 #include "mm_dict_base.h"
 #include "mm_dict_mgr.h"
@@ -84,3 +85,4 @@ namespace std
 %include "mm_charmap.h"
 %include "mm_dict_base.h"
 %include "mm_dict_mgr.h"
+%include "mm_entrydata_script.h"

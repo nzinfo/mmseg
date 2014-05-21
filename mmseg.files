@@ -10,6 +10,7 @@ include/mm_hashmap.h
 include/mm_charmap.h
 include/mm_stringpool.h
 include/mm_entrydata.h
+include/mm_entrydata_script.h
 include/mm_entry_datapool.h
 include/mm_dict_schema.h
 include/mm_match_result.h

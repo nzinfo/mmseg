@@ -21,6 +21,7 @@
 #include "mm_match_result.h"
 #include "mm_hashmap.h"
 #include "mm_entrydata.h"
+#include "mm_entrydata_script.h"
 
 #define	MAX_PREFIX_SEARCH_RESULT	256u	// prefix 最多出现的结果。
 
