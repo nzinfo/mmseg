@@ -54,7 +54,11 @@
 // This section is copied verbatim into the generated source code.
 // Any include files, definitions, etc. need to go here.
 %{
-#include <mm_charmap.h>
+#include "mm_charmap.h"
+#include "mm_entrydata.h"
+#include "mm_match_result.h"
+#include "mm_dict_base.h"
+#include "mm_dict_mgr.h"
 %}
 
 // Language Specific Sections
@@ -78,3 +82,5 @@ namespace std
  
 /* Wrapper并生成代码 */
 %include "mm_charmap.h"
+%include "mm_dict_base.h"
+%include "mm_dict_mgr.h"

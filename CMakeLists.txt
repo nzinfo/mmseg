@@ -58,7 +58,7 @@ IF (WIN32)
 ENDIF (WIN32)
 
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
-set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
+set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )  # python & javaext all needs dll in bin
 
 add_subdirectory (third_party)
 

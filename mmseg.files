@@ -50,5 +50,7 @@ tests/tst_gtest.cpp
 include/bak.seg_result.h
 include/bak.segmentor.h
 README
+binding/CMakeLists.txt
+binding/mmseg.i
 src/CMakeLists.txt
 CMakeLists.txt

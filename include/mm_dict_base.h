@@ -80,7 +80,8 @@ public:
     // @ return , the inner term id of the newly append string. (term_offset)
     // if - stands term pre existed.
     //int Insert(string term); if return NULL, term existed.
-    EntryData* Insert(const char* term, u2 len);
+    // full spell the typename, swig require this.
+    mm::EntryData* Insert(const char* term, u2 len);
 
     u4 EntryCount();        // how many terms in the dictionary.
 
@@ -91,7 +92,7 @@ public:
 	int ExactMatch(const char* q, u2 len);
 	// return all entry share the same prefix.
 	// if rs is NULL, just return the count of result in prefix matching.
-	int PrefixMatch(const char* q, u2 len, DictMatchResult* rs);
+    int PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs);
 
     // Save Raw Darts into file, used for debug only.
     int SaveRaw(const char* fname);
@@ -100,14 +101,14 @@ public:
     int MakeUpdatable();
 	bool IsUpdatable();
 
-    IStringPool* GetStringPool();
-    const DictSchema* GetSchema() const { return &_schema; }
+    mm::IStringPool* GetStringPool();
+    const mm::DictSchema* GetSchema() const { return &_schema; }
 
     // return the entrydata corrosponding to the term.
-    EntryData*   GetEntryData(const char* term, u2 len, bool bAppendIfNotExist = false);
+    mm::EntryData*   GetEntryData(const char* term, u2 len, bool bAppendIfNotExist = false);
     i4           GetEntryOffset(const char* term, u2 len);
 	// if term_offset beyone the range, a system assert will be raised.
-    EntryData*   GetEntryData(i4 term_offset);
+    mm::EntryData*   GetEntryData(i4 term_offset);
 
 	// Set the dictionary of this dicionary in the current Dictmgr, whom loaded the dictionary.
 	void SetDictionaryId(u2 dict_id_of_mgr);

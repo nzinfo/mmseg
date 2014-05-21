@@ -253,6 +253,12 @@ int DictBase::Save(const char* fname, u8 rev) {
 int DictBase::Init(const char* dict_name, const char* schema_define) {
     Reset();
     _dict_name = dict_name;
+    // check dict_name special, session, delta
+    if( _dict_name == "special"
+        || _dict_name == "session"
+        || _dict_name == "delta")
+        return -1; //invalid dict_name;
+
     _schema.InitString(schema_define);
 
     _entry_pool = new EntryDataPool(_schema.GetEntryDataSize()); // entry_data_size decided by schema.

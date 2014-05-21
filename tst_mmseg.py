@@ -7,7 +7,7 @@ import os
 import sys
 
 pwd = os.path.abspath(os.getcwd())
-mmseg_so_path = os.path.join(pwd, 'lib')
+mmseg_so_path = os.path.join(pwd, 'bin')
 #print mmseg_so_path
 sys.path.insert(0, mmseg_so_path)
 
