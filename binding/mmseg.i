@@ -27,6 +27,7 @@
 %apply unsigned char { u1 }; 
 %apply unsigned short { u2 }; 
 %apply unsigned int { u4 }; 
+%apply int { i4 };
 %apply unsigned long long { u8 }; 
 
 /* Create some functions for working with "int *" */

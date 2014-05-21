@@ -49,6 +49,11 @@ bool EntryAscOrderCmp (const DartsEntry& elem1, const DartsEntry& elem2 )
     return elem1.term < elem2.term;
 }
 
+int progress_func_darts(std::size_t a, std::size_t b) {
+    printf("(%d/%d)", a, b);
+    return 0;
+}
+
 DictBase::DictBase() {
     _dict_id     = 0;
     _darts_idx   = NULL;
@@ -76,6 +81,10 @@ int DictBase::Load(const char* fname) {
     if (!fp) return -1; // file not found.
 
     Reset();
+
+	// init idx
+	if(_darts_idx == NULL)
+		_darts_idx = new DartsDoubleArray();
 
     // read header
     mmseg_dict_file_header header;
@@ -130,6 +139,9 @@ int DictBase::Load_201200(std::FILE *fp, const mmseg_dict_file_header* header) {
     // load darts
     if(header->flags & DICT_FLAG_IDX_DARTS)  //FIXME: how too load cedar ?
     {
+		// reset idx
+		_darts_idx->clear();
+
         u1* ptr = (u1*)malloc(header->index_size);
 		LOG(INFO) << "read darts @"<<file_offset;
         nwrite = std::fread(ptr, header->index_size, 1, fp);
@@ -212,7 +224,7 @@ int DictBase::Save(const char* fname, u8 rev) {
 		file_offset += header.string_pool_size;
 		free(ptr);
 	}
-	
+    if(1)
 	{
 		u1* ptr = (u1*)malloc(header.entry_pool_size);
 		_entry_pool->Dump(ptr, header.entry_pool_size);
@@ -296,15 +308,16 @@ u4 DictBase::EntryCount() {
     return _entry_count;
 }
 
-u4 DictBase::BuildIndex() {
+u4 DictBase::BuildIndex(bool bShowProc) {
 #if USE_CEDAR
     assert(0); // givme cedar index!!!
 #else
     if(_darts_idx == NULL)
         _darts_idx = new DartsDoubleArray();
     _darts_idx->clear();
-    // this code will be fucking slow.
+    // this code will be fucking slow.  // use 2min build 100M keys, seems acceptable.
     std::vector<DartsEntry> v;
+	v.reserve(1024*1024*10);
     DartsEntry entry;
     for(unordered_map<std::string, u4>::iterator it = _key2id.begin();
             it !=  _key2id.end(); ++it) {
@@ -317,12 +330,18 @@ u4 DictBase::BuildIndex() {
     // build darts's key & value pair.
     std::vector <Darts::DoubleArray::key_type *> key;
     std::vector <Darts::DoubleArray::value_type> value;
+	key.reserve(1024*1024*10);
+	value.reserve(1024*1024*10);
+
     for(std::vector<DartsEntry>::iterator it = v.begin(); it != v.end(); ++it) {
         char* ptr = &( it->term[0] );
         key.push_back(ptr);
         value.push_back(it->id);
     }
-    return _darts_idx->build(key.size(), &key[0], 0, &value[0] ) ;
+    if(bShowProc)
+        return _darts_idx->build(key.size(), &key[0], 0, &value[0], progress_func_darts) ;
+    else
+        return _darts_idx->build(key.size(), &key[0], 0, &value[0] ) ;
 #endif
 }
 
@@ -403,10 +422,16 @@ EntryData* DictBase::Insert(const char* term, u2 len)
      *  2 新增 string offset 与 entry offset 构成 pair
      * 2 已经存在 return NULL;
      */
+    // alloc in string pool, return value not used.
+    i4 string_offset = _string_pool->AllocString(term, len);
+    assert(string_offset>=0);
+
     std::string key(term, len);
     unordered_map<std::string, u4>::iterator it = _key2id.find(key);
     if(it != _key2id.end() )
         return NULL;
+
+    CHECK_NE(_entry_pool, (EntryDataPool*)NULL) << "entry_pool is null!";
 
     // alloc entry
     u4 key_id = _entry_pool->NewEntryOffset();
@@ -428,7 +453,7 @@ EntryData* DictBase::GetEntryData(const char* term, u2 len, bool bAppendIfNotExi
     if(it != _key2id.end() ) {
 		// exist , lookup for offset
 		u4 offset = _id2entryoffset[it->second]; // because I certanly sure about key exist in the map.
-		return GetEntryData((i4)offset);
+        return GetEntryDataByOffset((i4)offset);
     }
     //FIXME: check in darts.  目前不需要
 
@@ -451,7 +476,7 @@ i4  DictBase::GetEntryOffset(const char* term, u2 len){
     return -1;
 }
 
-EntryData* DictBase::GetEntryData(i4 term_offset) {
+EntryData* DictBase::GetEntryDataByOffset(i4 term_offset) {
 	if(_entry_pool == NULL) return NULL;
     return _entry_pool->GetEntry(term_offset);
 }

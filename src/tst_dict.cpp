@@ -13,6 +13,54 @@ int main(int argc, char** argv) {
 	return 0;
 }
 
+TEST(DictBaseTest, NewTermPropTest)
+{
+	/*
+     * 测试创建 新词典， 用于采用 utf-8 编码， 没有特别设计中文的测试程序
+     *  增加 100 条记录
+	 */
+    mm::DictBase dict;
+    char buffer [256];
+    int cx;
+
+    dict.Init("com.coreseek.test", "id:4;freq:4");
+
+    //for(int i = 0; i < 100000; i++)
+    mm::EntryData* entry = NULL;
+    for(int i = 0; i < 100; i++)        // simple & fast @develop stage.
+    {
+        cx = snprintf( buffer, 256, "term_%d", i );
+        buffer[cx] = 0;
+        entry = dict.Insert(buffer, cx);
+        EXPECT_NE(entry, (mm::EntryData*)NULL);
+        // FIXME: change to MARCO
+		entry->SetU4(dict.GetSchema(), 0, i);
+		entry->SetU4(dict.GetSchema(), "freq", 1);
+		//entry->SetDataIdx(dict.GetSchema(), dict.GetStringPool(), 1, (const u1*)buffer, cx);
+    }
+
+	// try get property before save
+	{
+		cx = snprintf( buffer, 256, "term_%d", 2 );
+		buffer[cx] = 0;
+		entry = dict.GetEntryData(buffer, cx);
+		EXPECT_NE(entry, (mm::EntryData*)NULL); 
+		EXPECT_EQ(entry->GetU4(dict.GetSchema(), 0 ), 2); // id
+		EXPECT_EQ(entry->GetU4(dict.GetSchema(), 1 ), 1); // freq
+	} 
+
+	// test exactly match
+	{
+		int rs = dict.ExactMatch(buffer, cx);
+		int eoff = dict.GetEntryOffset(buffer, cx);
+		EXPECT_EQ(rs, eoff);
+
+		entry = dict.GetEntryDataByOffset(eoff);
+		EXPECT_EQ(entry->GetU4(dict.GetSchema(), 0 ), 2); // id
+		EXPECT_EQ(entry->GetU4(dict.GetSchema(), 1 ), 1); // freq
+	}
+}
+
 TEST(DictBaseTest, NewTermTest)
 {
 	/*
@@ -86,9 +134,10 @@ TEST(DictBaseTest, DictSaveLoadTest)
 
     dict.Init("com.coreseek.test", "id:4;pinyin:s;thres:s;pos:2");
 
-    //for(int i = 0; i < 100000; i++)
     mm::EntryData* entry = NULL;
-    for(int i = 0; i < 200; i++)        // simple & fast @develop stage.
+
+    //for(int i = 0; i < 1000000; i++)
+	for(int i = 0; i < 200; i++)        // simple & fast @develop stage.
     {
         cx = snprintf( buffer, 256, "term_%d", i );
         buffer[cx] = 0;
@@ -113,7 +162,7 @@ TEST(DictBaseTest, DictSaveLoadTest)
 		EXPECT_GE(rs, 0);
 
 		// get property data.
-		entry = dict.GetEntryData(rs);
+        entry = dict.GetEntryDataByOffset(rs);
 		EXPECT_NE(entry, (mm::EntryData*)NULL); 
 		EXPECT_EQ(entry->GetU4(dict.GetSchema(), 0 ), 2); // id
 

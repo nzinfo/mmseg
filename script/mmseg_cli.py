@@ -137,7 +137,7 @@ def charmap(tolower, script, dict):
 @manager.option('-d', '--dict', dest='dict', default='mmseg.term')
 def basedict(mmsegsource, dict):
     schema = "id:4;freq:4"
-    mmseg.basedict_main("mmseg.term", mmsegsource, dict, schema)
+    mmseg.basedict_mmseg_main("mmseg.term", mmsegsource, dict, schema)
 
 if __name__ == "__main__":
     manager.run()

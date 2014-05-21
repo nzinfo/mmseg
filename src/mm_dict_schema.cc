@@ -55,10 +55,10 @@ int DictSchema::InitString(const char* schema_define) {
 		CHECK_LE(_columns.size(), MAX_COLUMN_COUNT) << "column count larger than max column count. " << MAX_COLUMN_COUNT;
     }
 	
-	_data_entry_size  = 0; // update entry's size.
+	_data_entry_size  = sizeof(u2); // update entry's size.  first u2 as field mask
 	for(std::vector<DictSchemaColumn>::iterator it = _columns.begin();
 		it != _columns.end(); ++it) {
-            it->SetOffset(_data_entry_size + sizeof(u2)); // the offset include mask. so that 0 can mark as a mistake.
+            it->SetOffset(_data_entry_size); // the offset include mask. so that 0 can mark as a mistake.
 			_data_entry_size += it->GetSize();
 	}
 

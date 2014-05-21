@@ -70,8 +70,9 @@ public:
 	 * 当 SetData 或 NewEntry 被调用时，再次判断
 	 */
 
+    // first 2 byte as the mask.
 	EntryDataPool(u2 entry_size_uncompressed):
-		_entry_size_uncompressed(entry_size_uncompressed) {
+        _entry_size_uncompressed(entry_size_uncompressed) {
 			_begin = NULL;
 			_current = NULL;
 			_updatable = true;

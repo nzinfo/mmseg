@@ -86,7 +86,7 @@ public:
 
     u4 EntryCount();        // how many terms in the dictionary.
 
-    u4 BuildIndex();
+    u4 BuildIndex(bool bShowProc = false);
 	// Find the exactly term in the diictionary.
 	// if found,  return the offset of term.
 	// if not, return ERR_TERM_NOT_FOUND
@@ -109,11 +109,16 @@ public:
     mm::EntryData*   GetEntryData(const char* term, u2 len, bool bAppendIfNotExist = false);
     i4           GetEntryOffset(const char* term, u2 len);
 	// if term_offset beyone the range, a system assert will be raised.
-    mm::EntryData*   GetEntryData(i4 term_offset);
+    mm::EntryData*   GetEntryDataByOffset(i4 term_offset);
 
 	// Set the dictionary of this dicionary in the current Dictmgr, whom loaded the dictionary.
 	void SetDictionaryId(u2 dict_id_of_mgr);
     u8 GetReversion();
+
+public: // script helper
+    const char SchemaColumnType(const char* column_name) {
+        return _schema.GetColumn(column_name)->GetType();
+    }
 
 protected:
     int Load_201200(std::FILE *fp, const mmseg_dict_file_header* header);

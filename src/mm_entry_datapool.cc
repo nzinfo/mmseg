@@ -11,7 +11,7 @@
  *    and/or other materials provided with the distribution.
  */
 
-
+#include <glog/logging.h>
 #include "mm_entrydata.h"
 #include "mm_entry_datapool.h"
 
@@ -22,13 +22,18 @@ int EntryDataPool::STATUS_INSUFFICIENT_BUFFER = -413;
 
 EntryData* EntryDataPoolEntry::NewEntry(u4 entry_size)
 {
-    //u1* ptr = (_data_ptr+_used);
-    EntryData* entry_ptr = (mm::EntryData*) &_data_ptr[_used];
-    _used += entry_size;
+	// check is fill
+	if(_used + entry_size < _size) {
+		//u1* ptr = (_data_ptr+_used);
+		EntryData* entry_ptr = (mm::EntryData*) &_data_ptr[_used];
+		_used += entry_size;
 
-    // mark as uncompresed.
-    entry_ptr->SetAsUnCompressed();
-    return entry_ptr;
+		// mark as uncompresed.
+		entry_ptr->SetAsUnCompressed();
+        CHECK_EQ(entry_ptr, (mm::EntryData*)_data_ptr +_used - entry_size) << "new entry error.";
+        return entry_ptr;
+	}
+	return NULL;
 }
 
 EntryData* EntryDataPoolEntry::GetEntry(u4 offset)
@@ -149,9 +154,9 @@ EntryData* EntryDataPool::CloneEntry(const EntryData* entry) {
 
 int EntryDataPool::MakeNewEntryPool() {
     EntryDataPoolEntry* entry = new EntryDataPoolEntry(_entry_size_uncompressed, MAX_ENTRYPOOL_SIZE);
-
     _current->_next = entry;
     _current = entry;
+	LOG(INFO) << "new entry pool created.";
     return 0;
 }
 
