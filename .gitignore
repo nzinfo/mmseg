@@ -23,6 +23,6 @@ ext/*.cpp
 tmp/
 var/
 refer/
-build/
+/build/
 bld/
 bld*

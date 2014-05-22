@@ -5,5 +5,6 @@
 """
 from .charmap import CharMapDict
 from .basedict import BaseDict, basedict_mmseg_main
+from .basedict_cedict_import import basedict_cedict_main
 
 # -*- end of file -*-
