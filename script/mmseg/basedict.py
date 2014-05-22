@@ -81,7 +81,7 @@ class BaseDict():
             print term, entry , "term dup."
             return
 
-        if True:
+        if False:
             if term == u"中国".encode('utf8') :
                 props['freq'] = 2008
 
@@ -114,9 +114,9 @@ class BaseDict():
 
     def Match(self, s):
         entry_offset = BaseDict._mmseg.DictBase_ExactMatch(self._dt, s, len(s))
-        #return entry_offset
+        return entry_offset
 
-        if True:
+        if False:
             print entry_offset
             entry = BaseDict._mmseg.DictBase_GetEntryDataByOffset(self._dt, entry_offset)
             print BaseDict._mmseg.EntryDataWrap_GetU4(self._entry_helper, entry, BaseDict._mmseg.DictBase_GetSchema(self._dt), "freq", 0)

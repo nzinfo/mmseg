@@ -55,3 +55,4 @@ binding/CMakeLists.txt
 binding/mmseg.i
 src/CMakeLists.txt
 CMakeLists.txt
+build_dicts.bat
