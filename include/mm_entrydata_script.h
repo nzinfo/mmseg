@@ -44,9 +44,9 @@ public:
     }
 
 	// SetTheStringValue. In fact store the string offset of the string pool.
-	// As a shortcut of SetU4
-    int SetData(mm::EntryData* entry, const mm::DictSchema* schema, mm::IStringPool* pool, const char* prop, const u1* v, u2 v_size) {
-        return entry->SetData(schema, pool, prop, v, v_size);
+	// As a shortcut of SetU4 
+    int SetData(mm::EntryData* entry, const mm::DictSchema* schema, mm::IStringPool* pool, const char* prop, const char* v, u2 v_size) {
+        return entry->SetData(schema, pool, prop, (const u1*)v, v_size);
     }
 
 
@@ -66,9 +66,9 @@ public:
     }
 
     // the pool must be extactly the same whom pass to SetData
-    const u1* GetData(mm::EntryData* entry, const mm::DictSchema* schema, mm::IStringPool* pool, const char* prop, u2* v_size) {
+    const char* GetData(mm::EntryData* entry, const mm::DictSchema* schema, mm::IStringPool* pool, const char* prop, u2* v_size) {
         const DictSchemaColumn* column = schema->GetColumn(prop);
-        return entry->GetData(schema, pool, column->GetIndex(), v_size);
+        return (const char*)entry->GetData(schema, pool, column->GetIndex(), v_size);
     }
 };
 

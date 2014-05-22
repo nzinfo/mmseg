@@ -437,7 +437,10 @@ EntryData* DictBase::Insert(const char* term, u2 len)
     u4 key_id = _entry_pool->NewEntryOffset();
     _key2id[key] = key_id;
     _id2entryoffset[key_id] = key_id;
-    return _entry_pool->GetEntry(key_id);
+    EntryData* entry = _entry_pool->GetEntry(key_id);
+
+    CHECK_NE(entry, (EntryData*)NULL) << "entry_pool is fill? " << key_id;
+    return entry;
 }
 
 EntryData* DictBase::GetEntryData(const char* term, u2 len, bool bAppendIfNotExist) {

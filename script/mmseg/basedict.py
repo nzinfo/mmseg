@@ -77,7 +77,10 @@ class BaseDict():
         """
         self.i += 1
         entry = BaseDict._mmseg.DictBase_Insert(self._dt, term, len(term))
-        #print term
+        if entry == None:
+            print term, entry , "term dup."
+            return
+
         if True:
             if term == u"中国".encode('utf8') :
                 props['freq'] = 2008

@@ -43,15 +43,21 @@ class CEDictReader(BaseReader):
             simp_key = simp_key.encode('utf-8').strip()
             trad_key = trad_key.encode('utf-8').strip()
             reading = reading.encode('utf-8').strip()
-            keys[trad_key] = 1
-            if trad_key != simp_key:
-                self._terms.append(
-                    (trad_key, 1, [reading, simp_key])
-                )
+
+            if trad_key not in keys:
+                if trad_key != simp_key:
+                    self._terms.append(
+                        (trad_key, 1, [reading, simp_key])
+                    )
+                else:
+                    self._terms.append(
+                        (trad_key, 1, [reading, None])
+                    )
             else:
-                self._terms.append(
-                    (trad_key, 1, [reading, None])
-                )
+                #FIXME: update the property ?
+                pass
+
+            keys[trad_key] = 1
             if simp_key not in keys:
                 keys[simp_key] = 1
                 self._terms.append(
@@ -77,13 +83,13 @@ def basedict_cedict_main(dict_name, fsource, dict_fname):
 
     for term in reader.get_terms():
         term_txt, freq, props = term  # props is a vector of props value, each reader are diff.
-        term_txt = term_txt.encode('utf-8')
+        term_txt = term_txt   #.encode('utf-8') in cedict
         freq = int(freq)
         #print term_txt, type(term_txt)
         if props[1]:
-            d.AddItem(term_txt, {"freq": freq, 'pinyin':props[0], 'simp':props[1]})
+            d.AddItem(term_txt, {"freq": freq, 'pinyin': props[0], 'simp': props[1]})
         else:
-            d.AddItem(term_txt, {"freq": freq, 'pinyin':props[0] })
+            d.AddItem(term_txt, {"freq": freq, 'pinyin': props[0]})
 
     d.Save(dict_fname, 1)  # rev: 1
     # check load

@@ -2,6 +2,7 @@
 *.o
 *.a
 *.lib
+*.db
 *.so
 *.pyc
 *.user*
