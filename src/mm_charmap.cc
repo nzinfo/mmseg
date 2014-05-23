@@ -60,7 +60,8 @@ CharMapper::Load(const char* filename)
     //printf("I got %s %d.\n", filename, this->_bDefaultPass);
     // legacy code, use load into memory switch only. bLoadMem = true
     u1* ptr = NULL;
-    u4        ptr_length = 0;
+	u1* ptr_begin = NULL;
+    u4  ptr_length = 0;
     {
         std::ifstream ifs(filename, std::ios::binary|std::ios::ate);
         if(!ifs) {
@@ -70,7 +71,7 @@ CharMapper::Load(const char* filename)
         std::ifstream::pos_type pos = ifs.tellg();
         ptr_length = (u4)pos;
 
-        ptr = new u1[ptr_length];
+        ptr_begin = ptr = new u1[ptr_length];
         ifs.seekg(0, std::ios::beg);
         ifs.read((char*)ptr, ptr_length);
         ifs.close();
@@ -115,7 +116,7 @@ CharMapper::Load(const char* filename)
     LOG(INFO) << "load charmap done " << filename ;
 
 CHARMAP_LOADFAIL:
-    SafeDelete(ptr);
+    SafeDelete(ptr_begin);
     return CharMapper::STATUS_OK;
 }
 

@@ -85,6 +85,7 @@ public:
     mm::EntryData* Insert(const char* term, u2 len);
 
     u4 EntryCount();        // how many terms in the dictionary.
+    const char* GetDiskEntryByIndex(u4 idx, u2 *key_len, u4* entry_offset);
 
     u4 BuildIndex(bool bShowProc = false);
 	// Find the exactly term in the diictionary.
@@ -115,6 +116,10 @@ public:
 	void SetDictionaryId(u2 dict_id_of_mgr);
     u8 GetReversion();
 
+    const std::string& GetDictName() const {
+        return _dict_name;
+    }
+
 public: // script helper
     const char SchemaColumnType(const char* column_name) {
         return _schema.GetColumn(column_name)->GetType();
@@ -134,6 +139,7 @@ protected:
     std::string     _dict_name;
     u8              _reversion;
     u4              _entry_count;
+    u4*             _entry_string2offset; // 仅在从磁盘加载时有作用
     /*
      *  id 为 term 加入时的 entry_offset。 引入 id 的原因在于 entry_offset 会随着 entry_pool 的压缩而发生变化。
      */

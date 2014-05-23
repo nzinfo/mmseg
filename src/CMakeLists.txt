@@ -78,6 +78,9 @@ ENDIF (WIN32)
 ADD_EXECUTABLE(tst_dict tst_dict.cpp )
 target_link_libraries(tst_dict mmseg_c glog pthread gflags gtest)
 
+ADD_EXECUTABLE(tst_dict_mgr tst_dict_mgr.cpp )
+target_link_libraries(tst_dict_mgr mmseg_c glog pthread gflags gtest)
+
 ADD_EXECUTABLE(tst_dict_comp tst_dict_component.cpp )
 target_link_libraries(tst_dict_comp mmseg_c glog pthread gflags gtest)
 

@@ -15,9 +15,16 @@
 #if !defined(_DICTMGR_H)
 #define _DICTMGR_H
 
+#include "mm_charmap.h"
 #include "mm_dict_base.h"
+#include "mm_dict_pharse.h"
+#include "mm_dict_term.h"
 
-#define MAX_TERM_DICTIONARY 32
+
+// total 32, 4 for reverse; 20 for term 8 for pharse
+#define DICTIONARY_BASE     4
+#define MAX_TERM_DICTIONARY 20
+#define MAX_PHARSE_DICTIONARY 8
 
 namespace mm {
 
@@ -52,14 +59,16 @@ class DictMgr {
      *  - 需要在词典初始化的时候，检查名称，避免使用系统的名字
      */
 public:
-    DictMgr() {}
+    DictMgr() {
+        memset(_term_dictionaries, 0, sizeof(_term_dictionaries));
+        memset(_pharse_dictionaries, 0, sizeof(_pharse_dictionaries));
+        _delta_dictionary = NULL;
+
+        _mapper = new mm::CharMapper(true);
+    }
     virtual ~DictMgr();
 
 public:
-    //DictTerm* term_dictionaries[MAX_TERM_DICTIONARY];
-    mm::DictUpdatable* delta_dictionary;
-    //DictPharse* pharse_dictionaries;
-
     // 加载基本词条 , 格式与 DictBase 一样， 根据扩展名区分
     int LoadTerm(const char* dict_path);
     // 加载短语
@@ -68,11 +77,9 @@ public:
     int LoadSpecial(const char* dict_path);
 
     mm::DictBase* GetDictionary(const char* dict_name);
+    // 性能并不比 直接用名字好，仅仅是为了检查加载的情况
     mm::DictBase* GetDictionary(u2 dict_id); //not for special & user
-    u2 GetDictionaryIdx(const char* dict_name);
-
-    // 根据名称得到 Special 词典
-    mm::DictBase* GetDictionarySepcial(const char* dict_name);
+    //u2 GetDictionaryIdx(const char* dict_name);
 
     // 根据基本词条和短语 构建唯一的 darts 检索表
     int LoadIndexCache(const char* fname);
@@ -99,6 +106,22 @@ public:
 
 protected:
     int GetDictFileNames(const char* dict_path, std::string fext, std::vector<std::string> &files);
+
+protected:
+    CharMapper* _mapper;
+    DictTerm* _term_dictionaries[MAX_TERM_DICTIONARY];
+    DictUpdatable* _delta_dictionary;
+    DictPharse* _pharse_dictionaries[MAX_PHARSE_DICTIONARY];
+    std::vector<DictTerm*> _special_dictionary;
+
+    unordered_map<std::string, mm::DictBase*> _name2dict;
+    unordered_map<u2, std::string> _id2name;
+
+    // for reload
+    std::string _charmap_fname;
+    std::vector<std::string> _terms_fname;
+    std::vector<std::string> _pharses_fname;
+    std::vector<std::string> _specials_fname;
 };
 
 } // namespace mm

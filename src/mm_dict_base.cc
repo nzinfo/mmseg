@@ -60,6 +60,8 @@ DictBase::DictBase() {
     _cedar_idx   = NULL;
 	_string_pool = NULL;
 	_entry_pool = NULL;
+
+    _entry_string2offset = NULL;
     Reset();
 }
 
@@ -70,6 +72,9 @@ DictBase::~DictBase() {
 
     SafeDelete(_darts_idx);
     SafeDelete(_cedar_idx);
+    if(_entry_string2offset)
+        free(_entry_string2offset);
+    _entry_string2offset = NULL;
 }
 
 int DictBase::Load(const char* fname) {
@@ -131,9 +136,11 @@ int DictBase::Load_201200(std::FILE *fp, const mmseg_dict_file_header* header) {
     // ignore mapping
     if(header->flags & DICT_FLAG_IDX_DARTS)
     {
+        _entry_string2offset = (u4*) malloc(header->key_pair_size);
         // these data will be used when support in dict update.
 		LOG(INFO) << "read(seek) idmap @"<<file_offset;
-        std::fseek(fp, header->key_pair_size, SEEK_CUR);
+        nwrite = std::fread(_entry_string2offset, header->key_pair_size, 1, fp);
+        //std::fseek(fp, header->key_pair_size, SEEK_CUR);
 		file_offset += header->key_pair_size;
     }
     // load darts
@@ -260,6 +267,18 @@ int DictBase::Save(const char* fname, u8 rev) {
     std::fclose(fp);
     LOG(INFO) << "save dictionary done " << fname;
     return 0;
+}
+
+const char* DictBase::GetDiskEntryByIndex(u4 idx, u2* key_len, u4* entry_offset) {
+    if(!_entry_string2offset)
+        return NULL;
+    if(idx < EntryCount()) {
+        u4 string_offset = _entry_string2offset[idx*2];
+        if(entry_offset)
+            *entry_offset = _entry_string2offset[idx*2+1];
+        return this->_string_pool->GetString(string_offset, key_len);
+    }
+    return NULL;
 }
 
 int DictBase::Init(const char* dict_name, const char* schema_define) {

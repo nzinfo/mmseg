@@ -33,6 +33,7 @@ src/utils/pystring.cc
 src/utils/cityhash.cc
 src/tst_cmake.cpp
 src/tst_dict.cpp
+src/tst_dict_mgr.cpp
 src/tst_dict_component.cpp
 src/tst_lua.cpp
 src/utils/assert.c

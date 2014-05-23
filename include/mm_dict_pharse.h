@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -13,29 +13,22 @@
  */
 
 
-#if !defined(_DICTUPDATABLE_H)
-#define _DICTUPDATABLE_H
+#if !defined(_DICTPHARSE_H)
+#define _DICTPHARSE_H
 
 #include "mm_dict_base.h"
-#include "mm_dict_mgr.h"
 
 namespace mm {
 
-// The delta terms of DictMgr @runtime.
-// if value of on term is 0, means delete.
-// 
-class DictUpdatable : public DictBase {
+class DictPharse : public DictBase {
 public:
-    DictUpdatable(DictMgr* mgr);
-    virtual ~DictUpdatable() {}
-public:
-    int Insert(u2 dict_id, const char* term, u2 term_len);
-    int Remove(u2 dict_id, const char* term, u2 term_len);  // 删除某个词典中的词条
-    int Remove(const char* term, u2 term_len);              // 删除全部的词条
-protected:
-	DictMgr* _mgr;
+	/*
+	void GetTermID(string term) {
+
+	}
+	*/
 };
 
-} //mm namespace
+} // end namespace
 
-#endif  //_DICTUPDATABLE_H
+#endif  //_DICTPHARSE_H
