@@ -59,8 +59,23 @@ u2 encode_entry_in_dict(EntryInDict *entry, u1* entries){
     return (u2)(ptr - entries);
 }
 
-u2 decode_entry_to_matchentry(u2 term_len, DictMatchEntry* matches){
-    return 0;
+u2 decode_entry_to_matchentry(const u1* entries, u2 data_len, u2 term_len, DictMatchResult* rs){
+   const u1* ptr = entries;
+    u2  step_len = 0;
+    DictMatchEntry m;
+    int cnt = 0;
+
+    while(*ptr && (ptr < entries + data_len) ) {
+        m.match._dict_id = *ptr;
+        ptr ++;
+        m.match._len = term_len;
+        m.match._value = csr::csrUTF8Decode(ptr, step_len);
+        rs->Match(m);
+
+        ptr += step_len;
+        cnt ++;
+    };
+    return cnt;
 }
 
 struct Hash_Func
@@ -88,7 +103,9 @@ struct Cmp
     }
 };
 
-typedef unordered_map<const char* , EntryInDict*, Hash_Func, Cmp> keymap;
+//typedef unordered_map<const char* , EntryInDict*, Hash_Func, Cmp> keymap;
+
+typedef unordered_map<std::string, EntryInDict* > keymap;
 
 //typedef std::vector< EntryInDict > EntryInDictList;
 
@@ -108,6 +125,7 @@ int DictMgr::LoadTerm(const char* dict_path) {
     // if path have more dict. only the first 20 , 24 solt, 0~3 reversed.
     int nfiles = GetDictFileNames(dict_path, ".uni", charmap_dicts);
 	// if more than one file , accept the 1st.
+	if(nfiles)
     {
         // _mapper 不需要 Reset | Clear， Load 的同时清除
         _mapper->Load(charmap_dicts[0].c_str());
@@ -204,12 +222,20 @@ int DictMgr::LoadIndexCache(const char* fname) {
     /*
      * 词条， (dictid:u1, offset:u4)
      * 不能每个词条一个属性，因为词库的属性最多 15 个。
+     *
+     * 目前不对 cache 与 词库的更新状态进行检测， 或者， 不使用 cacheindex 功能
      */
-    return 0;
+    if(!_global_idx)
+        return -1;
+
+    return _global_idx->Load(fname);
 }
 
 int DictMgr::SaveIndexCache(const char* fname) {
-    return 0;
+    if(!_global_idx)
+        return -1;
+
+    return _global_idx->Save(fname, 1);
 }
 
 int DictMgr::BuildIndex() {
@@ -272,31 +298,31 @@ int DictMgr::BuildIndex() {
         // alloc all possible entryindict.
         EntryInDict* pool = (EntryInDict*) malloc( total_entry * sizeof(EntryInDict) );
         EntryInDict* pool_ptr = pool;
-        char * string_pool = (char*)malloc(total_stringpool_size + total_entry); //add more space, unness.
-		memset(string_pool, 0, total_stringpool_size + total_entry);
+        //char * string_pool = (char*)malloc(total_stringpool_size + total_entry); //add more space, unness.
+        //memset(string_pool, 0, total_stringpool_size + total_entry);
 
-        char * string_pool_ptr = string_pool;
+        //char * string_pool_ptr = string_pool;
 
         EntryInDict entry;
 
-        unordered_map<const char*, EntryInDict*>::iterator it;
+        keymap::iterator it;
         for(int i=0; i<MAX_TERM_DICTIONARY; i++) {
             if(_term_dictionaries[i] != NULL ) {
                 entry.dict_id = i + DICTIONARY_BASE;
                 for(u4 j=0; j<_term_dictionaries[i]->EntryCount(); j++) {
                     const char* ptr = _term_dictionaries[i]->GetDiskEntryByIndex(j, &key_len, &entry_offset);
                     //printf("%*.*s/o ", key_len, key_len, ptr);
-                    memcpy(string_pool_ptr, ptr, key_len);
-                    string_pool_ptr[key_len] = 0;
-                    //std::string key(ptr, key_len);
+                    //memcpy(string_pool_ptr, ptr, key_len);
+                    //string_pool_ptr[key_len] = 0;
+                    std::string key(ptr, key_len);
                     pool_ptr->dict_id = entry.dict_id;
                     pool_ptr->entry_offset = entry_offset;
                     pool_ptr->next = NULL;
 
-                    it = keys.find(string_pool_ptr);
+                    it = keys.find(key);
                     if(it == keys.end()) {
                         // create new
-                        keys[string_pool_ptr] = pool_ptr;
+                        keys[key] = pool_ptr;
                     } else{
                         // fill the nex
                         EntryInDict* key_entry_ptr = it->second;
@@ -305,7 +331,7 @@ int DictMgr::BuildIndex() {
                         key_entry_ptr->next = pool_ptr;
                     }
                     pool_ptr ++;
-                    string_pool_ptr += key_len + 1;
+                    //string_pool_ptr += key_len + 1;
                 }
             } // end if _term_dictionaries
         } // end for
@@ -316,17 +342,17 @@ int DictMgr::BuildIndex() {
                 for(u4 j=0; j<_pharse_dictionaries[i]->EntryCount(); j++) {
                     const char* ptr = _pharse_dictionaries[i]->GetDiskEntryByIndex(j, &key_len, &entry_offset);
 
-                    memcpy(string_pool_ptr, ptr, key_len);
-                    string_pool_ptr[key_len] = 0;
-                    //std::string key(ptr, key_len);
+                    //memcpy(string_pool_ptr, ptr, key_len);
+                    //string_pool_ptr[key_len] = 0;
+                    std::string key(ptr, key_len);
                     pool_ptr->dict_id = entry.dict_id;
                     pool_ptr->entry_offset = entry_offset;
                     pool_ptr->next = NULL;
 
-                    it = keys.find(string_pool_ptr);
+                    it = keys.find(key);
                     if(it == keys.end()) {
                         // create new
-                        keys[string_pool_ptr] = pool_ptr;
+                        keys[key] = pool_ptr;
                     } else{
                         // fill the nex
                         EntryInDict* key_entry_ptr = it->second;
@@ -335,7 +361,7 @@ int DictMgr::BuildIndex() {
                         key_entry_ptr->next = pool_ptr;
                     }
                     pool_ptr ++;
-                    string_pool_ptr += key_len + 1;
+                    //string_pool_ptr += key_len + 1;
                 }
             }
         }
@@ -352,17 +378,18 @@ int DictMgr::BuildIndex() {
             mm::EntryData* entry = NULL;
             for(keymap::iterator it = keys.begin();
                     it !=  keys.end(); ++it) {
-                entry = _global_idx ->Insert( it->first, strlen(it->first) );
-				printf("inser key =%s, %d, %p\n", it->first, strlen(it->first), it->first);
+                entry = _global_idx ->Insert( it->first.c_str(), it->first.length() );
+				//printf("inser key =%s, %d, %p\n", it->first, strlen(it->first), it->first);
                 CHECK_NE(entry, (mm::EntryData*)NULL) << "dup key?";
                 buf_len = encode_entry_in_dict(it->second, entries);
                 entry->SetDataIdx(_global_idx->GetSchema(), _global_idx->GetStringPool(), 0, (const u1*)entries, buf_len);
             }
+			_global_idx->BuildIndex();
         }
         // free
         keys.clear();
         free(pool);
-        free(string_pool);
+        //free(string_pool);
     }
 	LOG(INFO) << "build index done ";
     return 0;
@@ -370,7 +397,7 @@ int DictMgr::BuildIndex() {
 
 int DictMgr::Reload() {
     // unload all & reload by name. ， 有可能文件已经被删除。加载前需要检查
-
+    // 目前不提供
     return 0;
 }
 
@@ -404,10 +431,32 @@ int DictMgr::VerifyIndex() {
 }
 
 int DictMgr::ExactMatch(const char* q, u2 len, DictMatchResult* rs) {
-    return 0;
+    if(!_global_idx)
+        BuildIndex();
+    int v = _global_idx->ExactMatch(q, len);
+    if (v >= 0) {
+        // get the entry's data
+        mm::EntryData* entry = NULL;
+        entry = _global_idx->GetEntryDataByOffset(v);
+        u2 data_len = 0;
+		CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
+        const char* sptr = (const char*)entry->GetData(_global_idx->GetSchema(),
+                                                       _global_idx->GetStringPool(), 0, &data_len);
+        // decode sptr
+        return decode_entry_to_matchentry((const u1*)sptr, data_len, len, rs);
+    }else
+        return 0; // no entry found.
 }
 
 int DictMgr::PrefixMatch(const char* q, u2 len, DictMatchResult* rs) {
+
+    /*
+     *
+     */
+
+    if(!_global_idx)
+        BuildIndex();
+
     return 0;
 }
 

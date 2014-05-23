@@ -95,6 +95,8 @@ def basedict_cedict_main(dict_name, fsource, dict_fname):
     # check load
     #d = BaseDict()
     #d.Load(dict_fname)
-    print d.Match(u"中国".encode('utf8'))
+    off = d.Match(u"中文".encode('utf8'))
+    print off, d.GetString(off, "pinyin")
+    #print d.Match(u"中国".encode('utf8'))
 
 # -*- end of file -*-

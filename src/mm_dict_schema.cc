@@ -87,9 +87,9 @@ int DictSchema::InitString(const char* schema_define) {
     return 0;
 }
 
-std::string DictSchema::GetColumnDefine() {
+const std::string DictSchema::GetColumnDefine() const {
     std::ostringstream oss;
-    for(std::vector<DictSchemaColumn>::iterator it = _columns.begin();
+    for(std::vector<DictSchemaColumn>::const_iterator it = _columns.begin();
         it != _columns.end(); ++it) {
         oss<<it->GetName()<<":"<<it->GetType()<<";";
     }

@@ -37,7 +37,7 @@ public:
     }
 
 public:
-    inline const char* GetName() {
+    inline const char* GetName() const {
         return _name;
     }
 
@@ -89,7 +89,7 @@ public:
      *   <columen_name>:<char of type>[;]
      */
     int InitString(const char* schema_define);
-    std::string GetColumnDefine();
+    const std::string GetColumnDefine() const;
     const DictSchemaColumn& GetColumn(u2 idx) const;
     void SetDefault(const EntryData& entry_default);
     const DictSchemaColumn* GetColumn(const char* column_name) const;

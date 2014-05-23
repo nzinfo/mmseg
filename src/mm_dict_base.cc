@@ -112,6 +112,8 @@ int DictBase::Load_201200(std::FILE *fp, const mmseg_dict_file_header* header) {
 		file_offset += nwrite * header->schema_size;
         schema[header->schema_size] = 0;
         _schema.InitString(schema);
+
+        _dict_name = header->dictname;
     }
     // load string pool
     {

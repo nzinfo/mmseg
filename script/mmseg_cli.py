@@ -142,7 +142,7 @@ def mmdict(mmsegsource, dict):
 @manager.option('-m', '--cedict_source', dest='cesource', default='data/cedict_1_0_ts_utf-8_mdbg.zip')
 @manager.option('-d', '--dict', dest='dict', default='cedict.term')
 def cedict(cesource, dict):
-    mmseg.basedict_cedict_main("mmseg.term", cesource, dict)
+    mmseg.basedict_cedict_main("mmseg.cedict", cesource, dict)
 
 
 if __name__ == "__main__":

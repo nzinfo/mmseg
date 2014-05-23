@@ -22,7 +22,7 @@
 #include "mm_hashmap.h"
 #include "iface_stringpool.h"
 
-#define STRING_POOL_ENTRY_DATA_SIZE     65535u
+#define STRING_POOL_ENTRY_DATA_SIZE     655350u
 
 namespace mm {
 

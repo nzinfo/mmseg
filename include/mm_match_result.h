@@ -52,6 +52,14 @@ public:
 		}
 		return -1;
 	}
+
+    const DictMatchEntry* GetMatch(u2 idx) const {
+        if(idx<_pos) {
+            return &(_matches[idx]);
+        }
+        return NULL;
+    }
+
 private:
 	u2 _pos;
     u2 _max_match;

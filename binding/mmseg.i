@@ -67,6 +67,28 @@
 %include Java.i
 %include Python.i
 
+%newobject get_dict_property_string;
+// Some C-Side Helper
+%inline %{
+  char* get_dict_property_string(mm::DictBase* dict, mm::EntryData* entry, const char* key)
+  {
+      u2 data_len = 0;
+      const mm::DictSchemaColumn* column = dict->GetSchema()->GetColumn(key);
+      if(column == NULL)
+          return NULL;
+      const char* sptr = (const char*)entry->GetData(dict->GetSchema(), dict->GetStringPool(),
+                                                     column->GetIndex(), &data_len);
+      char* buf = NULL;
+      if(data_len) {
+          buf = (char*)malloc(data_len+1); // +1 for whitespace for string.
+          memcpy(buf, sptr, data_len);
+          buf[data_len] = 0;
+          return buf;
+      }
+      return NULL;
+  } // end of get_dict_property_string
+
+%}
 /*
 %newobject get_dict_property_string;
 %newobject get_dict_property_string_by_value;
