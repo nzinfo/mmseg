@@ -34,7 +34,7 @@ extern "C" {
 #endif
 } // end extern C
 #include "utils/pystring.h"
-
+#include "utils/utf8_to_16.h"
 #include "mm_dict_mgr.h"
 #include "mm_dict_updatable.h"
 
@@ -47,12 +47,56 @@ typedef struct EntryInDict {
     EntryInDict* next;
 }EntryInDict;
 
+u2 encode_entry_in_dict(EntryInDict *entry, u1* entries){
+    u1* ptr = entries;
+    while(entry) {
+        *ptr = entry->dict_id;
+        ptr ++;
+        ptr += csr::csrUTF8Encode(ptr, entry->entry_offset);
+        entry = entry->next;
+    }
+    *ptr = 0;
+    return (u2)(ptr - entries);
+}
+
+u2 decode_entry_to_matchentry(u2 term_len, DictMatchEntry* matches){
+    return 0;
+}
+
+struct Hash_Func
+{
+    //BKDR hash algorithm，有关字符串hash函数，可以去找找资料看看
+    int operator()(char * str)const
+    {
+        int seed = 131;//31  131 1313 13131131313 etc//
+        int hash = 0;
+        while(*str)
+        {
+            hash = (hash * seed) + (*str);
+            str ++;
+        }
+
+        return hash & (0x7FFFFFFF);
+    }
+};
+
+struct Cmp
+{
+    bool operator()(const char *str1,const char * str2)const
+    {
+        return strcmp(str1,str2) == 0;
+    }
+};
+
+typedef unordered_map<const char* , EntryInDict*, Hash_Func, Cmp> keymap;
+
 //typedef std::vector< EntryInDict > EntryInDictList;
 
 DictMgr::~DictMgr() {
    this->UnloadAll();
    SafeDelete(_mapper);
    SafeDelete(_delta_dictionary);
+   SafeDelete(_global_idx);
 }
 
 int DictMgr::LoadTerm(const char* dict_path) {
@@ -173,12 +217,16 @@ int DictMgr::BuildIndex() {
     _id2name.clear();
     // build dict_name, dict  & build dict_id, dict_name
     int total_entry = 0;
+    int total_stringpool_size = 0;
+
     for(int i=0; i<MAX_TERM_DICTIONARY; i++) {
         if(_term_dictionaries[i] != NULL ) {
             const std::string &dict_name = _term_dictionaries[i]->GetDictName();
             _name2dict[dict_name] = _term_dictionaries[i];
             _id2name[DICTIONARY_BASE+i] = dict_name;
             total_entry += _term_dictionaries[i]->EntryCount();
+            u4 string_size = _term_dictionaries[i]->StringPoolSize();
+			total_stringpool_size += string_size;
         }
     }
     for(int i=0; i<MAX_PHARSE_DICTIONARY; i++) {
@@ -187,6 +235,7 @@ int DictMgr::BuildIndex() {
             _name2dict[dict_name] = _pharse_dictionaries[i];
             _id2name[DICTIONARY_BASE+MAX_TERM_DICTIONARY+i] = dict_name;
             total_entry += _pharse_dictionaries[i]->EntryCount();
+            total_stringpool_size += _term_dictionaries[i]->GetStringPool()->GetSize();
         }
     }
     // load special, no global index in special
@@ -212,10 +261,10 @@ int DictMgr::BuildIndex() {
 		 *	use quick & dirty struct. map<std::string, dict_list>	dict_list = std::vector<dict_hit>	dict_hit = (dict_id, entry_offset)
 		 *  encode dict_list -> string , save as string.
          *
-         *  Very slow, huge deletes.
+         *  might cause huge memory consume
 		 */
 
-        unordered_map<std::string, EntryInDict*> keys;
+        keymap keys;  // 必须包括字符串的原始信息
         keys.reserve(total_entry);
 
         u2 key_len = 0;
@@ -223,26 +272,31 @@ int DictMgr::BuildIndex() {
         // alloc all possible entryindict.
         EntryInDict* pool = (EntryInDict*) malloc( total_entry * sizeof(EntryInDict) );
         EntryInDict* pool_ptr = pool;
+        char * string_pool = (char*)malloc(total_stringpool_size + total_entry); //add more space, unness.
+		memset(string_pool, 0, total_stringpool_size + total_entry);
+
+        char * string_pool_ptr = string_pool;
 
         EntryInDict entry;
 
-        unordered_map<std::string, EntryInDict*>::iterator it;
+        unordered_map<const char*, EntryInDict*>::iterator it;
         for(int i=0; i<MAX_TERM_DICTIONARY; i++) {
             if(_term_dictionaries[i] != NULL ) {
                 entry.dict_id = i + DICTIONARY_BASE;
                 for(u4 j=0; j<_term_dictionaries[i]->EntryCount(); j++) {
                     const char* ptr = _term_dictionaries[i]->GetDiskEntryByIndex(j, &key_len, &entry_offset);
                     //printf("%*.*s/o ", key_len, key_len, ptr);
-                    std::string key(ptr, key_len);
+                    memcpy(string_pool_ptr, ptr, key_len);
+                    string_pool_ptr[key_len] = 0;
+                    //std::string key(ptr, key_len);
                     pool_ptr->dict_id = entry.dict_id;
                     pool_ptr->entry_offset = entry_offset;
                     pool_ptr->next = NULL;
 
-                    it = keys.find(key);
+                    it = keys.find(string_pool_ptr);
                     if(it == keys.end()) {
                         // create new
-
-                        keys[key] = pool_ptr;
+                        keys[string_pool_ptr] = pool_ptr;
                     } else{
                         // fill the nex
                         EntryInDict* key_entry_ptr = it->second;
@@ -251,6 +305,7 @@ int DictMgr::BuildIndex() {
                         key_entry_ptr->next = pool_ptr;
                     }
                     pool_ptr ++;
+                    string_pool_ptr += key_len + 1;
                 }
             } // end if _term_dictionaries
         } // end for
@@ -261,15 +316,17 @@ int DictMgr::BuildIndex() {
                 for(u4 j=0; j<_pharse_dictionaries[i]->EntryCount(); j++) {
                     const char* ptr = _pharse_dictionaries[i]->GetDiskEntryByIndex(j, &key_len, &entry_offset);
 
-                    std::string key(ptr, key_len);
+                    memcpy(string_pool_ptr, ptr, key_len);
+                    string_pool_ptr[key_len] = 0;
+                    //std::string key(ptr, key_len);
                     pool_ptr->dict_id = entry.dict_id;
                     pool_ptr->entry_offset = entry_offset;
                     pool_ptr->next = NULL;
 
-                    it = keys.find(key);
+                    it = keys.find(string_pool_ptr);
                     if(it == keys.end()) {
                         // create new
-                        keys[key] = pool_ptr;
+                        keys[string_pool_ptr] = pool_ptr;
                     } else{
                         // fill the nex
                         EntryInDict* key_entry_ptr = it->second;
@@ -278,18 +335,36 @@ int DictMgr::BuildIndex() {
                         key_entry_ptr->next = pool_ptr;
                     }
                     pool_ptr ++;
+                    string_pool_ptr += key_len + 1;
                 }
             }
         }
         // all data collected.
         LOG(INFO) << "gather all terms, count is " << keys.size();
         {
+            u1 entries[1024];  // 1 for dicid 4 for each entry, 5*32 < 200 , enough
+            u2 buf_len = 0;
             // build the global index.
+            SafeDelete(_global_idx);
+            _global_idx = new mm::DictBase();
+            _global_idx->Init("com.coreseek.mm.global_idx", "entries:s"); // entries all the dict.
+
+            mm::EntryData* entry = NULL;
+            for(keymap::iterator it = keys.begin();
+                    it !=  keys.end(); ++it) {
+                entry = _global_idx ->Insert( it->first, strlen(it->first) );
+				printf("inser key =%s, %d, %p\n", it->first, strlen(it->first), it->first);
+                CHECK_NE(entry, (mm::EntryData*)NULL) << "dup key?";
+                buf_len = encode_entry_in_dict(it->second, entries);
+                entry->SetDataIdx(_global_idx->GetSchema(), _global_idx->GetStringPool(), 0, (const u1*)entries, buf_len);
+            }
         }
         // free
         keys.clear();
         free(pool);
+        free(string_pool);
     }
+	LOG(INFO) << "build index done ";
     return 0;
 }
 

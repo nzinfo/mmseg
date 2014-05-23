@@ -63,6 +63,7 @@ public:
         memset(_term_dictionaries, 0, sizeof(_term_dictionaries));
         memset(_pharse_dictionaries, 0, sizeof(_pharse_dictionaries));
         _delta_dictionary = NULL;
+        _global_idx = NULL;
 
         _mapper = new mm::CharMapper(true);
     }
@@ -113,6 +114,8 @@ protected:
     DictUpdatable* _delta_dictionary;
     DictPharse* _pharse_dictionaries[MAX_PHARSE_DICTIONARY];
     std::vector<DictTerm*> _special_dictionary;
+
+    mm::DictBase* _global_idx;
 
     unordered_map<std::string, mm::DictBase*> _name2dict;
     unordered_map<u2, std::string> _id2name;

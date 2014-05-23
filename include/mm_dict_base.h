@@ -85,6 +85,10 @@ public:
     mm::EntryData* Insert(const char* term, u2 len);
 
     u4 EntryCount();        // how many terms in the dictionary.
+    u4 StringPoolSize() {
+        return GetStringPool()->GetSize();
+    }
+
     const char* GetDiskEntryByIndex(u4 idx, u2 *key_len, u4* entry_offset);
 
     u4 BuildIndex(bool bShowProc = false);

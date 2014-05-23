@@ -136,6 +136,7 @@ int StringPoolMemory::Load(u1* ptr, u4 size)
 	if(_begin == NULL) {
 		_begin = new StringPoolMemoryEntry(ptr, size);
 		_current = _begin;
+		_total_size = size;
 	}
 	return STATUS_OK;
 }

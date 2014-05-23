@@ -19,6 +19,7 @@ include/mm_dict_updatable.h
 include/mm_dict_mgr.h
 include/utils/pystring.h
 include/utils/cityhash.h
+include/utils/utf8_to_16.h
 src/mm_charmap.cc
 src/mm_stringpool.cc
 src/mm_entrydata.cc
@@ -44,7 +45,6 @@ src/utils/csr_utils.h
 src/utils/os.h
 src/utils/scoped_ptr.h
 src/utils/utf8_to_16.cpp
-src/utils/utf8_to_16.h
 src/config.win.h
 src/seg_result.c
 src/segmentor.cpp
