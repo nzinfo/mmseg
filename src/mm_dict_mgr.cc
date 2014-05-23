@@ -145,11 +145,11 @@ int DictMgr::LoadTerm(const char* dict_path) {
             _term_dictionaries[i] = NULL;
         }
 
-        // _mapper 不需要 Reset | Clear， Load 的同时清除
         for(int i=0; i<min(nfiles, MAX_TERM_DICTIONARY); i++) {
             _term_dictionaries[i] = new mm::DictTerm();
             _term_dictionaries[i]->Load(_terms_fname[i].c_str());
             _terms_fname.push_back(_terms_fname[i]);
+            LOG(INFO) << "load term " << _terms_fname[i] << " named " << _term_dictionaries[i]->GetDictName() << " @pos " << DICTIONARY_BASE + i;
 		}
     }
     return 0;
@@ -273,6 +273,31 @@ int DictMgr::BuildIndex() {
         }
     }
 
+	/*
+    const char kChineseSampleText[] = {-28, -72, -83, -26, -106, -121, 0};
+    {
+        //int n = mgr.ExactMatch(kChineseSampleText, 6, &rs);
+        //printf("find %d hits\n", n);
+        //for(int i=0; i<n; i++)
+        {
+            //printf("dict_id %d, rs=%d ", rs.GetMatch(i)->match._dict_id, rs.GetMatch(i)->match._value);
+            // dump pinyin ,  std mmseg have no pinyin , should output as NULL.
+            mm::DictBase* dict = _term_dictionaries[0]; //mgr.GetDictionary( rs.GetMatch(i)->match._dict_id );
+            i4 query_entry_offset = dict->ExactMatch( kChineseSampleText, 6 );
+
+            mm::EntryData* entry = dict->GetEntryDataByOffset( query_entry_offset );
+            std::string s = dict->GetSchema()->GetColumnDefine();
+            printf("schema = %s name= %s offset = %d \n", s.c_str(), dict->GetDictName().c_str(), query_entry_offset);
+            const mm::DictSchemaColumn* column = dict->GetSchema()->GetColumn("pinyin");
+            if(column) {
+                u2 data_len = 0;
+                const char* sptr = (const char*)entry->GetData(dict->GetSchema(), dict->GetStringPool(), column->GetIndex(), &data_len);
+                printf("%*.*s/x ", data_len, data_len, sptr);
+            }
+        }
+    }
+	*/
+
     // build global darts index.
     {
         // debug code.
@@ -311,6 +336,14 @@ int DictMgr::BuildIndex() {
                 entry.dict_id = i + DICTIONARY_BASE;
                 for(u4 j=0; j<_term_dictionaries[i]->EntryCount(); j++) {
                     const char* ptr = _term_dictionaries[i]->GetDiskEntryByIndex(j, &key_len, &entry_offset);
+					/*
+                    {
+                        if(key_len == 6 && strncmp(ptr, kChineseSampleText, 6) == 0) {
+                            printf(" chinese 's offset is %d\n", entry_offset);
+                        }
+                    } 
+					*/
+
                     //printf("%*.*s/o ", key_len, key_len, ptr);
                     //memcpy(string_pool_ptr, ptr, key_len);
                     //string_pool_ptr[key_len] = 0;

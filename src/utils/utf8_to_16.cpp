@@ -36,14 +36,42 @@ int csrUTF8Encode ( u1 * pBuf, int iCode )
 		pBuf[1] = (u1)( ( iCode & 0x3F ) | 0x80 );
 		return 2;
 
-	} else
+    } else if ( iCode< 0x10000 )
 	{
 		pBuf[0] = (u1)( ( (iCode>>12) & 0x0F ) | 0xE0 );
 		pBuf[1] = (u1)( ( (iCode>>6) & 0x3F ) | 0x80 );
 		pBuf[2] = (u1)( ( iCode & 0x3F ) | 0x80 );
 		return 3;
 	}
+    else if ( iCode< 0x200000 )
+    {
+        pBuf[0] = (u1)( ( (iCode>>18) ) | 0xF0 );
+        pBuf[1] = (u1)( ( (iCode>>12) & 0x3F ) | 0x80 );
+        pBuf[2] = (u1)( ( (iCode>>6) & 0x3F ) | 0x80 );
+        pBuf[3] = (u1)( ( iCode & 0x3F ) | 0x80 );
+        return 4;
+    }
+    else if ( iCode< 0x4000000 )
+    {
+        pBuf[0] = (u1)( ( (iCode>>24) ) | 0xF8 );
+        pBuf[1] = (u1)( ( (iCode>>18) & 0x3F ) | 0x80 );
+        pBuf[2] = (u1)( ( (iCode>>12) & 0x3F ) | 0x80 );
+        pBuf[3] = (u1)( ( (iCode>>6) & 0x3F ) | 0x80 );
+        pBuf[4] = (u1)( ( iCode & 0x3F ) | 0x80 );
+        return 5;
+    }
+    else // if ( iCode< 0x80000000 )
+    {
+        pBuf[0] = (u1)( ( (iCode>>30) ) | 0xFC );
+        pBuf[1] = (u1)( ( (iCode>>24) & 0x3F ) | 0x80 );
+        pBuf[2] = (u1)( ( (iCode>>18) & 0x3F ) | 0x80 );
+        pBuf[3] = (u1)( ( (iCode>>12) & 0x3F ) | 0x80 );
+        pBuf[4] = (u1)( ( (iCode>>6) & 0x3F ) | 0x80 );
+        pBuf[5] = (u1)( ( iCode & 0x3F ) | 0x80 );
+        return 6;
+    }
 }
+
 int csrUTF8StringLength(const u1* pBuf)
 {
 	int n = 0;

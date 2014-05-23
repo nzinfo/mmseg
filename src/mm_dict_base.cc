@@ -278,7 +278,11 @@ const char* DictBase::GetDiskEntryByIndex(u4 idx, u2* key_len, u4* entry_offset)
         u4 string_offset = _entry_string2offset[idx*2];
         if(entry_offset)
             *entry_offset = _entry_string2offset[idx*2+1];
-        return this->_string_pool->GetString(string_offset, key_len);
+        const char* key = this->_string_pool->GetString(string_offset, key_len);
+        // a verify.
+        //i4 query_entry_offset = this->ExactMatch(key, *key_len);
+        //CHECK_EQ(*entry_offset, query_entry_offset);
+		return key;
     }
     return NULL;
 }
