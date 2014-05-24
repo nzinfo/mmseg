@@ -48,6 +48,7 @@ src/tst_dict.cpp
 src/tst_dict_mgr.cpp
 src/tst_dict_component.cpp
 src/tst_lua.cpp
+src/tst_lua_script.cpp
 src/utils/assert.c
 src/utils/csr.h
 src/utils/csr_assert.h

@@ -92,8 +92,11 @@ include_directories(${PROJECT_SOURCE_DIR}/third_party/luajit/src)
 # FIXME: should be build_dir
 include_directories(${PROJECT_BINARY_DIR}/third_party/luajit)
 
+ADD_EXECUTABLE(tst_lua_script tst_lua_script.cpp )
+target_link_libraries(tst_lua_script liblua mmseg_c glog pthread gflags gtest)
+
 ADD_EXECUTABLE(tst_lua tst_lua.cpp )
-target_link_libraries(tst_lua liblua)
+target_link_libraries(tst_lua liblua )
 
 #INSTALL(TARGETS rosetta DESTINATION ${LIBRARY_INSTALL_PATH})
 

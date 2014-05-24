@@ -23,6 +23,8 @@
     #define LUAAPI
 #endif
 
+// FIXME: add cplusplus detected.
+
 extern "C" {
 
 #include <lua.h>
@@ -106,15 +108,15 @@ typedef int (STDCALL * find_term_hit_dict_cb) ( TokenContextScript* script_ctx, 
                                                 u2 dict_id, u4 entry_offset );
 
 /* 系统初始化有关 */
-int lua_script_init(LUAScript* ctx);
+LUAAPI int lua_script_init(LUAScript* ctx);
 
 // 清除全部 结构体包括的指针
-int lua_script_clear(LUAScript* ctx);
+LUAAPI int lua_script_clear(LUAScript* ctx);
 
 /*
  * 从文件中加载脚本
  */
-int init_script(LUAScript* ctx, const char* script_fname);  // called c side
+LUAAPI int init_script(LUAScript* ctx, const char* script_fname);  // called c side
 
 u2  get_dictionary_id_by_name(LUAScript* ctx, const char* dict_name);
 

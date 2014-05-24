@@ -14,6 +14,7 @@
 
 #include "mm_api_script.h"
 
+//extern "C" {
 /*
  *  初始化 LUAScript 结构体
  */
@@ -249,4 +250,5 @@ int add_annote_u(i2 idx, u2 len, u2 annote_type_id, u8 annote)
     return 0;
 }
 
+//} // end extern "C"
 /* -- end of file -- */
