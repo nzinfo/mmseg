@@ -25,6 +25,13 @@
 
 extern "C" {
 
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+
+#include <stdlib.h>
+#include <stdio.h>
+
 // typedef void* SegScriptPtr; // 一个指向
 /*
  *  分词使用的上下文，通过本结构体 & 其中的指针，可以 操作 SegStatus ，并修改结果
@@ -53,7 +60,10 @@ typedef struct TokenContextScript
  */
 typedef struct LUAScript
 {
-    u4 balbalba;
+    lua_State *L;
+    //u4 balbalba;
+    TokenContext* ctx; //当前执行的分词上下文。不可以持续绑定到 LUAScript
+
 }LUAScript;
 
 /*
@@ -96,6 +106,10 @@ typedef int (STDCALL * find_term_hit_dict_cb) ( TokenContextScript* script_ctx, 
                                                 u2 dict_id, u4 entry_offset );
 
 /* 系统初始化有关 */
+int lua_script_init(LUAScript* ctx);
+
+// 清除全部 结构体包括的指针
+int lua_script_clear(LUAScript* ctx);
 
 /*
  * 从文件中加载脚本

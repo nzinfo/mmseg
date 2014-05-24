@@ -15,10 +15,71 @@
 #include "mm_api_script.h"
 
 /*
+ *  初始化 LUAScript 结构体
+ */
+int lua_script_init(LUAScript* ctx)
+{
+    ctx->L = luaL_newstate();
+    luaL_openlibs(ctx->L);
+    return 0;
+}
+
+int lua_script_clear(LUAScript* ctx)
+{
+    lua_close(ctx->L);
+    return 0;
+}
+
+/*
  * 从文件中加载脚本
+ *
+ * return
+ *  -1 脚本加载失败
+ *  -2 脚本本身执行出错
+ *  -3 脚本的注册函数执行错误
  */
 int init_script(LUAScript* ctx, const char* script_fname)
 {
+    lua_State *L = ctx->L;
+
+    int status = luaL_loadfile(L, script_fname);
+    if (status) {
+        // error loading
+        return -1;
+    }
+
+    // execute the lua file. 让脚本可以初始化部分自身变量。
+    status = lua_pcall(L, 0, LUA_MULTRET, 0);
+    if (status) {
+        fprintf(stderr, "Failed to run script: %s\n", lua_tostring(L, -1));
+        // error loading
+        return -2;
+    }
+
+    // 调用 脚本的初始化函数，
+    {
+        double z;
+        // Refer: http://lua-users.org/lists/lua-l/2011-06/msg00372.html
+        /* push functions and arguments */
+        lua_getglobal(L, "mm_init");  /* function to be called */
+        lua_pushlightuserdata(L, &ctx);
+        //lua_pushnumber(L, 10);   /* push 1st argument */
+
+        /* do the call (1 arguments, 1 result) */
+        if (lua_pcall(L, 1, 1, 0) != 0) {
+            fprintf(stderr, "error running function `f': %s",
+                 lua_tostring(L, -1));
+            return -3;
+        }
+
+        /* retrieve result */
+        if (!lua_isnumber(L, -1))
+            printf("function `f' must return a number");
+        z = lua_tonumber(L, -1);
+        lua_pop(L, 1);  /* pop returned value */
+        printf("get function 'f' result=%f\n", z);
+    }
+
     return 0;
 }
 
