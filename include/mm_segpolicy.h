@@ -12,23 +12,23 @@
  *
  */
 
+#if !defined(_SEGPOLICY_H)
+#define _SEGPOLICY_H
 
-#if !defined(_DICTTERMUSER_H)
-#define _DICTTERMUSER_H
-
-#include "mm_dict_base.h"
-#include "mm_dict_term.h"
-
+#include "SegStatus.h"
 namespace mm {
 
-// save session & ctx related terms.
-// might be transferred via web.
-class DictTermUser : public DictTerm {
+class SegPolicy {
 public:
-    std::string DumpAsJSON();
-    int LoadFromJSON(std::string s);
+	// do char-tag based segmentation, 
+	// return how many char been taged, from the begin of SegStatus
+	int Apply(SegStatus status);
+	int Apply(SegStatus status, u1 rs_tag_ptr, 4 rs_len);
+	u2 GetCharWindowSize();
+	u2 GetTermWindowSize();
+
 };
 
-} // namespace mm
+} // end namespace mm
 
-#endif  //_DICTTERMUSER_H
+#endif  //_SEGPOLICY_H

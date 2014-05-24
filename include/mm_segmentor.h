@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -12,23 +12,22 @@
  *
  */
 
+#if !defined(_SEGMENTOR_H)
+#define _SEGMENTOR_H
 
-#if !defined(_DICTTERMUSER_H)
-#define _DICTTERMUSER_H
-
-#include "mm_dict_base.h"
-#include "mm_dict_term.h"
-
+#include "SegStatus.h"
 namespace mm {
 
-// save session & ctx related terms.
-// might be transferred via web.
-class DictTermUser : public DictTerm {
+class Segmentor {
 public:
-    std::string DumpAsJSON();
-    int LoadFromJSON(std::string s);
+	DictMgr& _dict_mgr;
+	// text_to_seg: the text to proceed.
+	// user_dict, special the sass user's custom dictionary, the aspet dict.
+	// session_dict/ctx_dict, the dict related to this task
+	int Tokenizer(u8 task_id, string text_to_seg, SegStatus status);
+	Segmentor(DictMgr& dict_mgr);
 };
 
 } // namespace mm
 
-#endif  //_DICTTERMUSER_H
+#endif  //_SEGMENTOR_H

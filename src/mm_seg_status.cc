@@ -12,23 +12,44 @@
  *
  */
 
-
-#if !defined(_DICTTERMUSER_H)
-#define _DICTTERMUSER_H
-
-#include "mm_dict_base.h"
-#include "mm_dict_term.h"
+#include "mm_seg_status.h"
 
 namespace mm {
 
-// save session & ctx related terms.
-// might be transferred via web.
-class DictTermUser : public DictTerm {
-public:
-    std::string DumpAsJSON();
-    int LoadFromJSON(std::string s);
-};
+SegStatus::SegStatus(u4 size) {
+
+}
+
+void SegStatus::Reset() {
+
+}
+
+int SegStatus::MoveNext() {
+	return 0;
+}
+
+bool SegStatus::IsPause() {
+	return false;
+}
+
+const DictMatchResult* SegStatus::GetMatchesAt(u4 pos, u2* count) {
+	return NULL;
+}
+
+u2 SegStatus::SetTagA(u4 pos, u2 tag) {
+	return 0;
+}
+
+u2 SegStatus::SetTagB(u4 pos, u2 tag) {
+	return 0;
+}
+
+u2 SegStatus::SetTagPush(u4 pos, u2 tag) {
+	return 0;
+}
+
+void SegStatus::BuildTermIndex() {
+
+}
 
 } // namespace mm
-
-#endif  //_DICTTERMUSER_H

@@ -15,8 +15,15 @@ include/mm_entry_datapool.h
 include/mm_dict_schema.h
 include/mm_match_result.h
 include/mm_dict_base.h
+include/mm_dict_term.h
+include/mm_dict_term_user.h
 include/mm_dict_updatable.h
 include/mm_dict_mgr.h
+include/mm_seg_option.h
+include/mm_seg_status.h
+include/mm_seg_script.h
+include/mm_api_script.h
+include/mm_segmentor.h
 include/utils/pystring.h
 include/utils/cityhash.h
 include/utils/utf8_to_16.h
@@ -28,6 +35,9 @@ src/mm_dict_schema.cc
 src/mm_dict_base.cc
 src/mm_dict_mgr.cc
 src/mm_dict_updatable.cc
+src/mm_seg_option.cc
+src/mm_seg_status.cc
+src/mm_segmentor.cc
 src/mmseg_cli.cpp
 src/mmseg_main.cpp
 src/utils/pystring.cc

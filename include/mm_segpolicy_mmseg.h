@@ -13,22 +13,16 @@
  */
 
 
-#if !defined(_DICTTERMUSER_H)
-#define _DICTTERMUSER_H
+#if !defined(_SEGPOLICYMMSEG_H)
+#define _SEGPOLICYMMSEG_H
 
-#include "mm_dict_base.h"
-#include "mm_dict_term.h"
+#include "SegPolicy.h"
 
 namespace mm {
 
-// save session & ctx related terms.
-// might be transferred via web.
-class DictTermUser : public DictTerm {
-public:
-    std::string DumpAsJSON();
-    int LoadFromJSON(std::string s);
+class SegPolicyMMSeg : public SegPolicy {
 };
 
-} // namespace mm
+} // end namespace mm
 
-#endif  //_DICTTERMUSER_H
+#endif  //_SEGPOLICYMMSEG_H

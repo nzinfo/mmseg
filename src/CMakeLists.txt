@@ -51,6 +51,8 @@ SET(LIBMMSEG_SOURCE
     mm_dict_base.cc
     mm_dict_mgr.cc
     mm_dict_updatable.cc
+    mm_seg_option.cc
+    mm_seg_status.cc
     utils/pystring.cc
     utils/cityhash.cc
     utils/utf8_to_16.cpp

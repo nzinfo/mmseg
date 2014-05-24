@@ -13,22 +13,14 @@
  */
 
 
-#if !defined(_DICTTERMUSER_H)
-#define _DICTTERMUSER_H
+#include "Segmentor.h"
+#include "SegStatus.h"
 
-#include "mm_dict_base.h"
-#include "mm_dict_term.h"
+int Segmentor::Tokenizer(u8 task_id, string text_to_seg, SegStatus status) {
 
-namespace mm {
+}
 
-// save session & ctx related terms.
-// might be transferred via web.
-class DictTermUser : public DictTerm {
-public:
-    std::string DumpAsJSON();
-    int LoadFromJSON(std::string s);
-};
+Segmentor::Segmentor(DictMgr& dict_mgr) {
 
-} // namespace mm
+}
 
-#endif  //_DICTTERMUSER_H

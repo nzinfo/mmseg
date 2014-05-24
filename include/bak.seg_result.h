@@ -1,4 +1,4 @@
-#ifndef SEG_RESULT_H
+﻿#ifndef SEG_RESULT_H
 #define SEG_RESULT_H
 
 /*

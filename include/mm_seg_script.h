@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -13,22 +13,34 @@
  */
 
 
-#if !defined(_DICTTERMUSER_H)
-#define _DICTTERMUSER_H
+#if !defined(_SEGSCRIPT_H)
+#define _SEGSCRIPT_H
 
-#include "mm_dict_base.h"
-#include "mm_dict_term.h"
+#include "SegPolicy.h"
+//#include "SegScriptPeer.h"
 
 namespace mm {
 
-// save session & ctx related terms.
-// might be transferred via web.
-class DictTermUser : public DictTerm {
+/*
+ * 实际为 Script Manager， 从指定目录加载脚本文件
+ *
+ * - 暴露 API 给脚本
+ * - 本对象全局唯一
+ *
+ *
+ */
+class SegScript {
 public:
-    std::string DumpAsJSON();
-    int LoadFromJSON(std::string s);
+	//SegScriptPeer _peer;
+    /*
+     * load script from disk.
+     * load order by ascii orer
+     */
+    void LoadScripts(const char* script_path);
 };
 
 } // namespace mm
 
-#endif  //_DICTTERMUSER_H
+//////////////////////////////////////////////////////////////////////////////////////////
+
+#endif  //_SEGSCRIPT_H
