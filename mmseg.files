@@ -37,6 +37,7 @@ src/mm_dict_mgr.cc
 src/mm_dict_updatable.cc
 src/mm_seg_option.cc
 src/mm_seg_status.cc
+src/mm_api_script.cc
 src/mm_segmentor.cc
 src/mmseg_cli.cpp
 src/mmseg_main.cpp

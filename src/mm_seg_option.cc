@@ -11,6 +11,7 @@
  *    and/or other materials provided with the distribution.
  *
  */
+
 #include <glog/logging.h>
 #include <sstream>
 

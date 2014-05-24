@@ -53,6 +53,7 @@ SET(LIBMMSEG_SOURCE
     mm_dict_updatable.cc
     mm_seg_option.cc
     mm_seg_status.cc
+    mm_api_script.cc
     utils/pystring.cc
     utils/cityhash.cc
     utils/utf8_to_16.cpp
