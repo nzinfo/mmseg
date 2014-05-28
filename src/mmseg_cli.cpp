@@ -1,7 +1,7 @@
 /*
  *  MMSeg Chinese tokenizer command line interface.
  */
-
+#include <glog/logging.h>
 #include <fstream>
 #include <string>
 #include <iostream>
@@ -23,6 +23,11 @@ extern "C" {
 
 #include "csr_typedefs.h"
 
+#include "mm_dict_mgr.h"
+#include "mm_seg_option.h"
+//#include "mm_segmentor.h"
+#include "utils/pystring.h"
+
 // mmseg includes
 //#include "segmentor.h"
 
@@ -39,7 +44,7 @@ void usage(const char* argv_0) {
 
 DEFINE_string(dict_path, ".", "where to load dictionary");
 
-//int segment(const char* file, Segmentor& seg, u1 b_quit);
+int segment(const char* file, const char* dict_path, u1 b_quit);
 
 int main(int argc, char **argv) {
 
@@ -95,38 +100,33 @@ int main(int argc, char **argv) {
     printf("dict=%s; file=%s\n", resolved_dict_path, out_file);
 #endif
 
-    /*
+
     // load basic diction only -> for system booting up.
     {
-        SegmentOptions opts;
-        rs = seg.LoadDictionaries(resolved_dict_path, opts);
-        //rs = seg.LoadTermDictionary(resolved_dict_path, 0, opts);
+        int n = segment(out_file, resolved_dict_path, false);
     }
-    rs = segment(out_file, seg, bQuite);
-    */
-
     return 0;
 }
 
-#if 0
-int segment(const char* utf8_file, Segmentor& seg, u1 b_quit) {
+#if 1
+int segment(const char* utf8_file, const char* dict_path, u1 b_quit) {
     /*
      *  1 load all text from disk, file must encode in utf8
      *  2 strip BOM
      *  3 send it to seg, wait result.
      */
     int rs = 0;
-    int length;
+    size_t length;
     char* buffer = NULL;
     char* buffer_ptr = NULL;
-    char txtHead[3] = {239,187,191};
+    const unsigned char txtHead[4] = {239,187,191};
 
     // load buffer
     {
         std::ifstream is(utf8_file);
         //load data.
         is.seekg (0, std::ios::end);
-        length = is.tellg();
+        length = (size_t)is.tellg();
         is.seekg (0, std::ios::beg);
         buffer = new char [length+1];
         is.read (buffer,length);
@@ -141,9 +141,36 @@ int segment(const char* utf8_file, Segmentor& seg, u1 b_quit) {
     }
     // do segment
     {
-        SegmentOptions opts;
-        SegmentStatus seg_stat;
-        rs = seg.Tokenize(&seg_stat, buffer, length, opts);
+        /*
+         * 1 load term
+         * 2 load pharse
+         * 3 load special
+         */
+
+        mm::DictMgr mgr;
+
+        mgr.LoadTerm(dict_path);
+        mgr.LoadPharse(dict_path);
+        mgr.LoadSpecial(dict_path);
+
+        std::string s_dict_path(dict_path);
+        std::string s_idx_cache = pystring::os::path::join(s_dict_path, ".term_idx");
+        int rs = mgr.LoadIndexCache(s_idx_cache.c_str());
+        printf("load rs=%d\n", rs);
+        if( rs < 0) {
+            // manual build idx, load cache failure.
+            LOG(INFO) << "rebuild cache index " <<  s_idx_cache;
+            mgr.BuildIndex(true);
+            mgr.SaveIndexCache(s_idx_cache.c_str()); //might failure.
+        }else {
+            LOG(INFO) << "load cache index " <<  s_idx_cache;
+            mgr.BuildIndex();
+        }
+
+
+        //SegOptions opts;
+        //SegmentStatus seg_stat;
+        //rs = seg.Tokenize(&seg_stat, buffer, length, opts);
     }
 
     // free memory

@@ -23,7 +23,7 @@
 int
 main(int argc, char* argv[])
 {
-    mm::DictBase dict;
+    //mm::DictBase dict;
 
 	LUAScript ctx;
 	

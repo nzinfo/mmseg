@@ -33,6 +33,9 @@ extern "C" {
 #include "win32/realpath_win32.h"
 #endif
 } // end extern C
+
+#include <fstream>
+
 #include "utils/pystring.h"
 #include "utils/utf8_to_16.h"
 #include "mm_dict_mgr.h"
@@ -225,9 +228,17 @@ int DictMgr::LoadIndexCache(const char* fname) {
      *
      * 目前不对 cache 与 词库的更新状态进行检测， 或者， 不使用 cacheindex 功能
      */
-    if(!_global_idx)
-        return -1;
-
+    if(!_global_idx) {
+        // FIXME: dup code. & and should reset _global_idx @ each load cache.
+        _global_idx = new mm::DictBase();
+        _global_idx->Init("com.coreseek.mm.global_idx", "entries:s"); // entries all the dict.
+    }
+    // checkfile.
+    std::ifstream dfile(fname, std::ios::binary);
+    if(!dfile)
+        return -1; //file not found.
+    dfile.close();
+    // reopen and load.
     return _global_idx->Load(fname);
 }
 
@@ -238,7 +249,7 @@ int DictMgr::SaveIndexCache(const char* fname) {
     return _global_idx->Save(fname, 1);
 }
 
-int DictMgr::BuildIndex() {
+int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
     _name2dict.clear();
     _id2name.clear();
     // build dict_name, dict  & build dict_id, dict_name
@@ -400,6 +411,7 @@ int DictMgr::BuildIndex() {
         }
         // all data collected.
         LOG(INFO) << "gather all terms, count is " << keys.size();
+        if(bRebuildGlobalIdx)
         {
             u1 entries[1024];  // 1 for dicid 4 for each entry, 5*32 < 200 , enough
             u2 buf_len = 0;

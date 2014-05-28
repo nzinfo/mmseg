@@ -85,7 +85,7 @@ public:
     // 根据基本词条和短语 构建唯一的 darts 检索表
     int LoadIndexCache(const char* fname);
     int SaveIndexCache(const char* fname);
-	int BuildIndex();
+    int BuildIndex(bool bRebuildGlobalIdx = false);
     int VerifyIndex();
 
     // 重新加载词典

@@ -15,7 +15,7 @@
 #if !defined(_SEGMENTOR_H)
 #define _SEGMENTOR_H
 
-#include "SegStatus.h"
+#include "mm_seg_status.h"
 namespace mm {
 
 class Segmentor {
