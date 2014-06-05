@@ -41,7 +41,7 @@ public:
 		:_pos(0), _max_match(max_match), _matches((DictMatchEntry*)ptr) {}
 		
 	void Reset() {
-		memset(_matches, 0, sizeof(DictMatchEntry));
+        memset(_matches, 0, _max_match*sizeof(DictMatchEntry));
 	}
 	inline int Match(DictMatchEntry& entry) {
 		// 添加 新的命中， 如果已满，则返回 -1

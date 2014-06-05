@@ -11,8 +11,39 @@
  *    and/or other materials provided with the distribution.
  *
  */
+#include <stdio.h>
+#include <string.h>
 
+#include "csr.h"
 #include "mm_api_script.h"
+
+// helper function
+LUAScriptCallBackEntry* get_next_callback_entry(LUAScriptCallBackList* list)
+{
+    /*
+     * 得到下一个可以写入回调函数的地址, eg.
+     *
+     * func_cb * ptr = (func_cb*)get_next_callback_entry(...)
+     * *ptr = <the new cb>
+     */
+    // quick test
+    while(list->next) {
+        list = list->next;
+    }
+    // the tail of callback list. quick check is full
+    if(list->callbacks[LUASCRIPT_CALLBACK_BLOCK_SIZE-1].cb) {
+        // the tail not nil, create a new list.
+        list->next = (LUAScriptCallBackList*) malloc(sizeof(LUAScriptCallBackList));
+        list = list->next;
+        memset(list, sizeof(LUAScriptCallBackList), 0);
+    }
+    // move to the current empty block
+    for(int i=0; i<LUASCRIPT_CALLBACK_BLOCK_SIZE;i++){
+        if(list->callbacks[i].cb == NULL)
+            return  &(list->callbacks[i]);
+    }
+    return NULL; // should never happen.
+}
 
 //extern "C" {
 /*
@@ -20,13 +51,20 @@
  */
 int lua_script_init(LUAScript* ctx)
 {
+    // clear all
+    memset(ctx, sizeof(LUAScript), 0);
+    // init lua
     ctx->L = luaL_newstate();
     luaL_openlibs(ctx->L);
+    ctx->stage = LUASCRIPT_STATUS_INIT;
     return 0;
 }
 
 int lua_script_clear(LUAScript* ctx)
 {
+    // free all the cbs
+
+    // deinit lua
     lua_close(ctx->L);
     return 0;
 }
@@ -46,13 +84,16 @@ int init_script(LUAScript* ctx, const char* script_fname)
     int status = luaL_loadfile(L, script_fname);
     if (status) {
         // error loading
+        snprintf(ctx->error_msg, LUASCRIPT_ERROR_MESSAGE_LENGTH,
+                 "%s", lua_tostring(L, -1));
         return -1;
     }
 
     // execute the lua file. 让脚本可以初始化部分自身变量。
     status = lua_pcall(L, 0, LUA_MULTRET, 0);
     if (status) {
-        fprintf(stderr, "Failed to run script: %s\n", lua_tostring(L, -1));
+        snprintf(ctx->error_msg, LUASCRIPT_ERROR_MESSAGE_LENGTH,
+                 "%s", lua_tostring(L, -1));
         // error loading
         return -2;
     }
@@ -63,22 +104,25 @@ int init_script(LUAScript* ctx, const char* script_fname)
         // Refer: http://lua-users.org/lists/lua-l/2011-06/msg00372.html
         /* push functions and arguments */
         lua_getglobal(L, "mm_init");  /* function to be called */
-        lua_pushlightuserdata(L, &ctx);
+        lua_pushlightuserdata(L, ctx);
         //lua_pushnumber(L, 10);   /* push 1st argument */
 
         /* do the call (1 arguments, 1 result) */
         if (lua_pcall(L, 1, 1, 0) != 0) {
-            fprintf(stderr, "error running function `f': %s",
-                 lua_tostring(L, -1));
+            snprintf(ctx->error_msg, LUASCRIPT_ERROR_MESSAGE_LENGTH,
+                     "error exec `mm_init` function %s", lua_tostring(L, -1));
             return -3;
         }
 
         /* retrieve result */
-        if (!lua_isnumber(L, -1))
-            printf("function `f' must return a number");
+        if (!lua_isnumber(L, -1)) {
+            snprintf(ctx->error_msg, LUASCRIPT_ERROR_MESSAGE_LENGTH,
+                     "function `mm_init' must return a number");
+            return -4;
+        }
         z = lua_tonumber(L, -1);
         lua_pop(L, 1);  /* pop returned value */
-        printf("get function 'f' result=%f\n", z);
+        //printf("get function 'f' result=%f\n", z);
     }
 
     return 0;
@@ -96,6 +140,13 @@ u2  get_dictionary_id_by_name(LUAScript* ctx, const char* dict_name)
  */
 int reg_at_char_prepare(LUAScript* ctx, u4 icode, char_prepare_cb cb)
 {
+    if(ctx->stage != LUASCRIPT_STATUS_INIT)
+        return -1;  // invalid stage.
+    /*
+    LUAScriptCallBackEntry * entry = get_next_callback_entry(& (ctx->registed_cb) );
+    //*cb_ptr = cb;
+    */
+    printf("reg char called with %d\n", icode);
     return 0;
 }
 

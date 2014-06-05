@@ -28,21 +28,7 @@
 #include "csr_typedefs.h"
 
 
-#include "utf8_to_16.h"
-
-/*
-#ifdef WIN32
-typedef std::wstring unistring;
-#else
-
-#if defined(_WIN64)   
-
-typedef std::basic_string<u2> unistring;
-
-#else
-typedef std::basic_string<u2> unistring;
-#endif
-*/
+#include "utils/utf8_to_16.h"
 
 #ifdef WIN32
 #define snprintf        _snprintf

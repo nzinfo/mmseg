@@ -5,6 +5,10 @@
 #include <exception>
 #include <new>
 
+// coreseek dirty path
+#include "csr_typedefs.h"
+#include "utils/utf8_to_16.h"
+
 #define DARTS_VERSION "0.32"
 
 // DARTS_THROW() throws a <Darts::Exception> whose message starts with the
@@ -283,6 +287,23 @@ class DoubleArrayImpl {
       std::size_t max_num_results, std::size_t length = 0,
       std::size_t node_pos = 0) const;
 
+  // -coreseek patch
+  template <class U>
+  void exactMatchSearch(const u4 *key, U &result,
+      std::size_t length = 0, std::size_t node_pos = 0) const {
+    result = exactMatchSearch<U>(key, length, node_pos);
+  }
+
+  template <class U>
+  inline U exactMatchSearch(const u4 *iCode, std::size_t length = 0,
+      std::size_t node_pos = 0) const;
+
+  template <class U>
+  inline std::size_t commonPrefixSearch(const u4 *iCode, U *results,
+      std::size_t max_num_results, std::size_t length = 0,
+      std::size_t node_pos = 0) const;
+  // end coreseek patch
+
   // In Darts-clone, a dictionary is a deterministic finite-state automaton
   // (DFA) and traverse() tests transitions on the DFA. The initial state is
   // `node_pos' and traverse() chooses transitions labeled key[key_pos],
@@ -483,6 +504,78 @@ inline std::size_t DoubleArrayImpl<A, B, T, C>::commonPrefixSearch(
 
   return num_results;
 }
+
+// patch by coreseek , to allow icode search
+template <typename A, typename B, typename T, typename C>
+template <typename U>
+inline U DoubleArrayImpl<A, B, T, C>::exactMatchSearch(const u4 *iCode,
+    std::size_t length, std::size_t node_pos) const {
+  U result;
+  set_result(&result, static_cast<value_type>(-1), 0);
+
+  unit_type unit = array_[node_pos];
+  // iCode's length is required.
+  if (length != 0) {
+    u1 icode_utf8[8];
+    int  icode_utf8_len = 0;
+    for (std::size_t i = 0; i < length; ++i) {
+      // convert to utf8
+      icode_utf8_len = csr::csrUTF8Encode(icode_utf8, iCode[i]);
+      icode_utf8[icode_utf8_len] = 0;
+      for(int j = 0; j < icode_utf8_len; j++ ) {
+          node_pos ^= unit.offset() ^ static_cast<uchar_type>(icode_utf8[j]);
+          unit = array_[node_pos];
+          if (unit.label() != static_cast<uchar_type>(icode_utf8[j])) {
+            return result;
+          }
+      } // end for utf8
+    } // end for icode
+  }
+  if (!unit.has_leaf()) {
+    return result;
+  }
+  unit = array_[node_pos ^ unit.offset()];
+  set_result(&result, static_cast<value_type>(unit.value()), length);
+  return result;
+}
+
+template <typename A, typename B, typename T, typename C>
+template <typename U>
+inline std::size_t DoubleArrayImpl<A, B, T, C>::commonPrefixSearch(
+    const u4* iCode, U *results, std::size_t max_num_results,
+    std::size_t length, std::size_t node_pos) const {
+  std::size_t num_results = 0;
+
+  unit_type unit = array_[node_pos];
+  node_pos ^= unit.offset();
+  if (length != 0) {
+    u1 icode_utf8[8];
+    int  icode_utf8_len = 0;
+    for (std::size_t i = 0; i < length; ++i) {
+      // convert to utf8
+      icode_utf8_len = csr::csrUTF8Encode(icode_utf8, iCode[i]);
+      icode_utf8[icode_utf8_len] = 0;
+      for(int j = 0; j < icode_utf8_len; j ++) {
+          node_pos ^= static_cast<uchar_type>(icode_utf8[j]);
+          unit = array_[node_pos];
+          if (unit.label() != static_cast<uchar_type>(icode_utf8[j])) {
+            return num_results;
+          }
+          node_pos ^= unit.offset();
+          if (unit.has_leaf()) {
+            if (num_results < max_num_results) {
+              set_result(&results[num_results], static_cast<value_type>(
+                  array_[node_pos].value()), i + 1);
+            }
+            ++num_results;
+          }
+      } // end for utf8
+    } // end for icode
+  } // end if
+  return num_results;
+}
+
+// end the coreseek
 
 template <typename A, typename B, typename T, typename C>
 inline typename DoubleArrayImpl<A, B, T, C>::value_type

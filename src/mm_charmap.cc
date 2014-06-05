@@ -318,7 +318,7 @@ CharMapper::TagRange(u4 src_begin, u4 src_end, u2 tag)
 }
 
 u4
-CharMapper::TransformScript(u4 src, u2* out_tag)
+CharMapper::TransformScript(u4 src, u2* out_tag) const
 {
     return Transform(src, out_tag);
 }

@@ -402,6 +402,37 @@ int DictBase::PrefixMatch(const char* q, u2 len, DictMatchResult* rs) {
 	return num;
 }
 
+int DictBase::ExactMatch(const u4* q, u2 len)
+{
+#if USE_CEDAR
+    assert(0); // givme cedar index!!!
+#else
+    if(_darts_idx == NULL)
+        BuildIndex(); // assume always true.
+
+    Darts::DoubleArray::result_pair_type  rs;
+    _darts_idx->exactMatchSearch(q, rs, len);
+    // check unmatch.
+    return rs.value;
+#endif
+}
+
+int DictBase::PrefixMatch(const u4* q, u2 len, mm::DictMatchResult* rs)
+{
+    Darts::DoubleArray::result_pair_type result[MAX_PREFIX_SEARCH_RESULT];
+    DictMatchEntry mrs;
+    mrs.match._dict_id = _dict_id;
+    int num = _darts_idx->commonPrefixSearch(q, result, MAX_PREFIX_SEARCH_RESULT, len);
+    if(rs) {
+        for(int i=0; i<num; i++) {
+            mrs.match._len = result[i].length;
+            mrs.match._value = result[i].value;
+            rs->Match(mrs); //might be full (return -1 ), just ignore .
+        }
+    }
+    return num;
+}
+
 int DictBase::SaveRaw(const char* fname) {
 #if USE_CEDAR
     assert(0); // givme cedar index!!!

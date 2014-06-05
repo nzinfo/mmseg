@@ -15,18 +15,25 @@
 #if !defined(_SEGPOLICY_H)
 #define _SEGPOLICY_H
 
-#include "SegStatus.h"
+#include "mm_seg_status.h"
 namespace mm {
 
 class SegPolicy {
 public:
 	// do char-tag based segmentation, 
 	// return how many char been taged, from the begin of SegStatus
-	int Apply(SegStatus status);
-	int Apply(SegStatus status, u1 rs_tag_ptr, 4 rs_len);
-	u2 GetCharWindowSize();
-	u2 GetTermWindowSize();
+    int Apply(SegStatus status) {
+        return 0; // tar each char.
+    }
 
+    //int Apply(SegStatus status, u1 rs_tag_ptr, 4 rs_len);
+    inline u2 GetCharWindowSize() {
+        return 0;
+    }
+
+    inline u2 GetTermWindowSize() {
+        return 0;
+    }
 };
 
 } // end namespace mm

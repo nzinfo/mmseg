@@ -102,7 +102,7 @@ int csrUTF8DecodeLength ( const u1 *  pBuf )
 	}
 
 	// check for valid number of bytes
-	if ( iBytes<2 || iBytes>4 )
+	if ( iBytes<2 || iBytes>6 )
 		return -1;
 	/*
 	int iCode = ( v>>iBytes );
@@ -152,7 +152,7 @@ int csrUTF8Decode ( const u1 * pBuf , u2& length)
 	}
 
 	// check for valid number of bytes
-	if ( iBytes<2 || iBytes>4 )
+	if ( iBytes<2 || iBytes>6 )
 		return -1;
 	
 	length = iBytes;

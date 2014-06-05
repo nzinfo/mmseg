@@ -25,7 +25,9 @@ extern "C" {
 
 #include "mm_dict_mgr.h"
 #include "mm_seg_option.h"
-//#include "mm_segmentor.h"
+#include "mm_seg_script.h"
+
+#include "mm_segmentor.h"
 #include "utils/pystring.h"
 
 // mmseg includes
@@ -43,13 +45,15 @@ void usage(const char* argv_0) {
 */
 
 DEFINE_string(dict_path, ".", "where to load dictionary");
+DEFINE_string(script_path, ".", "where to load scripts");
 
-int segment(const char* file, const char* dict_path, u1 b_quit);
+int segment(const char* file, const char* dict_path, const char* , u1 b_quit);
 
 int main(int argc, char **argv) {
 
     char resolved_dict_buf[255];
     const char* dict_path = NULL;
+	const char* script_path = NULL;
     const char* out_file = NULL;
     u1 bQuite = 0;
     int rs = 0;
@@ -94,22 +98,28 @@ int main(int argc, char **argv) {
     out_file = argv[1]; // file to be process
 
     dict_path = FLAGS_dict_path.c_str();
+	script_path = FLAGS_script_path.c_str();
+
     const char* resolved_dict_path = realpath(dict_path, resolved_dict_buf);
+	std::string s_dict_path(resolved_dict_path);
+
+	resolved_dict_path = realpath(script_path, resolved_dict_buf);
+	std::string s_script_path(resolved_dict_path);
 
 #if MMSEG_DEBUG
-    printf("dict=%s; file=%s\n", resolved_dict_path, out_file);
+    printf("dict=%s; file=%s\n", s_dict_path.c_str(), out_file);
 #endif
 
 
     // load basic diction only -> for system booting up.
     {
-        int n = segment(out_file, resolved_dict_path, false);
+        int n = segment(out_file, s_dict_path.c_str(), s_script_path.c_str(), false);
     }
     return 0;
 }
 
 #if 1
-int segment(const char* utf8_file, const char* dict_path, u1 b_quit) {
+int segment(const char* utf8_file, const char* dict_path, const char* script_path, u1 b_quit) {
     /*
      *  1 load all text from disk, file must encode in utf8
      *  2 strip BOM
@@ -145,32 +155,54 @@ int segment(const char* utf8_file, const char* dict_path, u1 b_quit) {
          * 1 load term
          * 2 load pharse
          * 3 load special
+         * ---------------
+         * 4 load script
+         * 5 init options
+         * 6 do token
          */
 
-        mm::DictMgr mgr;
-
-        mgr.LoadTerm(dict_path);
-        mgr.LoadPharse(dict_path);
-        mgr.LoadSpecial(dict_path);
-
         std::string s_dict_path(dict_path);
-        std::string s_idx_cache = pystring::os::path::join(s_dict_path, ".term_idx");
-        int rs = mgr.LoadIndexCache(s_idx_cache.c_str());
-        printf("load rs=%d\n", rs);
-        if( rs < 0) {
-            // manual build idx, load cache failure.
-            LOG(INFO) << "rebuild cache index " <<  s_idx_cache;
-            mgr.BuildIndex(true);
-            mgr.SaveIndexCache(s_idx_cache.c_str()); //might failure.
-        }else {
-            LOG(INFO) << "load cache index " <<  s_idx_cache;
-            mgr.BuildIndex();
+        mm::DictMgr mgr;
+        mm::SegScript script_mgr;
+        std::string s_error;
+        // load script stage, if script execute wrang, no needs load dictionary any more
+        // FIXME: deal with script engine later.
+        int rs = script_mgr.LoadScripts( script_path, s_error);
+        if(rs < 0) // the script loaded, if <0, error
+        {
+            LOG(ERROR) << "script load error. " <<  s_error;
         }
 
+        if(1)
+        {
+            // load dict stage
+            mgr.LoadTerm(dict_path);
+            mgr.LoadPharse(dict_path);
+            mgr.LoadSpecial(dict_path);
 
-        //SegOptions opts;
-        //SegmentStatus seg_stat;
-        //rs = seg.Tokenize(&seg_stat, buffer, length, opts);
+            std::string s_idx_cache = pystring::os::path::join(s_dict_path, ".term_idx");
+            rs = mgr.LoadIndexCache(s_idx_cache.c_str());
+            if( rs < 0) {
+                // manual build idx, load cache failure.
+                LOG(INFO) << "rebuild cache index " <<  s_idx_cache;
+                mgr.BuildIndex(true);
+                mgr.SaveIndexCache(s_idx_cache.c_str()); //might failure.
+            }else {
+                LOG(INFO) << "load cache index " <<  s_idx_cache;
+                mgr.BuildIndex();
+            }
+        } // end load dict.
+
+        mm::SegStatus* seg_stat = new mm::SegStatus();  // huge memory alloc, needs alloc on heap.
+        mm::Segmentor seg(mgr, script_mgr);
+        int task_id = 0;
+        rs = seg.Tokenizer(task_id, buffer, length, seg_stat);
+        while(rs > 0) {
+            // should round by while,
+            // dup the output.
+            rs = seg.Tokenizer(task_id, NULL, 0, seg_stat); // state call
+        }
+        delete seg_stat; // clear
     }
 
     // free memory

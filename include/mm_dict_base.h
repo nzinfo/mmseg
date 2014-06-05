@@ -100,6 +100,10 @@ public:
 	// if rs is NULL, just return the count of result in prefix matching.
     int PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs);
 
+    // Unicode route
+    int ExactMatch(const u4* q, u2 len);
+    int PrefixMatch(const u4* q, u2 len, mm::DictMatchResult* rs);
+
     // Save Raw Darts into file, used for debug only.
     int SaveRaw(const char* fname);
     int LoadRaw(const char* fname);

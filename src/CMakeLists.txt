@@ -53,7 +53,9 @@ SET(LIBMMSEG_SOURCE
     mm_dict_updatable.cc
     mm_seg_option.cc
     mm_seg_status.cc
+    mm_seg_script.cc
     mm_api_script.cc
+    mm_segmentor.cc
     utils/pystring.cc
     utils/cityhash.cc
     utils/utf8_to_16.cpp
@@ -64,7 +66,7 @@ SET(LIBMMSEG_SOURCE
 ADD_LIBRARY(mmseg_c STATIC ${LIBMMSEG_SOURCE} )
 
 ADD_EXECUTABLE(mmseg mmseg_cli.cpp )
-target_link_libraries(mmseg mmseg_c glog pthread gflags)
+target_link_libraries(mmseg mmseg_c glog pthread gflags liblua)
 
 include_directories(${PROJECT_SOURCE_DIR}/third_party/)
 include_directories(${PROJECT_SOURCE_DIR}/third_party/glog/src)

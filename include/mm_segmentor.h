@@ -15,17 +15,21 @@
 #if !defined(_SEGMENTOR_H)
 #define _SEGMENTOR_H
 
+#include "mm_dict_mgr.h"
+#include "mm_seg_script.h"
 #include "mm_seg_status.h"
+
 namespace mm {
 
 class Segmentor {
 public:
-	DictMgr& _dict_mgr;
+    const DictMgr& _dict_mgr;
+    const SegScript& _script_mgr;
 	// text_to_seg: the text to proceed.
 	// user_dict, special the sass user's custom dictionary, the aspet dict.
 	// session_dict/ctx_dict, the dict related to this task
-	int Tokenizer(u8 task_id, string text_to_seg, SegStatus status);
-	Segmentor(DictMgr& dict_mgr);
+    int Tokenizer(u8 task_id, const char* text_to_seg, u4 text_len, SegStatus* status);
+    Segmentor(const DictMgr& dict_mgr, const SegScript& script_mgr);
 };
 
 } // namespace mm

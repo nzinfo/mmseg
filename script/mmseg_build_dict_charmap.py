@@ -34,6 +34,8 @@ class CharMapDict():
         CharMapDict._mmseg.CharMapper_MappingRangePass(self._char_map, src_begin, src_end)
 
     def def_tag(self, src, tag):
+        #if tag > 127:
+        #    print '-------------'
         CharMapDict._mmseg.CharMapper_Tag(self._char_map, src, tag)
 
     def save(self, fname):

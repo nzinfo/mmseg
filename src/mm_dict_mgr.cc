@@ -170,6 +170,12 @@ int DictMgr::LoadSpecial(const char* dict_path) {
 
 int DictMgr::GetDictFileNames(const char* dict_path, std::string fext, std::vector<std::string> &files)
 {
+    return GetDictFileNames(dict_path, fext, false, files);
+}
+
+int DictMgr::GetDictFileNames(const char* dict_path, std::string fext, bool filename_only,
+                            std::vector<std::string> &files)
+{
     char resolved_dict_buf[255];
     files.clear();
     std::string fname; fname.reserve(255);
@@ -189,7 +195,10 @@ int DictMgr::GetDictFileNames(const char* dict_path, std::string fext, std::vect
           if (S_ISDIR( filestat.st_mode ))         continue;
 
           if( std::string::npos != fname.rfind(fext.c_str(), fname.length() - fext.length(), fext.length()) ) {
-              files.push_back(fname);
+              if(filename_only)
+                files.push_back(ent->d_name);
+              else
+                files.push_back(fname);
           }
       } // end while
       closedir (dir);
@@ -199,22 +208,22 @@ int DictMgr::GetDictFileNames(const char* dict_path, std::string fext, std::vect
     return files.size();
 }
 
-DictBase* DictMgr::GetDictionary(const char* dict_name) {
+DictBase* DictMgr::GetDictionary(const char* dict_name) const {
     /*
      *  根据名字，返回词典对象， 包括 专用词表
      *  - GetDictionarySepcial 包括在内
      */
-	unordered_map<std::string, mm::DictBase*>::iterator it = _name2dict.find(dict_name);
+	unordered_map<std::string, mm::DictBase*>::const_iterator it = _name2dict.find(dict_name);
 	if(it == _name2dict.end() )
 		return NULL;
     return it->second;
 }
 
-DictBase* DictMgr::GetDictionary(u2 dict_id) {
+DictBase* DictMgr::GetDictionary(u2 dict_id) const {
     /*
      *  根据 id 返回， 只能是系统的 Term & Pharse
      */
-    unordered_map<u2, std::string>::iterator it = _id2name.find(dict_id);
+    unordered_map<u2, std::string>::const_iterator it = _id2name.find(dict_id);
     if(it == _id2name.end() )
         return NULL;
     // got a name
@@ -310,6 +319,7 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
 	*/
 
     // build global darts index.
+	if(bRebuildGlobalIdx)
     {
         // debug code.
 		/*
@@ -496,13 +506,13 @@ int DictMgr::ExactMatch(const char* q, u2 len, DictMatchResult* rs) {
 int DictMgr::PrefixMatch(const char* q, u2 len, DictMatchResult* rs) {
 
     /*
-     *
+     *  返回全局范围内，符合条件的词条。不保证长度的严格有序。
      */
 
     if(!_global_idx)
         BuildIndex();
-
-    return 0;
+    int num = _global_idx->PrefixMatch(q, len, rs);
+    return num;
 }
 
 } //mm namespace

@@ -17,6 +17,8 @@
 
 #include "mm_hashmap.h"
 #include "mm_seg_option.h"
+#include "mm_dict_mgr.h"
+#include "mm_dict_term_user.h"
 
 // A temporary place store token result & intermedia data
 // 
@@ -48,6 +50,13 @@
 // 3 clear _annotes , where key < _offset
 // 
 // if _annotes have prev annote, it's in unactive part, and still accessible.
+#define SEG_STATUS_DEFAULT_BATCH    4096    // 4K uni-char.
+
+#define SEG_PADING_B1           0xF0000u
+#define SEG_PADING_B2           0xF0002u
+#define SEG_PADING_E2           0x10FFFEu
+#define SEG_PADING_E1           0x10FFFFu
+#define SEG_PADING_TAGTYPE      0x7Fu
 
 namespace mm {
 
@@ -69,41 +78,71 @@ class AnnotePool {
      */
 };
 
+class Segmentor;
+
+typedef struct UnicodeSegChar {
+    u4 origin_code;
+    u2 code;    // 转换为小写的　icode , 如果为 0 则取 origin_code.
+    u1 tagA;
+    u1 tagB;
+}UnicodeSegChar;
+
 class SegStatus {
+
+    friend class Segmentor;
+
+
 	/*
 	 * 执行分词使用的上下文。
 	 */
 public:
-	SegStatus(u4 size);		// 一个处理批次可以处理的文字数量
+    SegStatus(u4 size = SEG_STATUS_DEFAULT_BATCH);		// 一个处理批次可以处理的文字数量
     virtual ~SegStatus();
 	void Reset();
 
 public:
+    int SetBuffer(const char* buf, u4 len);
+
 	// Similar with Reset, but slide window to next valid postions.
 	int MoveNext();		// 不是移动到下一个字，而是移动到下一个处理批次的起始位置
 	bool IsPause();		// 
 	const DictMatchResult* GetMatchesAt(u4 pos, u2* count);
 	// Called By SegPolicy
-	u2 SetTagA(u4 pos, u2 tag);
+    u1 SetTagA(u4 pos, u1 tag);
 	// Use by LUA Script, set the highest 8bit as tag.
 	// if in CRFMode, tagA is the result of assistant tokenizer's result
-	u2 SetTagB(u4 pos, u2 tag);
+    u1 SetTagB(u4 pos, u1 tag);
 	// Almost the save as tagB, but Push the originB -> A, if originB is not 0;
 	// Used by SegPolicy chain.
-	u2 SetTagPush(u4 pos, u2 tag);
+    u1 SetTagPush(u4 pos, u1 tag);
 	// Build property's index. 用于支持 find term by property 
 	void BuildTermIndex();
 
 protected:
+    // Segmenter's Intractive functions.
+    u4 FillWithICode(const DictMgr& dict_mgr, bool toLower = true); // 转换到 icode, 转换到小写（常用字）
+	// 根据 词典生成候选词表, 返回 DAG 图中的元素个数。可以同时加载 用户自定义词库 与 专用的一个领域词库。
+	u4 BuildTermDAG (const DictMgr& dict_mgr, const char* special_dict_name = NULL, const DictTermUser* user_dict=NULL);						
+protected:
+	void _DebugCodeConvert();
+
+protected:
+    u1*              _matches_data_ptr;  // 实际存 match 大的区域
     DictMatchResult* _matches;  // 从词典中读取到的命中信息， 必须按照长度排序
-    u8* _icodes;	// 当前正在处理的上下文， 如果处理完毕， 会更新, 保存 tag 和 实际的 icode
-	u4 _offset;		// 从起点开始， 现在的偏移量
+    UnicodeSegChar* _icodes;	// 当前正在处理的上下文， 如果处理完毕， 会更新, 保存 tag 和 实际的 icode
+    u4 _icode_pos;  // 当前的位置，当切换时...
+    u4 _offset;		// 从起点开始， 现在的偏移量
 	u4 _size;		// 整个 status 的最大字符容量
-    unordered_map<u4, AnnoteEntry> _annotes;    // offset -> annote 的表
+    unordered_map<u4, AnnoteEntry> _annotes;    // offset -> annote 的表 , 可以被脚本操作。
     AnnotePool* _annote_pool1;                  // 存储 annote　的数据
     AnnotePool* _annote_pool2;
     AnnotePool* _annote_pool_active;  // a pointer of _annote_pool1 | _annote_pool2
 	SegOptions * _options;
+
+protected:
+    const char* _text_buffer;
+    const char* _text_buffer_ptr;
+    u4          _text_buffer_len;
 };
 
 } // namespace mm

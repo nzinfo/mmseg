@@ -77,9 +77,13 @@ public:
     // 加载专有词典， 与其他词典不同， Special 不占用 32 个固定的词典槽
     int LoadSpecial(const char* dict_path);
 
-    mm::DictBase* GetDictionary(const char* dict_name);
+    const mm::CharMapper* GetCharMapper() const {
+        return _mapper;
+    }
+
+    mm::DictBase* GetDictionary(const char* dict_name) const;
     // 性能并不比 直接用名字好，仅仅是为了检查加载的情况
-    mm::DictBase* GetDictionary(u2 dict_id); //not for special & user
+    mm::DictBase* GetDictionary(u2 dict_id) const; //not for special & user
     //u2 GetDictionaryIdx(const char* dict_name);
 
     // 根据基本词条和短语 构建唯一的 darts 检索表
@@ -105,8 +109,10 @@ public:
         return NULL;    // 目前不支持在线的更新
     }
 
-protected:
-    int GetDictFileNames(const char* dict_path, std::string fext, std::vector<std::string> &files);
+public:
+    static int GetDictFileNames(const char* dict_path, std::string fext, std::vector<std::string> &files);
+    static int GetDictFileNames(const char* dict_path, std::string fext, bool filename_only,
+                                std::vector<std::string> &files);
 
 protected:
     CharMapper* _mapper;

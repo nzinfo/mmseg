@@ -21,9 +21,11 @@ include/mm_dict_updatable.h
 include/mm_dict_mgr.h
 include/mm_seg_option.h
 include/mm_seg_status.h
+include/mm_segpolicy.h
 include/mm_seg_script.h
 include/mm_api_script.h
 include/mm_segmentor.h
+include/csr.h
 include/utils/pystring.h
 include/utils/cityhash.h
 include/utils/utf8_to_16.h
@@ -37,6 +39,7 @@ src/mm_dict_mgr.cc
 src/mm_dict_updatable.cc
 src/mm_seg_option.cc
 src/mm_seg_status.cc
+src/mm_seg_script.cc
 src/mm_api_script.cc
 src/mm_segmentor.cc
 src/mmseg_cli.cpp
@@ -50,7 +53,6 @@ src/tst_dict_component.cpp
 src/tst_lua.cpp
 src/tst_lua_script.cpp
 src/utils/assert.c
-src/utils/csr.h
 src/utils/csr_assert.h
 src/utils/csr_utils.c
 src/utils/csr_utils.h

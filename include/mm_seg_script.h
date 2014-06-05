@@ -16,8 +16,8 @@
 #if !defined(_SEGSCRIPT_H)
 #define _SEGSCRIPT_H
 
-#include "SegPolicy.h"
-//#include "SegScriptPeer.h"
+#include "mm_segpolicy.h"
+#include "mm_api_script.h"
 
 namespace mm {
 
@@ -31,12 +31,23 @@ namespace mm {
  */
 class SegScript {
 public:
+    SegScript() {
+        _script = new LUAScript();
+        lua_script_init(_script);
+    }
+
+    virtual ~SegScript();
+
+public:
 	//SegScriptPeer _peer;
     /*
      * load script from disk.
      * load order by ascii orer
      */
-    void LoadScripts(const char* script_path);
+    int LoadScripts(const std::string script_path, std::string & s_err);
+
+protected:
+    LUAScript* _script;
 };
 
 } // namespace mm

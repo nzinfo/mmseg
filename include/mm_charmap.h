@@ -27,7 +27,7 @@
 
 // CharMapper define
 #define MAX_UNICODE_CODEPOINT   0x10FFFFu      // Unicode Max
-#define UNICODE_MASK            0x1FFFFFu      // (2**21-1)
+#define UNICODE_MASK            0x1FFFFFu      // (2**21-1) 保留了 11个bit 给 tag，实际用 不到 8bit
 #define UNICODE_BITS            21u            // Unicode's bits count.
 #define UNICODE_PAGE_SIZE       0xFFFFu        // 65536
 
@@ -68,10 +68,10 @@ public:
     int Tag(u4 icode, u2 tag);
     int TagRange(u4 src_begin, u4 src_end, u2 tag);
 
-    inline u4 Transform(u4 src, u2* out_tag)  {
+    inline u4 Transform(u4 src, u2* out_tag)  const {
         // FIXME: check src < MAX_UNICODE_CODEPOINT
         u4 base = 0;
-        u4* _char_mapping = GetPage(src, &base);
+        const u4* _char_mapping = ((CharMapper*)this)->GetPage(src, &base); //tear const
         if(!_char_mapping) // should ignore
             return 0;
         src -= base;
@@ -88,11 +88,11 @@ public:
             return 0;
     }
 
-    u4 TransformScript(u4 src, u2* out_tag);  // the script side , check for trans
+    u4 TransformScript(u4 src, u2* out_tag) const;  // the script side , check for trans
 
 protected:
 
-    inline u4* GetPage(u4 icode, u4 *page_base) {
+    inline u4* GetPage(u4 icode, u4 *page_base)  {
         /*
          *
             平面	始末字符值	中文名称	英文名称
