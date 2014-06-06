@@ -82,7 +82,7 @@ class Segmentor;
 
 typedef struct UnicodeSegChar {
     u4 origin_code;
-    u2 code;    // 转换为小写的　icode , 如果为 0 则取 origin_code.
+    //u2 code;    // 转换为小写的　icode , 如果为 0 则取 origin_code. 移出，用于prefixmatch
     u1 tagA;
     u1 tagB;
 }UnicodeSegChar;
@@ -122,14 +122,18 @@ protected:
     // Segmenter's Intractive functions.
     u4 FillWithICode(const DictMgr& dict_mgr, bool toLower = true); // 转换到 icode, 转换到小写（常用字）
 	// 根据 词典生成候选词表, 返回 DAG 图中的元素个数。可以同时加载 用户自定义词库 与 专用的一个领域词库。
-	u4 BuildTermDAG (const DictMgr& dict_mgr, const char* special_dict_name = NULL, const DictTermUser* user_dict=NULL);						
+    u4 BuildTermDAG (const DictMgr& dict_mgr, const char* special_dict_name = NULL, const DictTermUser* dict_user=NULL);
+
 protected:
 	void _DebugCodeConvert();
+    void _DebugDumpDAG();
 
 protected:
     u1*              _matches_data_ptr;  // 实际存 match 大的区域
     DictMatchResult* _matches;  // 从词典中读取到的命中信息， 必须按照长度排序
     UnicodeSegChar* _icodes;	// 当前正在处理的上下文， 如果处理完毕， 会更新, 保存 tag 和 实际的 icode
+    u4*             _icode_chars; // 保存unicode 的原始值 和 tolower 后的值（如果有），用于 prefixmatch.
+    u2*             _icode_matches; // 按照词的位置，给出都命中了多少词条。
     u4 _icode_pos;  // 当前的位置，当切换时...
     u4 _offset;		// 从起点开始， 现在的偏移量
 	u4 _size;		// 整个 status 的最大字符容量

@@ -105,6 +105,9 @@ public:
     int ExactMatch(const char* q, u2 len, mm::DictMatchResult* rs);
     int PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs);
 
+	int ExactMatch(u4* q, u2 len, mm::DictMatchResult* rs);
+	int PrefixMatch(u4* q, u2 len, mm::DictMatchResult* rs);
+
     mm::DictUpdatable* GetUpdatableDictionary() {
         return NULL;    // 目前不支持在线的更新
     }
@@ -121,7 +124,7 @@ protected:
     DictPharse* _pharse_dictionaries[MAX_PHARSE_DICTIONARY];
     std::vector<DictTerm*> _special_dictionary;
 
-    mm::DictBase* _global_idx;
+    mm::DictGlobalIndex* _global_idx;
 
     unordered_map<std::string, mm::DictBase*> _name2dict;
     unordered_map<u2, std::string> _id2name;

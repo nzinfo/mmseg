@@ -396,7 +396,9 @@ int DictBase::PrefixMatch(const char* q, u2 len, DictMatchResult* rs) {
 		for(int i=0; i<num; i++) {
 			mrs.match._len = result[i].length;
 			mrs.match._value = result[i].value;
-			rs->Match(mrs); //might be full (return -1 ), just ignore .
+            //might be full (return -1 ), just ignore .
+            if(rs->Match(mrs) == -1)
+                return -1; // result is full.
 		}
 	}
 	return num;
@@ -546,6 +548,103 @@ void DictBase::SetDictionaryId(u2 dict_id_of_mgr) {
 
 u8 DictBase::GetReversion() {
     return _reversion;
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+// load
+u2 decode_entry_to_matchentry(const u1* entries, u2 data_len, u2 term_len, DictMatchResult* rs)
+{
+   const u1* ptr = entries;
+    u2  step_len = 0;
+    DictMatchEntry m;
+    int cnt = 0;
+
+    while(*ptr && (ptr < entries + data_len) ) {
+        m.match._dict_id = *ptr;
+        ptr ++;
+        m.match._len = term_len;
+        m.match._value = csr::csrUTF8Decode(ptr, step_len);
+        rs->Match(m);
+
+        ptr += step_len;
+        cnt ++;
+    };
+    return cnt;
+}
+
+
+int DictGlobalIndex::ExactMatch(const char* q, u2 len, DictMatchResult* rs)
+{
+    int v = DictBase::ExactMatch(q, len);
+    if (v >= 0) {
+        // get the entry's data
+        mm::EntryData* entry = NULL;
+        entry = GetEntryDataByOffset(v);
+        u2 data_len = 0;
+        CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
+        const char* sptr = (const char*)entry->GetData(GetSchema(),
+                                                       GetStringPool(), 0, &data_len);
+        // decode sptr
+        return decode_entry_to_matchentry((const u1*)sptr, data_len, len, rs);
+    }else
+        return 0; // no entry found.
+}
+
+int DictGlobalIndex::PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs)
+{
+    Darts::DoubleArray::result_pair_type result[MAX_PREFIX_SEARCH_RESULT];
+    DictMatchEntry mrs;
+    mrs.match._dict_id = _dict_id;
+
+    mm::EntryData* entry = NULL;
+    u2 data_len = 0;
+
+    int total_num = 0;
+    int num = _darts_idx->commonPrefixSearch(q, result, MAX_PREFIX_SEARCH_RESULT, len);
+    if(rs) {
+        for(int i=0; i<num; i++) {
+            mrs.match._len = result[i].length;
+            mrs.match._value = result[i].value;
+            // rs->Match(mrs); // not fill the match,
+            entry = GetEntryDataByOffset(mrs.match._value);
+            CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
+            const char* sptr = (const char*)entry->GetData(GetSchema(),
+                                                           GetStringPool(), 0, &data_len);
+            total_num += decode_entry_to_matchentry((const u1*)sptr, data_len, mrs.match._len, rs);
+        }
+        return total_num;
+    }
+    return num;
+}
+
+int DictGlobalIndex::PrefixMatch(const u4* q, u2 len, mm::DictMatchResult* rs)
+{
+    /*
+     *  需要对结果进行解码，解码到每个词典的 match.
+     */
+    Darts::DoubleArray::result_pair_type result[MAX_PREFIX_SEARCH_RESULT];
+    DictMatchEntry mrs;
+    mrs.match._dict_id = _dict_id;
+
+    mm::EntryData* entry = NULL;
+    u2 data_len = 0;
+
+    int total_num = 0;
+    int num = _darts_idx->commonPrefixSearch(q, result, MAX_PREFIX_SEARCH_RESULT, len);
+    if(rs) {
+        for(int i=0; i<num; i++) {
+            mrs.match._len = result[i].length;
+            mrs.match._value = result[i].value;
+            // rs->Match(mrs); // not fill the match,
+            entry = GetEntryDataByOffset(mrs.match._value);
+            CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
+            const char* sptr = (const char*)entry->GetData(GetSchema(),
+                                                           GetStringPool(), 0, &data_len);
+            total_num += decode_entry_to_matchentry((const u1*)sptr, data_len, mrs.match._len, rs);
+        }
+        return total_num;
+    }
+    return num;
 }
 
 } //mm namespace

@@ -37,7 +37,7 @@ typedef union DictMatchEntry {
 // 
 class DictMatchResult {
 public:
-    DictMatchResult(u1* ptr, u2 max_match)  // max of match result. ptr's size = sizeof(DictMatchEntry==u8) * max_match
+    DictMatchResult(u1* ptr, u4 max_match)  // max of match result. ptr's size = sizeof(DictMatchEntry==u8) * max_match
 		:_pos(0), _max_match(max_match), _matches((DictMatchEntry*)ptr) {}
 		
 	void Reset() {
@@ -53,16 +53,20 @@ public:
 		return -1;
 	}
 
-    const DictMatchEntry* GetMatch(u2 idx) const {
+    inline const DictMatchEntry* GetMatch(u4 idx) const {
         if(idx<_pos) {
             return &(_matches[idx]);
         }
         return NULL;
     }
 
+    u4   Count() const {
+        return _pos;
+    }
+
 private:
-	u2 _pos;
-    u2 _max_match;
+	u4 _pos;
+    u4 _max_match;
 	DictMatchEntry* _matches;
 };
 

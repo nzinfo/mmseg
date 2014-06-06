@@ -50,7 +50,8 @@ int Segmentor::Tokenizer(u8 task_id, const char* text_to_seg, u4 text_len, SegSt
     //status->_DebugCodeConvert();
 	int iterm_count = status->BuildTermDAG(_dict_mgr);		  // 使用 dictionary 构造对应的词网格（DAG）， 返回全部候选词的数量
     status->BuildTermIndex();                                 // 用于支持脚本对词条的快速查找
-	//status->Apply();				// 应用具体的切分算法。返回当前处理到的 text_to_seg_ptr 到 text_to_seg 的偏移量
+    status->_DebugDumpDAG();
+    //status->Apply();				// 应用具体的切分算法。返回当前处理到的 text_to_seg_ptr 到 text_to_seg 的偏移量
     return 0;
 }
 

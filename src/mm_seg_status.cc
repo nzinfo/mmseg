@@ -26,6 +26,10 @@ SegStatus::SegStatus(u4 size) {
     u4 size_of_icodes = 2*(_size+4)*sizeof(UnicodeSegChar);
     _icodes = (UnicodeSegChar*)malloc(size_of_icodes); // include padding. B1B2; E2E1
     memset(_icodes, 0, size_of_icodes);
+    _icode_chars = (u4*)malloc(2*(_size+4)*sizeof(u4)); // 反正  match 已经开到1M了，这里额外用32K，大丈夫无所谓了。
+    memset(_icode_chars, 0, 2*(_size+4)*sizeof(u4));
+    _icode_matches = (u2*)malloc(2*(_size+4)*sizeof(u2)); // 用于记录在特定位置，都有多少候选词。存在技巧压缩，不折腾了。
+    memset(_icode_matches, 0, 2*(_size+4)*sizeof(u2));
     _icode_pos = 0;
 
     u4 size_of_matches = size*sizeof(DictMatchEntry)*32; // 1M, less than one picture.
@@ -37,6 +41,8 @@ SegStatus::SegStatus(u4 size) {
 
 SegStatus::~SegStatus() {
     free(_icodes);
+    free(_icode_chars);
+    free(_icode_matches);
     delete _matches;
     free(_matches_data_ptr);
 }
@@ -48,6 +54,8 @@ void SegStatus::Reset() {
 
 	u4 size_of_icodes = 2*(_size+4)*sizeof(UnicodeSegChar);
     memset(_icodes, 0, size_of_icodes);
+    memset(_icode_chars, 0, 2*(_size+4)*sizeof(u4));
+    memset(_icode_matches, 0, 2*(_size+4)*sizeof(u2));
     _icode_pos = 0;
     _matches->Reset();
 }
@@ -62,10 +70,12 @@ int SegStatus::SetBuffer(const char* buf, u4 len) {
     _icodes[_icode_pos].origin_code = SEG_PADING_B1;
     _icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE; // 127
     _icodes[_icode_pos].tagB = 'S';
+    _icode_chars[_icode_pos] = SEG_PADING_B1;
     _icode_pos ++;
     _icodes[_icode_pos].origin_code = SEG_PADING_B2;
     _icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
     _icodes[_icode_pos].tagB = 'S';
+    _icode_chars[_icode_pos] = SEG_PADING_B2;
     _icode_pos++;
     return 0;
 }
@@ -150,7 +160,11 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
                     ( (u4)icode, &icode_tag ); // the fact is only 11 byte of tag, currently we use only 8bit
 		_icodes[_icode_pos].origin_code = icode;
         _icodes[_icode_pos].tagA = (u1)icode_tag;  // force case, change here if charmap's tag larger than 8bit.
-        _icodes[_icode_pos].code = icode_lower;
+        // 如果有小写的定义，则使用小写，否则，使用原始值。
+        if(icode_lower)
+            _icode_chars[_icode_pos] = icode_lower;
+        else
+            _icode_chars[_icode_pos] = icode;
         {
             // 计算 tagB 的值； 如果 与前一个的tagB 不同，则说明出现一个切分。
             if(_icodes[_icode_pos].tagA != _icodes[_icode_pos-1].tagA) {
@@ -182,16 +196,19 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
         _icodes[_icode_pos].origin_code = SEG_PADING_E2;
         _icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
         _icodes[_icode_pos].tagB = 'S';
+        _icode_chars[_icode_pos] = SEG_PADING_E2;
         _icode_pos++;
         _icodes[_icode_pos].origin_code = SEG_PADING_E1;
         _icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
         _icodes[_icode_pos].tagB = 'S';
+        _icode_chars[_icode_pos] = SEG_PADING_E1;
         _icode_pos++;
     }
     return _icode_pos - icode_pos_begin; // how many char filled.
 }
 
-u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const char* special_dict_name, const DictTermUser*)
+u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const char* special_dict_name,
+                            const DictTermUser* dict_user)
 {
 	/*
 	 * 使用前缀搜索，构造 词网格
@@ -204,26 +221,56 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const char* special_dict_na
 	if(special_dict_name)	
 		special_dict = dict_mgr.GetDictionary(special_dict_name);
 
-    //int num = dict_mgr.PrefixMatch(buffer, cx, &rs);
-	return 0;
+    int num = 0;
+	DictMgr& mgr = (DictMgr&)dict_mgr;
+    for(u4 i = 0; i < _icode_pos; i++) {
+        int rs = mgr.PrefixMatch(_icode_chars + i, _icode_pos - i, _matches); // matches will advence
+        if(rs == -1)
+            return -1; // should assert too many matches.
+        _icode_matches[i] = rs;
+        num += rs;
+    }
+    return num;
 }
+
 //////////////////////////////////////////////////////////////////////////
 void SegStatus::_DebugCodeConvert() {
 	/* 调试使用的 iCode ， 输出 UTF8 字符串 & 对应的 icode， 用 ' ' 分割 */
 	u1 buf[128];
 	int n = 0;
 	for(u4 i = 0; i< _icode_pos; i++ ){
-		if(_icodes[i].code == 0)
-			n = csr::csrUTF8Encode(buf, _icodes[i].origin_code);
-		else
-			n = csr::csrUTF8Encode(buf, _icodes[i].code);
+		n = csr::csrUTF8Encode(buf, _icode_chars[i]);
 		buf[n] = 0;
-		printf("%s(%lu->%lu) ", buf, _icodes[i].origin_code, _icodes[i].code);
+		printf("%s(%lu->%lu) ", buf, _icodes[i].origin_code, _icode_chars[i]);
         if( _icodes[i].tagB == 'E' || _icodes[i].tagB == 'S' )
         {
             printf("/ ");
         }
 	}
+}
+
+void SegStatus::_DebugDumpDAG() {
+  /*
+   *  调试 DAG，  输出 字 ， 词的候选
+   */
+  u1 buf[128];
+  int n = 0;
+
+  int pos = 0;
+  const DictMatchEntry* match_entry = NULL;
+  for(u4 i = 0; i< _icode_pos; i++ ){
+      n = csr::csrUTF8Encode(buf, _icode_chars[i]);
+      buf[n] = 0;
+      printf("%s ", buf );
+      for(u2 j = 0; j < _icode_matches[i]; j++) {
+          match_entry = _matches->GetMatch(pos);
+          if(match_entry) {
+              printf("d = %d, c = %d; ", match_entry->match._dict_id, match_entry->match._len );
+          }
+          pos ++;
+      }
+      printf("\n");
+  } // end for
 }
 
 } // namespace mm

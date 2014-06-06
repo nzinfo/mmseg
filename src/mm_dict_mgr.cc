@@ -50,6 +50,7 @@ typedef struct EntryInDict {
     EntryInDict* next;
 }EntryInDict;
 
+// FIXME: should move to dict_index
 u2 encode_entry_in_dict(EntryInDict *entry, u1* entries){
     u1* ptr = entries;
     while(entry) {
@@ -60,25 +61,6 @@ u2 encode_entry_in_dict(EntryInDict *entry, u1* entries){
     }
     *ptr = 0;
     return (u2)(ptr - entries);
-}
-
-u2 decode_entry_to_matchentry(const u1* entries, u2 data_len, u2 term_len, DictMatchResult* rs){
-   const u1* ptr = entries;
-    u2  step_len = 0;
-    DictMatchEntry m;
-    int cnt = 0;
-
-    while(*ptr && (ptr < entries + data_len) ) {
-        m.match._dict_id = *ptr;
-        ptr ++;
-        m.match._len = term_len;
-        m.match._value = csr::csrUTF8Decode(ptr, step_len);
-        rs->Match(m);
-
-        ptr += step_len;
-        cnt ++;
-    };
-    return cnt;
 }
 
 struct Hash_Func
@@ -179,6 +161,8 @@ int DictMgr::GetDictFileNames(const char* dict_path, std::string fext, bool file
     char resolved_dict_buf[255];
     files.clear();
     std::string fname; fname.reserve(255);
+	std::string f_root;
+	std::string f_ext;
     DIR *dir;
     struct stat filestat;
     struct dirent *ent;
@@ -193,8 +177,9 @@ int DictMgr::GetDictFileNames(const char* dict_path, std::string fext, bool file
           fname +=ent->d_name;
           if (stat( fname.c_str(), &filestat )) continue;
           if (S_ISDIR( filestat.st_mode ))         continue;
-
-          if( std::string::npos != fname.rfind(fext.c_str(), fname.length() - fext.length(), fext.length()) ) {
+		  pystring::os::path::splitext(f_root, f_ext, fname);
+          //if( std::string::npos != fname.rfind(fext.c_str(), fname.length() - fext.length(), fext.length()) {
+		  if(f_ext == fext) {
               if(filename_only)
                 files.push_back(ent->d_name);
               else
@@ -239,7 +224,7 @@ int DictMgr::LoadIndexCache(const char* fname) {
      */
     if(!_global_idx) {
         // FIXME: dup code. & and should reset _global_idx @ each load cache.
-        _global_idx = new mm::DictBase();
+        _global_idx = new mm::DictGlobalIndex();
         _global_idx->Init("com.coreseek.mm.global_idx", "entries:s"); // entries all the dict.
     }
     // checkfile.
@@ -427,7 +412,7 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
             u2 buf_len = 0;
             // build the global index.
             SafeDelete(_global_idx);
-            _global_idx = new mm::DictBase();
+            _global_idx = new mm::DictGlobalIndex();
             _global_idx->Init("com.coreseek.mm.global_idx", "entries:s"); // entries all the dict.
 
             mm::EntryData* entry = NULL;
@@ -488,19 +473,8 @@ int DictMgr::VerifyIndex() {
 int DictMgr::ExactMatch(const char* q, u2 len, DictMatchResult* rs) {
     if(!_global_idx)
         BuildIndex();
-    int v = _global_idx->ExactMatch(q, len);
-    if (v >= 0) {
-        // get the entry's data
-        mm::EntryData* entry = NULL;
-        entry = _global_idx->GetEntryDataByOffset(v);
-        u2 data_len = 0;
-		CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
-        const char* sptr = (const char*)entry->GetData(_global_idx->GetSchema(),
-                                                       _global_idx->GetStringPool(), 0, &data_len);
-        // decode sptr
-        return decode_entry_to_matchentry((const u1*)sptr, data_len, len, rs);
-    }else
-        return 0; // no entry found.
+    int v = _global_idx->ExactMatch(q, len, rs);
+    return v;
 }
 
 int DictMgr::PrefixMatch(const char* q, u2 len, DictMatchResult* rs) {
@@ -513,6 +487,20 @@ int DictMgr::PrefixMatch(const char* q, u2 len, DictMatchResult* rs) {
         BuildIndex();
     int num = _global_idx->PrefixMatch(q, len, rs);
     return num;
+}
+
+int DictMgr::ExactMatch(u4* q, u2 len, mm::DictMatchResult* rs)
+{
+	// FIXME: impl icode match.
+	assert(0);
+	return 0;
+}
+int DictMgr::PrefixMatch(u4* q, u2 len, mm::DictMatchResult* rs)
+{
+	if(!_global_idx)
+		BuildIndex();
+	int num = _global_idx->PrefixMatch(q, len, rs);
+	return num;
 }
 
 } //mm namespace

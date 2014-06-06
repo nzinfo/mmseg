@@ -88,6 +88,11 @@ if __name__ == "__main__":
         term_txt = u"中国".encode('utf-8')
         v = _mmseg.BaseDict_ExactMatchScript( dt, term_txt, len(term_txt))
         print term_txt, v
+
+        term_txt = u"关于".encode('utf-8')
+        v = _mmseg.BaseDict_ExactMatchScript( dt, term_txt, len(term_txt))
+        print term_txt, v
+
         #print _mmseg.BaseDict_GetEntryPropertyU4(dt, v, "freq", 0)
         print _mmseg.get_dict_property_string_by_value(dt, v, "pinyin");
         print v
