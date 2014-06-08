@@ -38,6 +38,11 @@ SegStatus::SegStatus(SegOptions &option, u4 size)
     memset(_matches_data_ptr, 0, size_of_matches);
 
     _matches = new DictMatchResult( _matches_data_ptr, size*32 );
+
+    // 初始化 标引池
+    _annote_pool1 = new AnnotePool();
+    _annote_pool2 = new AnnotePool();
+    _annote_pool_active = _annote_pool1;
 }
 
 SegStatus::~SegStatus() {
@@ -46,6 +51,11 @@ SegStatus::~SegStatus() {
     free(_icode_matches);
     delete _matches;
     free(_matches_data_ptr);
+
+    _annote_pool_active = NULL;
+    delete _annote_pool1;
+    delete _annote_pool2;
+
 }
 
 void SegStatus::Reset() {
@@ -60,6 +70,11 @@ void SegStatus::Reset() {
     _icode_pos = 0;
     _icode_last_s_pos = 0;
     _matches->Reset();
+
+    // 处理标引
+    _annote_pool_active = _annote_pool1;
+    _annote_pool1->Reset();
+    _annote_pool2->Reset();
 }
 
 int SegStatus::SetBuffer(const char* buf, u4 len) {
@@ -79,15 +94,49 @@ int SegStatus::SetBuffer(const char* buf, u4 len) {
     _icodes[_icode_pos].tagB = 'S';
     _icode_chars[_icode_pos] = SEG_PADING_B2;
     _icode_pos++;
+
     return 0;
 }
 
 int SegStatus::MoveNext() {
-	return 0;
-}
+    /*
+     * 把 _icode 之类的状态，切换到下一个 block 可用
+     *  - 因为还要保留 annote　等信息，因此无法使用　Reset， 实际上 Reset 不会被调用。
+     *
+     * 返回，当前 的 _icode_pos
+     *
+     */
+    LOG(INFO) << "MNext " <<  _icode_last_s_pos << "->" << _icode_pos;
+    u4 icode_last_s_pos = _icode_last_s_pos;
+    if(!_icode_last_s_pos)
+        icode_last_s_pos = _icode_pos - 50;
 
-bool SegStatus::IsPause() {
-	return false;
+    // move remain char.
+    if(icode_last_s_pos != _icode_pos-1) {
+        memmove(_icodes, _icodes+icode_last_s_pos, sizeof(UnicodeSegChar)*(_icode_pos - icode_last_s_pos) );
+        memmove(_icode_chars, _icode_chars+icode_last_s_pos, sizeof(u4)*(_icode_pos - icode_last_s_pos) );
+        // 不需要移动 _icode_matches 因为要重新找。
+        _icode_pos = _icode_pos - icode_last_s_pos;
+    }else{
+		_icode_pos = 0;
+	}
+    memset(_icode_matches, 0, 2*(_size+4)*sizeof(u4));
+    _matches->Reset();
+
+    icode_last_s_pos = 0;
+
+    // 处理 AnnotePool 的轮换; 使用轮换的初衷是不希望在 block 切换时，丢失上下文的标引信息。
+    {
+        if(_annote_pool_active == _annote_pool1) {
+            _annote_pool2->Reset();
+            _annote_pool_active = _annote_pool2;
+        }else
+        if(_annote_pool_active == _annote_pool2) {
+            _annote_pool1->Reset();
+            _annote_pool_active = _annote_pool1;
+        }
+    }
+    return _icode_pos;
 }
 
 const DictMatchResult* SegStatus::GetMatchesAt(u4 pos, u2* count) {
@@ -189,25 +238,28 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
     // check is reach the end of text
     if( b_decode_error  ||  ! (_text_buffer_ptr < _text_buffer + _text_buffer_len) ) {
 
-        // fix prev B->S
-        if(_icodes[_icode_pos-1].tagB == 'B')
-            _icodes[_icode_pos-1].tagB = 'S';
-        // fix prev M->E
-        if(_icodes[_icode_pos-1].tagB == 'M')
-            _icodes[_icode_pos-1].tagB = 'E';
+		if(_icode_pos != icode_pos_begin) {  //else no char advance error @begin.
+			// fix prev B->S
+			if(_icodes[_icode_pos-1].tagB == 'B')
+				_icodes[_icode_pos-1].tagB = 'S';
+			// fix prev M->E
+			if(_icodes[_icode_pos-1].tagB == 'M')
+				_icodes[_icode_pos-1].tagB = 'E';
 
-        // the end of buffer. 或者 解码出现错误。
-        _icodes[_icode_pos].origin_code = SEG_PADING_E2;
-        _icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
-        _icodes[_icode_pos].tagB = 'S';
-        _icode_chars[_icode_pos] = SEG_PADING_E2;
-        _icode_pos++;
-        _icodes[_icode_pos].origin_code = SEG_PADING_E1;
-        _icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
-        _icodes[_icode_pos].tagB = 'S';
-        _icode_chars[_icode_pos] = SEG_PADING_E1;
-        _icode_last_s_pos = _icode_pos;
-        _icode_pos++;
+			// the end of buffer. 或者 解码出现错误。
+			_icodes[_icode_pos].origin_code = SEG_PADING_E2;
+			_icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
+			_icodes[_icode_pos].tagB = 'S';
+			_icode_chars[_icode_pos] = SEG_PADING_E2;
+			_icode_pos++;
+			_icodes[_icode_pos].origin_code = SEG_PADING_E1;
+			_icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
+			_icodes[_icode_pos].tagB = 'S';
+			_icode_chars[_icode_pos] = SEG_PADING_E1;
+			_icode_last_s_pos = _icode_pos;
+			_icode_pos++;
+            LOG(INFO) << "Add Doc EndMark " << _icode_pos << " " << icode_pos_begin;
+        }
     }
     return _icode_pos - icode_pos_begin; // how many char filled.
 }

@@ -12,7 +12,7 @@
  *
  */
 
-
+#include <glog/logging.h>
 #include "mm_segmentor.h"
 #include "mm_seg_status.h"
 #include "utils/utf8_to_16.h"
@@ -47,18 +47,25 @@ int Segmentor::Tokenizer(u8 task_id, const char* text_to_seg, u4 text_len, SegSt
 	}
 
 	int ichar_count = status->FillWithICode(_dict_mgr, true); // enable to lower case.
-    // FIXME： give a debug macro.
-    //status->_DebugCodeConvert();
-	int iterm_count = status->BuildTermDAG(_dict_mgr);		  // 使用 dictionary 构造对应的词网格（DAG）， 返回全部候选词的数量
-    //在启用 人名库 | 组织名库后， 在此处即进行处理。 可能需要 CRF 对人名做二次确认。类似 Adaboost ?
-    status->BuildTermIndex();                                 // 用于支持脚本对词条的快速查找
-    //status->_DebugDumpDAG();
-    status->Apply(_dict_mgr, &_mmseg);				// 应用具体的切分算法。返回当前处理到的 text_to_seg_ptr 到 text_to_seg 的偏移量
-    //status->_DebugMMSegResult();
-    //check is enable crfseg.
-    //check enable pos
-    //check enable ner.
-    return 0;
+	if(ichar_count) {
+		// FIXME： give a debug macro.
+		//status->_DebugCodeConvert();
+		int iterm_count = status->BuildTermDAG(_dict_mgr);		  // 使用 dictionary 构造对应的词网格（DAG）， 返回全部候选词的数量
+		//在启用 人名库 | 组织名库后， 在此处即进行处理。 可能需要 CRF 对人名做二次确认。类似 Adaboost ?
+		status->BuildTermIndex();                                 // 用于支持脚本对词条的快速查找
+        //status->_DebugDumpDAG();
+		int icode_seg = status->Apply(_dict_mgr, &_mmseg);		  // 应用具体的切分算法。 返回处理的文字个数
+        //status->_DebugMMSegResult();
+		//check is enable crfseg.
+		//check enable pos
+		//check enable ner.
+	}
+
+    //check is all data done.
+    if(status->HasMoreData())
+        return ichar_count; // 如果有数据，但是已经不能产生新的icode ，一样是结束。
+    else
+        return 0;
 }
 
 Segmentor::Segmentor(const DictMgr& dict_mgr, const SegScript& script_mgr, const DictTermUser *dict_user)

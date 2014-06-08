@@ -30,8 +30,7 @@ extern "C" {
 #include "mm_segmentor.h"
 #include "utils/pystring.h"
 
-// mmseg includes
-//#include "segmentor.h"
+#include "utils/csr_utils.h"
 
 /*
 void usage(const char* argv_0) {
@@ -133,15 +132,15 @@ int segment(const char* utf8_file, const char* dict_path, const char* script_pat
 
     // load buffer
     {
-        std::ifstream is(utf8_file);
+        std::ifstream is(utf8_file, std::ios::binary);
         //load data.
         is.seekg (0, std::ios::end);
         length = (size_t)is.tellg();
         is.seekg (0, std::ios::beg);
         buffer = new char [length+1];
-        is.read (buffer,length);
+        is.read (buffer, length);
         buffer[length] = 0;
-
+		
         buffer_ptr = buffer;
         // check header UTF-8 BOM
         if(memcmp(buffer,txtHead,sizeof(char)*3) == 0) {
@@ -193,6 +192,9 @@ int segment(const char* utf8_file, const char* dict_path, const char* script_pat
             }
         } // end load dict.
 
+        unsigned long srch,str;
+        str = currentTimeMillis();
+
         // property to read from dict, special dict
         mm::SegOptions seg_option("", "");
         mm::SegStatus* seg_stat = new mm::SegStatus(seg_option);  // huge memory alloc, needs alloc on heap.
@@ -202,14 +204,19 @@ int segment(const char* utf8_file, const char* dict_path, const char* script_pat
 
         int task_id = 0;
         rs = seg.Tokenizer(task_id, buffer, length, seg_stat);
-        seg.GetResult(&rs_out, seg_stat);
+        //seg.GetResult(&rs_out, seg_stat);
         while(rs > 0) {
             // should round by while,
             // dup the output.
             rs = seg.Tokenizer(task_id, NULL, 0, seg_stat); // state call
-            seg.GetResult(&rs_out, seg_stat);
+            //seg.GetResult(&rs_out, seg_stat);
         }
         delete seg_stat; // clear
+
+        srch = currentTimeMillis() - str;
+        if (true) {
+            printf("\n\nWord Splite took: %d ms.\n", srch);
+        }
     }
 
     // free memory

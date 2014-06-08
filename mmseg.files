@@ -30,6 +30,7 @@ include/csr.h
 include/utils/pystring.h
 include/utils/cityhash.h
 include/utils/utf8_to_16.h
+include/utils/csr_utils.h
 src/mm_charmap.cc
 src/mm_stringpool.cc
 src/mm_entrydata.cc
@@ -57,7 +58,6 @@ src/tst_lua_script.cpp
 src/utils/assert.c
 src/utils/csr_assert.h
 src/utils/csr_utils.c
-src/utils/csr_utils.h
 src/utils/os.h
 src/utils/scoped_ptr.h
 src/utils/utf8_to_16.cpp

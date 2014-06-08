@@ -77,6 +77,8 @@ class AnnotePool {
      *  类型，长度，数据。类型定义同 dictentry
      *  当 SegStatus MoveNext 后， AnnotePool 在特定的时间会被清空。
      */
+public:
+    void Reset() {}
 };
 
 class Segmentor;
@@ -113,7 +115,10 @@ public:
 
 	// Similar with Reset, but slide window to next valid postions.
 	int MoveNext();		// 不是移动到下一个字，而是移动到下一个处理批次的起始位置
-	bool IsPause();		// 
+    bool HasMoreData() {
+        return _text_buffer_ptr < _text_buffer + _text_buffer_len;
+    }
+
 	const DictMatchResult* GetMatchesAt(u4 pos, u2* count);
 	// Called By SegPolicy
     u1 SetTagA(u4 pos, u1 tag);

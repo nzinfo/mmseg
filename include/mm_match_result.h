@@ -42,6 +42,7 @@ public:
 		
 	void Reset() {
         memset(_matches, 0, _max_match*sizeof(DictMatchEntry));
+		_pos = 0;
 	}
 	inline int Match(DictMatchEntry& entry) {
 		// 添加 新的命中， 如果已满，则返回 -1

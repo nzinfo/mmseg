@@ -99,7 +99,7 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 
 	//for(u4 i = 0;  ; i++ ) 
 	u4 i = 0;
-    while(i< status._icode_pos) //最后 2 个 不是被截断的文字，就是E2E1; 最后2个中文的结果可能是错的 需要回溯到上一个 tagB ， 才能移动数据。
+    while(i< status._icode_pos -2 ) //最后 2 个 不是被截断的文字，就是E2E1; 需要回溯到上一个 tagB ， 才能移动数据。
 	{	
         if(status._icodes[i].tagA != _cjk_chartag) {
             status._icodes[i].tagSegA = status._icodes[i].tagB;
@@ -133,6 +133,10 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                if(match_entry->match._dict_id)
                    break; // 直接转到 ·标注字符·
             }
+			
+			if(i_level2 >= status._icode_pos) // 因为 status._icode_pos -2 , 所以，必然存在最后两个字都是单字的路径。
+				continue;
+
             for(int term2_i = (status._icode_matches[i_level2] - status._icode_matches[i_level2-1]); term2_i >= 0; term2_i--) {
 				// 第二层循环
 				//term2_i -= 1; //make it as an index
@@ -144,6 +148,9 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                     i_level3 = i_level2 + 1;
 
 				current_chunk.term2_pos = i_level3;
+				
+				if(i_level3 >= status._icode_pos)
+					continue;
 
                 for(int term3_i = (status._icode_matches[i_level3] - status._icode_matches[i_level3-1]); term3_i >= 0; term3_i--) {
 					//term3_i -= 1; //make it as an index
