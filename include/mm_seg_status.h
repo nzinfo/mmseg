@@ -19,6 +19,7 @@
 #include "mm_seg_option.h"
 #include "mm_dict_mgr.h"
 #include "mm_dict_term_user.h"
+#include "mm_segpolicy.h"
 
 // A temporary place store token result & intermedia data
 // 
@@ -79,24 +80,28 @@ class AnnotePool {
 };
 
 class Segmentor;
+class SegPolicyMMSeg;
 
 typedef struct UnicodeSegChar {
     u4 origin_code;
     //u2 code;    // 转换为小写的　icode , 如果为 0 则取 origin_code. 移出，用于prefixmatch
-    u1 tagA;
-    u1 tagB;
+    u1 tagA;      // 字符在 Unicode 标准中定义的 Script Type
+    u1 tagB;      // 根据 ScriptType 的切分方案， 此处有冗余。
+    u1 tagSegA;   // 辅助分词法 （MMSeg）
+    u1 tagSegB;   // 最终的分词结果。 如果最终定下来后，在处理词性标注|NER之前，可以将数据存入 tagA 或 tagB
 }UnicodeSegChar;
 
 class SegStatus {
 
     friend class Segmentor;
-
+	friend class SegPolicy;
+    friend class SegPolicyMMSeg;
 
 	/*
 	 * 执行分词使用的上下文。
 	 */
 public:
-    SegStatus(u4 size = SEG_STATUS_DEFAULT_BATCH);		// 一个处理批次可以处理的文字数量
+    SegStatus(SegOptions& option, u4 size = SEG_STATUS_DEFAULT_BATCH);		// 一个处理批次可以处理的文字数量
     virtual ~SegStatus();
 	void Reset();
 
@@ -117,31 +122,36 @@ public:
     u1 SetTagPush(u4 pos, u1 tag);
 	// Build property's index. 用于支持 find term by property 
 	void BuildTermIndex();
+    SegOptions& GetOption() { return _options; }
 
 protected:
     // Segmenter's Intractive functions.
     u4 FillWithICode(const DictMgr& dict_mgr, bool toLower = true); // 转换到 icode, 转换到小写（常用字）
 	// 根据 词典生成候选词表, 返回 DAG 图中的元素个数。可以同时加载 用户自定义词库 与 专用的一个领域词库。
-    u4 BuildTermDAG (const DictMgr& dict_mgr, const char* special_dict_name = NULL, const DictTermUser* dict_user=NULL);
+    u4 BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_user = NULL);
+
+    int Apply(const DictMgr& dict_mgr, SegPolicy* policy);   //不使用 const，因为有些policy 可能有上下文词典，需要修改自身。（虽然理论上不应）
 
 protected:
 	void _DebugCodeConvert();
     void _DebugDumpDAG();
+    void _DebugMMSegResult();
 
 protected:
     u1*              _matches_data_ptr;  // 实际存 match 大的区域
     DictMatchResult* _matches;  // 从词典中读取到的命中信息， 必须按照长度排序
     UnicodeSegChar* _icodes;	// 当前正在处理的上下文， 如果处理完毕， 会更新, 保存 tag 和 实际的 icode
     u4*             _icode_chars; // 保存unicode 的原始值 和 tolower 后的值（如果有），用于 prefixmatch.
-    u2*             _icode_matches; // 按照词的位置，给出都命中了多少词条。
+    u4*             _icode_matches; // 按照词的位置，给出都命中了多少词条。 处理为累计，使用 - 得到实际的数量
     u4 _icode_pos;  // 当前的位置，当切换时...
     u4 _offset;		// 从起点开始， 现在的偏移量
 	u4 _size;		// 整个 status 的最大字符容量
+
     unordered_map<u4, AnnoteEntry> _annotes;    // offset -> annote 的表 , 可以被脚本操作。
     AnnotePool* _annote_pool1;                  // 存储 annote　的数据
     AnnotePool* _annote_pool2;
     AnnotePool* _annote_pool_active;  // a pointer of _annote_pool1 | _annote_pool2
-	SegOptions * _options;
+    SegOptions& _options;
 
 protected:
     const char* _text_buffer;

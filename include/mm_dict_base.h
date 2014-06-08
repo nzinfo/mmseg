@@ -122,6 +122,7 @@ public:
 
 	// Set the dictionary of this dicionary in the current Dictmgr, whom loaded the dictionary.
 	void SetDictionaryId(u2 dict_id_of_mgr);
+    u2   DictionaryId() const { return _dict_id; }
     u8 GetReversion();
 
     const std::string& GetDictName() const {
@@ -163,8 +164,8 @@ protected:
 class DictGlobalIndex : public DictBase {
 public:
     int ExactMatch(const char* q, u2 len, DictMatchResult *rs);
-    int PrefixMatch(const u4* q, u2 len, mm::DictMatchResult* rs);
-    int PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs);
+    int PrefixMatch(const u4* q, u2 len, mm::DictMatchResult* rs, bool extend_value = true);
+    int PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs, bool extend_value = true);
 };
 
 u2 decode_entry_to_matchentry(const u1* entries, u2 data_len, u2 term_len, DictMatchResult* rs);

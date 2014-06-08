@@ -590,7 +590,7 @@ int DictGlobalIndex::ExactMatch(const char* q, u2 len, DictMatchResult* rs)
         return 0; // no entry found.
 }
 
-int DictGlobalIndex::PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs)
+int DictGlobalIndex::PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs, bool extend_value)
 {
     Darts::DoubleArray::result_pair_type result[MAX_PREFIX_SEARCH_RESULT];
     DictMatchEntry mrs;
@@ -605,22 +605,27 @@ int DictGlobalIndex::PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs)
         for(int i=0; i<num; i++) {
             mrs.match._len = result[i].length;
             mrs.match._value = result[i].value;
-            // rs->Match(mrs); // not fill the match,
+            if(extend_value == false) {
+				rs->Match(mrs); // not fill the match,
+				total_num ++;
+				continue;
+			}
             entry = GetEntryDataByOffset(mrs.match._value);
             CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
             const char* sptr = (const char*)entry->GetData(GetSchema(),
-                                                           GetStringPool(), 0, &data_len);
+                                                            GetStringPool(), 0, &data_len);
             total_num += decode_entry_to_matchentry((const u1*)sptr, data_len, mrs.match._len, rs);
         }
         return total_num;
-    }
+    } // end if rs
     return num;
 }
 
-int DictGlobalIndex::PrefixMatch(const u4* q, u2 len, mm::DictMatchResult* rs)
+int DictGlobalIndex::PrefixMatch(const u4* q, u2 len, mm::DictMatchResult* rs, bool extend_value)
 {
     /*
      *  需要对结果进行解码，解码到每个词典的 match.
+     *  - 存在多个词条，如果都出现，可能会影响性能？
      */
     Darts::DoubleArray::result_pair_type result[MAX_PREFIX_SEARCH_RESULT];
     DictMatchEntry mrs;
@@ -632,17 +637,21 @@ int DictGlobalIndex::PrefixMatch(const u4* q, u2 len, mm::DictMatchResult* rs)
     int total_num = 0;
     int num = _darts_idx->commonPrefixSearch(q, result, MAX_PREFIX_SEARCH_RESULT, len);
     if(rs) {
-        for(int i=0; i<num; i++) {
-            mrs.match._len = result[i].length;
-            mrs.match._value = result[i].value;
-            // rs->Match(mrs); // not fill the match,
-            entry = GetEntryDataByOffset(mrs.match._value);
-            CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
-            const char* sptr = (const char*)entry->GetData(GetSchema(),
-                                                           GetStringPool(), 0, &data_len);
-            total_num += decode_entry_to_matchentry((const u1*)sptr, data_len, mrs.match._len, rs);
-        }
-        return total_num;
+		for(int i=0; i<num; i++) {
+			mrs.match._len = result[i].length;
+			mrs.match._value = result[i].value;
+			if(extend_value == false) {
+				rs->Match(mrs); // not fill the match,
+				total_num ++;
+				continue;
+			}
+			entry = GetEntryDataByOffset(mrs.match._value);
+			CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
+			const char* sptr = (const char*)entry->GetData(GetSchema(),
+															GetStringPool(), 0, &data_len);
+			total_num += decode_entry_to_matchentry((const u1*)sptr, data_len, mrs.match._len, rs);
+		}
+		return total_num;
     }
     return num;
 }

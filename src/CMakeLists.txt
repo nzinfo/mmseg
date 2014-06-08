@@ -54,6 +54,7 @@ SET(LIBMMSEG_SOURCE
     mm_seg_option.cc
     mm_seg_status.cc
     mm_seg_script.cc
+    mm_segpolicy_mmseg.cc
     mm_api_script.cc
     mm_segmentor.cc
     utils/pystring.cc

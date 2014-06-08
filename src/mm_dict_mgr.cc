@@ -193,7 +193,8 @@ int DictMgr::GetDictFileNames(const char* dict_path, std::string fext, bool file
     return files.size();
 }
 
-DictBase* DictMgr::GetDictionary(const char* dict_name) const {
+DictBase* DictMgr::GetDictionary(const char* dict_name) const
+{
     /*
      *  根据名字，返回词典对象， 包括 专用词表
      *  - GetDictionarySepcial 包括在内
@@ -204,15 +205,36 @@ DictBase* DictMgr::GetDictionary(const char* dict_name) const {
     return it->second;
 }
 
-DictBase* DictMgr::GetDictionary(u2 dict_id) const {
+int DictMgr::GetDictionaryID(const char* dict_name) const
+{
+    unordered_map<std::string, mm::DictBase*>::const_iterator it = _name2dict.find(dict_name);
+    if(it == _name2dict.end() )
+        return NULL;
+    u2 dict_id = it->second->DictionaryId();
+    if(dict_id != 0)
+        return dict_id;
+    return -1; // no such dictionary | the dict have no id.
+}
+
+DictBase* DictMgr::GetDictionary(u2 dict_id) const
+{
     /*
      *  根据 id 返回， 只能是系统的 Term & Pharse
      */
+    /*
     unordered_map<u2, std::string>::const_iterator it = _id2name.find(dict_id);
     if(it == _id2name.end() )
         return NULL;
     // got a name
     return GetDictionary(it->second.c_str());
+    */
+    if(dict_id > DICTIONARY_BASE && dict_id < MAX_TERM_DICTIONARY + DICTIONARY_BASE)
+        return _term_dictionaries[dict_id - DICTIONARY_BASE];
+    if(dict_id > DICTIONARY_BASE+MAX_TERM_DICTIONARY
+            && dict_id < DICTIONARY_BASE+MAX_TERM_DICTIONARY+MAX_PHARSE_DICTIONARY)
+        return _pharse_dictionaries[dict_id - DICTIONARY_BASE+MAX_TERM_DICTIONARY];
+    // FIXME: 不支持 < DICTIONARY_BASE 的查询
+    return NULL;
 }
 
 int DictMgr::LoadIndexCache(const char* fname) {
@@ -255,6 +277,7 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
             const std::string &dict_name = _term_dictionaries[i]->GetDictName();
             _name2dict[dict_name] = _term_dictionaries[i];
             _id2name[DICTIONARY_BASE+i] = dict_name;
+            _term_dictionaries[i]->SetDictionaryId(DICTIONARY_BASE+i);
             total_entry += _term_dictionaries[i]->EntryCount();
             u4 string_size = _term_dictionaries[i]->StringPoolSize();
 			total_stringpool_size += string_size;
@@ -265,6 +288,7 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
             const std::string &dict_name = _pharse_dictionaries[i]->GetDictName();
             _name2dict[dict_name] = _pharse_dictionaries[i];
             _id2name[DICTIONARY_BASE+MAX_TERM_DICTIONARY+i] = dict_name;
+            _pharse_dictionaries[i]->SetDictionaryId(DICTIONARY_BASE+MAX_TERM_DICTIONARY+i);
             total_entry += _pharse_dictionaries[i]->EntryCount();
             total_stringpool_size += _term_dictionaries[i]->GetStringPool()->GetSize();
         }
@@ -495,11 +519,11 @@ int DictMgr::ExactMatch(u4* q, u2 len, mm::DictMatchResult* rs)
 	assert(0);
 	return 0;
 }
-int DictMgr::PrefixMatch(u4* q, u2 len, mm::DictMatchResult* rs)
+int DictMgr::PrefixMatch(u4* q, u2 len, mm::DictMatchResult* rs, bool extend_value)
 {
 	if(!_global_idx)
 		BuildIndex();
-	int num = _global_idx->PrefixMatch(q, len, rs);
+    int num = _global_idx->PrefixMatch(q, len, rs, extend_value);
 	return num;
 }
 

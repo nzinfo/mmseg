@@ -22,6 +22,7 @@ include/mm_dict_mgr.h
 include/mm_seg_option.h
 include/mm_seg_status.h
 include/mm_segpolicy.h
+include/mm_segpolicy_mmseg.h
 include/mm_seg_script.h
 include/mm_api_script.h
 include/mm_segmentor.h
@@ -41,6 +42,7 @@ src/mm_seg_option.cc
 src/mm_seg_status.cc
 src/mm_seg_script.cc
 src/mm_api_script.cc
+src/mm_segpolicy_mmseg.cc
 src/mm_segmentor.cc
 src/mmseg_cli.cpp
 src/mmseg_main.cpp

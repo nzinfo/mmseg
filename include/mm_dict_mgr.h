@@ -82,6 +82,7 @@ public:
     }
 
     mm::DictBase* GetDictionary(const char* dict_name) const;
+    int GetDictionaryID(const char* dict_name) const;
     // 性能并不比 直接用名字好，仅仅是为了检查加载的情况
     mm::DictBase* GetDictionary(u2 dict_id) const; //not for special & user
     //u2 GetDictionaryIdx(const char* dict_name);
@@ -106,7 +107,7 @@ public:
     int PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs);
 
 	int ExactMatch(u4* q, u2 len, mm::DictMatchResult* rs);
-	int PrefixMatch(u4* q, u2 len, mm::DictMatchResult* rs);
+    int PrefixMatch(u4* q, u2 len, mm::DictMatchResult* rs, bool extend_value=true);
 
     mm::DictUpdatable* GetUpdatableDictionary() {
         return NULL;    // 目前不支持在线的更新

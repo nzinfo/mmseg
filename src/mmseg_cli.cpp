@@ -193,7 +193,9 @@ int segment(const char* utf8_file, const char* dict_path, const char* script_pat
             }
         } // end load dict.
 
-        mm::SegStatus* seg_stat = new mm::SegStatus();  // huge memory alloc, needs alloc on heap.
+        // property to read from dict, special dict
+        mm::SegOptions seg_option("", "");
+        mm::SegStatus* seg_stat = new mm::SegStatus(seg_option);  // huge memory alloc, needs alloc on heap.
         mm::Segmentor seg(mgr, script_mgr);
         int task_id = 0;
         rs = seg.Tokenizer(task_id, buffer, length, seg_stat);

@@ -15,14 +15,19 @@
 #if !defined(_SEGPOLICY_H)
 #define _SEGPOLICY_H
 
-#include "mm_seg_status.h"
+//#include "mm_seg_status.h"
+#include "csr_typedefs.h"
+
 namespace mm {
+
+class SegStatus;
+class DictMgr;
 
 class SegPolicy {
 public:
 	// do char-tag based segmentation, 
 	// return how many char been taged, from the begin of SegStatus
-    int Apply(SegStatus status) {
+    virtual int Apply(const DictMgr &dict_mgr, SegStatus& status) {
         return 0; // tar each char.
     }
 

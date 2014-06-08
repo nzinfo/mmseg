@@ -21,15 +21,16 @@
 
 namespace mm {
 
-SegStatus::SegStatus(u4 size) {
-    _size = size;
+SegStatus::SegStatus(SegOptions &option, u4 size) 
+	:_options(option), _size(size)
+{
     u4 size_of_icodes = 2*(_size+4)*sizeof(UnicodeSegChar);
     _icodes = (UnicodeSegChar*)malloc(size_of_icodes); // include padding. B1B2; E2E1
     memset(_icodes, 0, size_of_icodes);
     _icode_chars = (u4*)malloc(2*(_size+4)*sizeof(u4)); // 反正  match 已经开到1M了，这里额外用32K，大丈夫无所谓了。
     memset(_icode_chars, 0, 2*(_size+4)*sizeof(u4));
-    _icode_matches = (u2*)malloc(2*(_size+4)*sizeof(u2)); // 用于记录在特定位置，都有多少候选词。存在技巧压缩，不折腾了。
-    memset(_icode_matches, 0, 2*(_size+4)*sizeof(u2));
+    _icode_matches = (u4*)malloc(2*(_size+4)*sizeof(u4)); // 用于记录在特定位置，都有多少候选词。存在技巧压缩，不折腾了。
+    memset(_icode_matches, 0, 2*(_size+4)*sizeof(u4));
     _icode_pos = 0;
 
     u4 size_of_matches = size*sizeof(DictMatchEntry)*32; // 1M, less than one picture.
@@ -55,7 +56,7 @@ void SegStatus::Reset() {
 	u4 size_of_icodes = 2*(_size+4)*sizeof(UnicodeSegChar);
     memset(_icodes, 0, size_of_icodes);
     memset(_icode_chars, 0, 2*(_size+4)*sizeof(u4));
-    memset(_icode_matches, 0, 2*(_size+4)*sizeof(u2));
+    memset(_icode_matches, 0, 2*(_size+4)*sizeof(u4));
     _icode_pos = 0;
     _matches->Reset();
 }
@@ -207,8 +208,7 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
     return _icode_pos - icode_pos_begin; // how many char filled.
 }
 
-u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const char* special_dict_name,
-                            const DictTermUser* dict_user)
+u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_user)
 {
 	/*
 	 * 使用前缀搜索，构造 词网格
@@ -217,24 +217,37 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const char* special_dict_na
      * 3 检索 用户词典
      * 4 对检索结果进行排序
 	 */
-	DictBase* special_dict = NULL;
-	if(special_dict_name)	
-		special_dict = dict_mgr.GetDictionary(special_dict_name);
+	mm::DictBase* special_dict = NULL;
+    if(_options.GetSpecialDictionaryName() != "")
+        special_dict = dict_mgr.GetDictionary(_options.GetSpecialDictionaryName().c_str());
 
     int num = 0;
 	DictMgr& mgr = (DictMgr&)dict_mgr;
     for(u4 i = 0; i < _icode_pos; i++) {
-        int rs = mgr.PrefixMatch(_icode_chars + i, _icode_pos - i, _matches); // matches will advence
+        // 从全局中检索，并不对读取到的值进行扩展 （ 1 不一定需要属性信息，如词频； 2 降低 _matches 的数量（长度相同没必要重复了） ）
+        int rs = mgr.PrefixMatch(_icode_chars + i, _icode_pos - i, _matches, false); // matches will advence
         if(rs == -1)
             return -1; // should assert too many matches.
-        _icode_matches[i] = rs;
+        if(i)
+            _icode_matches[i] = rs + _icode_matches[i-1];
+        else
+            _icode_matches[i] = rs;
         num += rs;
     }
     return num;
 }
 
+int SegStatus::Apply(const DictMgr& dict_mgr, SegPolicy* policy)
+{
+    if(policy == NULL)
+        return -1; // should crash.
+    policy->Apply(dict_mgr, *this);
+    return 0;
+}
+
 //////////////////////////////////////////////////////////////////////////
-void SegStatus::_DebugCodeConvert() {
+void SegStatus::_DebugCodeConvert()
+{
 	/* 调试使用的 iCode ， 输出 UTF8 字符串 & 对应的 icode， 用 ' ' 分割 */
 	u1 buf[128];
 	int n = 0;
@@ -249,7 +262,8 @@ void SegStatus::_DebugCodeConvert() {
 	}
 }
 
-void SegStatus::_DebugDumpDAG() {
+void SegStatus::_DebugDumpDAG()
+{
   /*
    *  调试 DAG，  输出 字 ， 词的候选
    */
@@ -262,7 +276,8 @@ void SegStatus::_DebugDumpDAG() {
       n = csr::csrUTF8Encode(buf, _icode_chars[i]);
       buf[n] = 0;
       printf("%s ", buf );
-      for(u2 j = 0; j < _icode_matches[i]; j++) {
+      // 因为 B1 B2 不可能出现在词库中，因此此处 i 必然 > 0
+      for(u2 j = 0; j < (u2)(_icode_matches[i] - _icode_matches[i-1] ); j++) {
           match_entry = _matches->GetMatch(pos);
           if(match_entry) {
               printf("d = %d, c = %d; ", match_entry->match._dict_id, match_entry->match._len );
@@ -271,6 +286,26 @@ void SegStatus::_DebugDumpDAG() {
       }
       printf("\n");
   } // end for
+}
+
+void SegStatus::_DebugMMSegResult()
+{
+    /*
+     *  输出 mmseg 的切分结果
+     */
+    u1 buf[128];
+    int n = 0;
+
+    int pos = 0;
+    const DictMatchEntry* match_entry = NULL;
+    for(u4 i = 0; i< _icode_pos; i++ ){
+        n = csr::csrUTF8Encode(buf, _icode_chars[i]);
+        buf[n] = 0;
+        printf("%s %c", buf , _icodes[i].tagSegA);
+        // 因为 B1 B2 不可能出现在词库中，因此此处 i 必然 > 0
+
+        printf("\n");
+    } // end for
 }
 
 } // namespace mm
