@@ -81,6 +81,7 @@ class AnnotePool {
 
 class Segmentor;
 class SegPolicyMMSeg;
+class SegmentorResultReader;
 
 typedef struct UnicodeSegChar {
     u4 origin_code;
@@ -93,9 +94,11 @@ typedef struct UnicodeSegChar {
 
 class SegStatus {
 
+    // 这里暗示了一个 设计缺陷， 但是我没想好怎么改。
     friend class Segmentor;
 	friend class SegPolicy;
     friend class SegPolicyMMSeg;
+    friend class SegmentorResultReader;
 
 	/*
 	 * 执行分词使用的上下文。
@@ -144,6 +147,7 @@ protected:
     u4*             _icode_chars; // 保存unicode 的原始值 和 tolower 后的值（如果有），用于 prefixmatch.
     u4*             _icode_matches; // 按照词的位置，给出都命中了多少词条。 处理为累计，使用 - 得到实际的数量
     u4 _icode_pos;  // 当前的位置，当切换时...
+    u4 _icode_last_s_pos; // 最后一个 根据 unicode script 标注为 S 的字的位置；需要检查如果为0， 则 _icode_last_s_pos == _icode_pos
     u4 _offset;		// 从起点开始， 现在的偏移量
 	u4 _size;		// 整个 status 的最大字符容量
 

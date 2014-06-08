@@ -15,6 +15,7 @@
 
 #include "mm_segmentor.h"
 #include "mm_seg_status.h"
+#include "utils/utf8_to_16.h"
 
 namespace mm {
 
@@ -49,11 +50,12 @@ int Segmentor::Tokenizer(u8 task_id, const char* text_to_seg, u4 text_len, SegSt
     // FIXME： give a debug macro.
     //status->_DebugCodeConvert();
 	int iterm_count = status->BuildTermDAG(_dict_mgr);		  // 使用 dictionary 构造对应的词网格（DAG）， 返回全部候选词的数量
+    //在启用 人名库 | 组织名库后， 在此处即进行处理。 可能需要 CRF 对人名做二次确认。类似 Adaboost ?
     status->BuildTermIndex();                                 // 用于支持脚本对词条的快速查找
     //status->_DebugDumpDAG();
     status->Apply(_dict_mgr, &_mmseg);				// 应用具体的切分算法。返回当前处理到的 text_to_seg_ptr 到 text_to_seg 的偏移量
+    //status->_DebugMMSegResult();
     //check is enable crfseg.
-    status->_DebugMMSegResult();
     //check enable pos
     //check enable ner.
     return 0;
@@ -66,6 +68,34 @@ Segmentor::Segmentor(const DictMgr& dict_mgr, const SegScript& script_mgr, const
 
     // build the char's freq.
     _mmseg.BuildUSC2CharFreqMap(dict_mgr);
+}
+
+//////////////////////////////////////////////////////////////////
+int SegmentorResultReaderFile::Feed(SegStatus* status)
+{
+    // 输出到 _fd
+    u1 buf[128];
+    int n = 0;
+
+	UnicodeSegChar* _icodes = get_seg_char(status);
+	u4*		   _icode_chars = get_icodes(status);
+
+    int pos = 0;
+    const DictMatchEntry* match_entry = NULL;
+    for(u4 i = 0; i< icode_last_pos(status); i++ ){
+        if(_icode_chars[i] >= SEG_PADING_B1)
+            continue; // 自己增加的特殊字符。
+        n = csr::csrUTF8Encode(buf, _icode_chars[i]);
+        buf[n] = 0;
+        fprintf(_fd, "%s", buf);
+        if(_icode_chars[i] == '\r' || _icode_chars[i]=='\n' || _icode_chars[i] == '\t' || _icode_chars[i] == ' ') {
+            continue; //已经输出了，就不要再额外给出 /S 了
+        }
+        // FIXME: 输出/x , 老传统了。 此外，应该输出 Annote， 目前没有 Annote 的支持。
+        if(_icodes[i].tagSegA == 'S' || _icodes[i].tagSegA == 'E')
+            fprintf(_fd, "/x ");
+    } // end for
+    return 0;
 }
 
 } //end namespace mm.

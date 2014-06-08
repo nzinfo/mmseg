@@ -99,7 +99,7 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 
 	//for(u4 i = 0;  ; i++ ) 
 	u4 i = 0;
-	while(i< status._icode_pos -2) //最后 2 个 不是被截断的文字，就是E2E1; 这里简单的不处理。 需要回溯到上一个 tagB ， 才能移动数据。
+    while(i< status._icode_pos) //最后 2 个 不是被截断的文字，就是E2E1; 最后2个中文的结果可能是错的 需要回溯到上一个 tagB ， 才能移动数据。
 	{	
         if(status._icodes[i].tagA != _cjk_chartag) {
             status._icodes[i].tagSegA = status._icodes[i].tagB;
@@ -203,7 +203,7 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 			max_freedom = 0.0; 
 		}
     } // end for char
-    return 0;
+    return status._icode_pos;
 }
 
 

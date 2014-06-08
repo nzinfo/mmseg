@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
 	std::string s_script_path(resolved_dict_path);
 
 #if MMSEG_DEBUG
-    printf("dict=%s; file=%s\n", s_dict_path.c_str(), out_file);
+    //printf("dict=%s; file=%s\n", s_dict_path.c_str(), out_file);
 #endif
 
 
@@ -197,12 +197,17 @@ int segment(const char* utf8_file, const char* dict_path, const char* script_pat
         mm::SegOptions seg_option("", "");
         mm::SegStatus* seg_stat = new mm::SegStatus(seg_option);  // huge memory alloc, needs alloc on heap.
         mm::Segmentor seg(mgr, script_mgr);
+
+        mm::SegmentorResultReaderFile rs_out(stdout);
+
         int task_id = 0;
         rs = seg.Tokenizer(task_id, buffer, length, seg_stat);
+        seg.GetResult(&rs_out, seg_stat);
         while(rs > 0) {
             // should round by while,
             // dup the output.
             rs = seg.Tokenizer(task_id, NULL, 0, seg_stat); // state call
+            seg.GetResult(&rs_out, seg_stat);
         }
         delete seg_stat; // clear
     }

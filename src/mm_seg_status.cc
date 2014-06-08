@@ -58,6 +58,7 @@ void SegStatus::Reset() {
     memset(_icode_chars, 0, 2*(_size+4)*sizeof(u4));
     memset(_icode_matches, 0, 2*(_size+4)*sizeof(u4));
     _icode_pos = 0;
+    _icode_last_s_pos = 0;
     _matches->Reset();
 }
 
@@ -171,8 +172,10 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
             if(_icodes[_icode_pos].tagA != _icodes[_icode_pos-1].tagA) {
                 _icodes[_icode_pos].tagB = 'B';
                 // fix prev B->S
-                if(_icodes[_icode_pos-1].tagB == 'B')
+                if(_icodes[_icode_pos-1].tagB == 'B') {
+                    _icode_last_s_pos = _icode_pos-1;
                     _icodes[_icode_pos-1].tagB = 'S';
+                }
                 // fix prev M->E
                 if(_icodes[_icode_pos-1].tagB == 'M')
                     _icodes[_icode_pos-1].tagB = 'E';
@@ -203,6 +206,7 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
         _icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
         _icodes[_icode_pos].tagB = 'S';
         _icode_chars[_icode_pos] = SEG_PADING_E1;
+        _icode_last_s_pos = _icode_pos;
         _icode_pos++;
     }
     return _icode_pos - icode_pos_begin; // how many char filled.
@@ -241,8 +245,7 @@ int SegStatus::Apply(const DictMgr& dict_mgr, SegPolicy* policy)
 {
     if(policy == NULL)
         return -1; // should crash.
-    policy->Apply(dict_mgr, *this);
-    return 0;
+    return policy->Apply(dict_mgr, *this);
 }
 
 //////////////////////////////////////////////////////////////////////////
