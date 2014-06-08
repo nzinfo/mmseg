@@ -65,8 +65,6 @@ src/config.win.h
 src/seg_result.c
 src/segmentor.cpp
 tests/tst_gtest.cpp
-include/bak.seg_result.h
-include/bak.segmentor.h
 README
 binding/CMakeLists.txt
 binding/mmseg.i
