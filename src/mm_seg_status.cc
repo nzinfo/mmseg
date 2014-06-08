@@ -106,7 +106,7 @@ int SegStatus::MoveNext() {
      * 返回，当前 的 _icode_pos
      *
      */
-    LOG(INFO) << "MNext " <<  _icode_last_s_pos << "->" << _icode_pos;
+    //LOG(INFO) << "MNext " <<  _icode_last_s_pos << "->" << _icode_pos;
     u4 icode_last_s_pos = _icode_last_s_pos;
     if(!_icode_last_s_pos)
         icode_last_s_pos = _icode_pos - 50;
@@ -258,7 +258,7 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
 			_icode_chars[_icode_pos] = SEG_PADING_E1;
 			_icode_last_s_pos = _icode_pos;
 			_icode_pos++;
-            LOG(INFO) << "Add Doc EndMark " << _icode_pos << " " << icode_pos_begin;
+            //LOG(INFO) << "Add Doc EndMark " << _icode_pos << " " << icode_pos_begin;
         }
     }
     return _icode_pos - icode_pos_begin; // how many char filled.
