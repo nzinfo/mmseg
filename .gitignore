@@ -1,0 +1,11 @@
+*.o
+*.lo
+*.la
+*.in
+*.m4
+*.deps
+*.libs
+*.dirstamp
+*.cache
+config*
+Makefile
