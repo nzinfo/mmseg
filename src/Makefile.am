@@ -17,6 +17,7 @@
 
 MAINTAINERCLEANFILES	= Makefile.in common.h stamp-common
 EXTRA_DIST		= common-h.in
+AUTOMAKE_OPTIONS = subdir-objects
 
 AM_CFLAGS 		= -fPIC	
 AM_CPPFLAGS		= -fPIC -I$(top_builddir) -I$(top_srcdir) -I$(top_srcdir)/src/css -I$(top_srcdir)/src/utils -D_REENTRANT -D_LARGEFILE64_SOURCE 
