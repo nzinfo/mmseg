@@ -32,6 +32,7 @@
 
 /* Create some functions for working with "int *" */
 %pointer_functions(u2, ushortp);
+%pointer_functions(u4, u4p);
 
 %ignore mm::CharMapper::STATUS_OK; 
 %ignore mm::CharMapper::STATUS_FILE_NOT_FOUND; 
@@ -52,6 +53,9 @@
 %ignore mm::DictMatchResult::AddResult;
 %ignore mm::DictMatchResult::GetResultPtr;
 */
+%ignore mm::SegmentorResultReaderFile;
+%ignore mm::SegmentorResultReaderMM;
+%ignore mm::SegScript::_script;
 
 // This section is copied verbatim into the generated source code.
 // Any include files, definitions, etc. need to go here.
@@ -61,6 +65,11 @@
 #include "mm_match_result.h"
 #include "mm_dict_base.h"
 #include "mm_dict_mgr.h"
+#include "mm_seg_script.h"
+#include "mm_seg_option.h"
+#include "mm_seg_status.h"
+#include "mm_segmentor.h"
+
 %}
 
 // Language Specific Sections
@@ -89,10 +98,7 @@
   } // end of get_dict_property_string
 
 %}
-/*
-%newobject get_dict_property_string;
-%newobject get_dict_property_string_by_value;
-*/
+
 
 // Help SWIG handle std vectors
 namespace std
@@ -103,9 +109,16 @@ namespace std
 
 /* stl support */
 %include stl.i
- 
+%include "std_string.i"
+
 /* Wrapper并生成代码 */
 %include "mm_charmap.h"
 %include "mm_dict_base.h"
 %include "mm_dict_mgr.h"
+%include "mm_match_result.h"
+%include "mm_seg_script.h"
 %include "mm_entrydata_script.h"
+%include "mm_seg_option.h"
+%include "mm_seg_status.h"
+%include "mm_segmentor.h"
+

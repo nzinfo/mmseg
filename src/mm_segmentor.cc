@@ -105,4 +105,31 @@ int SegmentorResultReaderFile::Feed(SegStatus* status)
     return 0;
 }
 
+int SegmentorResultReaderScript::Feed(SegStatus* status)
+{
+    /*
+     * 需要提供 可以输出切分 和 Annote 的能力， 标引不一定在 Term 的开头
+     */
+    _icodes = get_seg_char(status);
+    _icode_chars = get_icodes(status);
+    _icode_lastpos = icode_last_pos(status);
+    return 0;
+}
+
+const char SegmentorResultReaderScript::Char(int pos, u2* annote_count_at_pos)
+{
+    if(pos >= 0 &&  _icode_lastpos - pos > 0) {
+      if(_icode_chars[pos] >= SEG_PADING_B1)
+        return 0; // 自己增加的特殊字符。
+
+      if(annote_count_at_pos) {
+          *annote_count_at_pos = 0;
+      }
+      return _icodes[pos].tagSegA;
+    }
+    // out of range.
+    return 0;
+}
+
+
 } //end namespace mm.

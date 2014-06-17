@@ -573,7 +573,7 @@ u2 decode_entry_to_matchentry(const u1* entries, u2 data_len, u2 term_len, DictM
 }
 
 
-int DictGlobalIndex::ExactMatch(const char* q, u2 len, DictMatchResult* rs)
+int DictGlobalIndex::ExactMatch(const char* q, u2 len, mm::DictMatchResult* rs)
 {
     int v = DictBase::ExactMatch(q, len);
     if (v >= 0) {

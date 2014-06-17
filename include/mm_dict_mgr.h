@@ -86,6 +86,7 @@ public:
     // 性能并不比 直接用名字好，仅仅是为了检查加载的情况
     mm::DictBase* GetDictionary(u2 dict_id) const; //not for special & user
     //u2 GetDictionaryIdx(const char* dict_name);
+    const std::string GetDictionaryNames(const char* category) const; // 返回词典的 dict_name 的列表， category=NULL|term|pharse|special
 
     // 根据基本词条和短语 构建唯一的 darts 检索表
     int LoadIndexCache(const char* fname);

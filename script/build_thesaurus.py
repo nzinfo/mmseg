@@ -38,6 +38,7 @@ def main():
             continue
         subk = {}
         kl = enmu_all_keys(k)
+        # 遍历全部的子串，检查是否在词库内。
         for sk in kl:
             #print sk, sk != k ,ht.has_key(sk)
             if sk != k and ht.has_key(sk):

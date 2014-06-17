@@ -159,16 +159,17 @@ int segment(const char* utf8_file, const char* dict_path, const char* script_pat
          * 5 init options
          * 6 do token
          */
-
+		
         std::string s_dict_path(dict_path);
         mm::DictMgr mgr;
         mm::SegScript script_mgr;
         std::string s_error;
         // load script stage, if script execute wrang, no needs load dictionary any more
         // FIXME: deal with script engine later.
-        int rs = script_mgr.LoadScripts( script_path, s_error);
-        if(rs < 0) // the script loaded, if <0, error
+        int rs = script_mgr.LoadScripts( script_path);
+        if(rs < 0) // the script loaded, if <0, error 
         {
+			s_error = script_mgr.GetErrorMessage();
             LOG(ERROR) << "script load error. " <<  s_error;
         }
 

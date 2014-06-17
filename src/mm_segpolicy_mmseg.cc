@@ -101,10 +101,25 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 	u4 i = 0;
     while(i< status._icode_pos -2 ) //最后 2 个 不是被截断的文字，就是E2E1; 需要回溯到上一个 tagB ， 才能移动数据。
 	{	
+        /*
+         * 需要考虑 n 种情况
+         * 1 产品型号， 英文+数字+特定符号
+         * 2 混合字母的中文专有名词，如 X光
+         * 3 中文中夹杂的英文单词
+         *
+         * 规则：
+         *  1 如果词库里面有这个词条，则尊重词库
+         *  2 如果没有这个词条，但是基于 Unicode 的 Script Type 已经有结果，从 ScriptType
+         *  3 基于第一个字母判断，如果第一个字母命中词条，则从词典；如不命中，则步进到下一个
+         */
+
+        /*
         if(status._icodes[i].tagA != _cjk_chartag) {
             status._icodes[i].tagSegA = status._icodes[i].tagB;
             i++; continue; // 无视不是中文的。
         }
+        */
+
         if(status._icodes[i].tagB == 'S' ) {
             status._icodes[i].tagSegA = 'S';
             i++; continue; // 已经被标记为单字的，在 MMSeg 阶段继续保持（在 CRF 阶段则不同，因为需要进行新词发现）
@@ -178,7 +193,18 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                         }else
                         if(abs(avg - min_avg) < 1E-6) {  //应该是  avg == min_avg, 最好不要依赖编译器判断 float 是否相同
                             // R4: 最大自由度
+                            if( abs(max_freedom -0) < 1E-6 ) {
+                              max_freedom = best_chunk.free(i, status._icode_chars, _ucs2_freq_log);
+                            }
                             float free_score = current_chunk.free(i, status._icode_chars, _ucs2_freq_log);
+
+                            /*
+                            printf("chunk %d %d %d, score %f\n", current_chunk.term1_pos,
+                                   current_chunk.term2_pos, current_chunk.term3_pos, free_score);
+                            printf("best chunk %d %d %d, score %f\n", best_chunk.term1_pos,
+                                   best_chunk.term2_pos, best_chunk.term3_pos, max_freedom);
+                            */
+
                             if(max_freedom<free_score) {
                                 max_freedom = free_score;
                                 best_chunk = current_chunk;
@@ -192,9 +218,22 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
         } // end for term1
 		
 		// 标注字符
-		if(best_chunk.term1_pos == i+1) {
-			status._icodes[i].tagSegA = 'S';
-		}else{
+        // check is a mixterm
+
+        if(best_chunk.term1_pos == i+1) {
+          int j = i;
+          while(0 < status._icode_pos - 2 -j ) {
+              if(status._icodes[j].tagA != _cjk_chartag) {
+                status._icodes[j].tagSegA = status._icodes[j].tagB;
+                j++; continue; // 无视不是中文的。
+              }
+              break;
+          } // end while
+          if(j==i)
+            status._icodes[i].tagSegA = 'S';
+          else
+            best_chunk.term1_pos = j;
+        }else{
 			status._icodes[i].tagSegA = 'B';
 			for(u4 j = i+1; j<best_chunk.term1_pos-1;j++)
 			{
@@ -202,7 +241,8 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 			} // end for
 			status._icodes[best_chunk.term1_pos-1].tagSegA = 'E';
 		}// end if 
-		i = best_chunk.term1_pos; //step to next term.
+
+        i = best_chunk.term1_pos; //step to next term.
 		// clear chunk status
 		{
 			chunk_max_len = 0;
@@ -247,6 +287,13 @@ int SegPolicyMMSeg::BuildUSC2CharFreqMap(const DictMgr &dict_mgr)
            entry = mmseg_base_dict->GetEntryDataByOffset(offset);
            if(entry) {
                 _ucs2_freq_log[iCode] = (float)log( entry->GetU4(schema, column_id) + 1 ) * 64;
+           }
+           if(0)
+           {
+               // debug check.
+               if(iCode == 0x9053 || iCode == 0x4e0a ) {
+                 printf("icode=%d, score=%f\n", iCode, _ucs2_freq_log[iCode]);
+               }
            }
        } // end if offset
     } // end for

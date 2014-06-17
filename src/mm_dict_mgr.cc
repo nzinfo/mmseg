@@ -237,6 +237,18 @@ DictBase* DictMgr::GetDictionary(u2 dict_id) const
     return NULL;
 }
 
+const std::string DictMgr::GetDictionaryNames(const char* category) const
+{
+    std::ostringstream oss;
+    if(strncmp(category,"term",4) == 0) {
+      for(int i=0; i<MAX_TERM_DICTIONARY; i++) {
+        if(_term_dictionaries[i] != NULL )
+          oss<< _term_dictionaries[i]->GetDictName() <<";";
+      }
+    }
+    return oss.str();
+}
+
 int DictMgr::LoadIndexCache(const char* fname) {
     /*
      * 词条， (dictid:u1, offset:u4)
@@ -494,14 +506,14 @@ int DictMgr::VerifyIndex() {
     return 0;
 }
 
-int DictMgr::ExactMatch(const char* q, u2 len, DictMatchResult* rs) {
+int DictMgr::ExactMatch(const char* q, u2 len, mm::DictMatchResult* rs) {
     if(!_global_idx)
         BuildIndex();
     int v = _global_idx->ExactMatch(q, len, rs);
     return v;
 }
 
-int DictMgr::PrefixMatch(const char* q, u2 len, DictMatchResult* rs) {
+int DictMgr::PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs) {
 
     /*
      *  返回全局范围内，符合条件的词条。不保证长度的严格有序。

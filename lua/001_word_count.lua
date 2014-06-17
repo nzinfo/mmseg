@@ -1,4 +1,7 @@
 local ffi = require("ffi")
+
+-- print(mmseg_api)
+
 ffi.cdef[[
 	// from  csr_typedef.h
 	typedef char				i1;
@@ -38,8 +41,9 @@ ffi.cdef[[
 
 function mm_init( ctx )
 	local C = ffi.C
+	local mmseg_api = ffi.load("_mmseg.pyd")
 	local ctx_ptr = ffi.cast("LUAScript*", ctx)
-	C.reg_at_char_prepare(ctx_ptr, 100, nil);
+	mmseg_api.reg_at_char_prepare(ctx_ptr, 100, nil)  -- in mmseg_cli , ffi.load C.  should give a function load by exe or extension. ( python | java )
 	print (ctx)
 	return 0
 end

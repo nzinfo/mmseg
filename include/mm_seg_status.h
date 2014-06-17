@@ -119,7 +119,7 @@ public:
         return _text_buffer_ptr < _text_buffer + _text_buffer_len;
     }
 
-	const DictMatchResult* GetMatchesAt(u4 pos, u2* count);
+    const mm::DictMatchResult* GetMatchesAt(u4 pos, u2* count);
 	// Called By SegPolicy
     u1 SetTagA(u4 pos, u1 tag);
 	// Use by LUA Script, set the highest 8bit as tag.
@@ -147,8 +147,8 @@ protected:
 
 protected:
     u1*              _matches_data_ptr;  // 实际存 match 大的区域
-    DictMatchResult* _matches;  // 从词典中读取到的命中信息， 必须按照长度排序
-    UnicodeSegChar* _icodes;	// 当前正在处理的上下文， 如果处理完毕， 会更新, 保存 tag 和 实际的 icode
+    mm::DictMatchResult* _matches;  // 从词典中读取到的命中信息， 必须按照长度排序
+    mm::UnicodeSegChar* _icodes;	// 当前正在处理的上下文， 如果处理完毕， 会更新, 保存 tag 和 实际的 icode
     u4*             _icode_chars; // 保存unicode 的原始值 和 tolower 后的值（如果有），用于 prefixmatch.
     u4*             _icode_matches; // 按照词的位置，给出都命中了多少词条。 处理为累计，使用 - 得到实际的数量
     u4 _icode_pos;  // 当前的位置，当切换时...
@@ -160,7 +160,7 @@ protected:
     AnnotePool* _annote_pool1;                  // 存储 annote　的数据
     AnnotePool* _annote_pool2;
     AnnotePool* _annote_pool_active;  // a pointer of _annote_pool1 | _annote_pool2
-    SegOptions& _options;
+    mm::SegOptions& _options;
 
 protected:
     const char* _text_buffer;

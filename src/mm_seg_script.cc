@@ -22,13 +22,18 @@
 
 namespace mm {
 
+SegScript::SegScript() {
+    _script = new LUAScript();
+    lua_script_init(_script);
+}
+
 SegScript::~SegScript() {
     lua_script_clear(_script);
 
     delete _script;
 }
 
-int SegScript::LoadScripts(const std::string script_path, std::string &s_err)
+int SegScript::LoadScripts(const std::string script_path)
 {
     /*
      *  1 get all file in the path
@@ -53,12 +58,16 @@ int SegScript::LoadScripts(const std::string script_path, std::string &s_err)
         rs = init_script(_script,  script_fname.c_str());  //FIXME: how to report error ?
         if(rs < 0) {
             // FIXME: addtional error from _script
-            s_err = "error execute " + *it;
+            _err_msg = "error execute " + *it + _script->error_msg;
             return rs;
         }
         LOG(INFO) << "load script " << *it;
     }
     return nfiles;
+}
+
+void SegScript::_KeepAPICode() {
+    reg_at_char_prepare(_script, 0, NULL);
 }
 
 } // namespace mm

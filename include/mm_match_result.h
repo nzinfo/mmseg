@@ -37,14 +37,29 @@ typedef union DictMatchEntry {
 // 
 class DictMatchResult {
 public:
+    // give a default buffer & match, only for script usage.
+    DictMatchResult()
+        :_pos(0), _max_match(1024) {
+        _matches = (DictMatchEntry*)malloc(sizeof(DictMatchEntry)*1024);
+        _own_matches = true;
+    }
+
     DictMatchResult(u1* ptr, u4 max_match)  // max of match result. ptr's size = sizeof(DictMatchEntry==u8) * max_match
-		:_pos(0), _max_match(max_match), _matches((DictMatchEntry*)ptr) {}
-		
+        :_pos(0), _max_match(max_match), _matches((DictMatchEntry*)ptr)
+        ,_own_matches(false)
+        {}
+
+    virtual ~DictMatchResult()
+    {
+        if(_own_matches)
+            free(_matches);
+    }
+
 	void Reset() {
         memset(_matches, 0, _max_match*sizeof(DictMatchEntry));
 		_pos = 0;
 	}
-	inline int Match(DictMatchEntry& entry) {
+    inline int Match(mm::DictMatchEntry& entry) {
 		// 添加 新的命中， 如果已满，则返回 -1
 		if(_pos<_max_match) {
 			_matches[_pos].v = entry.v; // basic type op, ignore default copy construct
@@ -54,7 +69,7 @@ public:
 		return -1;
 	}
 
-    inline const DictMatchEntry* GetMatch(u4 idx) const {
+    inline const mm::DictMatchEntry* GetMatch(u4 idx) const {
         if(idx<_pos) {
             return &(_matches[idx]);
         }
@@ -69,6 +84,7 @@ private:
 	u4 _pos;
     u4 _max_match;
 	DictMatchEntry* _matches;
+    bool _own_matches;
 };
 
 } //mm namespace

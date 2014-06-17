@@ -288,6 +288,7 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_us
             _icode_matches[i] = rs + _icode_matches[i-1];
         else
             _icode_matches[i] = rs;
+        //printf("match @ %d, count %d.\n", i, _icode_matches[i]);
         num += rs;
     }
     return num;
@@ -327,19 +328,19 @@ void SegStatus::_DebugDumpDAG()
 
   int pos = 0;
   const DictMatchEntry* match_entry = NULL;
-  for(u4 i = 0; i< _icode_pos; i++ ){
+  for(u4 i = 2; i< _icode_pos; i++ ){
       n = csr::csrUTF8Encode(buf, _icode_chars[i]);
       buf[n] = 0;
-      printf("%s ", buf );
+      fprintf(stdout, "%s ", buf );
       // 因为 B1 B2 不可能出现在词库中，因此此处 i 必然 > 0
       for(u2 j = 0; j < (u2)(_icode_matches[i] - _icode_matches[i-1] ); j++) {
           match_entry = _matches->GetMatch(pos);
           if(match_entry) {
-              printf("d = %d, c = %d; ", match_entry->match._dict_id, match_entry->match._len );
+              fprintf(stdout, "d = %d, c = %d; ", match_entry->match._dict_id, match_entry->match._len );
           }
           pos ++;
       }
-      printf("\n");
+      fprintf(stdout, "\n");
   } // end for
 }
 

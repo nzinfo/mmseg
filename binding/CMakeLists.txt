@@ -32,6 +32,10 @@ function(mmseg_strip_target tgt)
 
 endfunction()
 
+include_directories(${PROJECT_SOURCE_DIR}/third_party/luajit/src)
+# FIXME: should be build_dir
+include_directories(${PROJECT_BINARY_DIR}/third_party/luajit)
+
 #------------------------------------------------------------------------------
 if ( PYTHON_BINDINGS )
   find_package ( PythonInterp )
@@ -67,7 +71,7 @@ if ( SWIG_FOUND AND PYTHONINTERP_FOUND )
   endif()
 
   swig_add_module ( mmseg python mmseg.i )
-  swig_link_libraries ( mmseg  mmseg_c glog pthread)
+  swig_link_libraries ( mmseg  mmseg_c glog pthread liblua)
 
   if ( LINK_PYTHON_LIBRARY )
     swig_link_libraries ( mmseg ${PYTHON_LIBRARIES} )
@@ -128,7 +132,7 @@ if ( JAVA_BINDINGS )
   set(SWIG_MODULE_MMSegJave_EXTRA_DEPS ${SWIG_EXTRA_DEPS}
     ${CMAKE_CURRENT_SOURCE_DIR}/Java.i )
   SWIG_add_module ( MMSegJava java mmseg.i mmsegJAVA_wrap.cxx)
-  SWIG_link_libraries(MMSegJava ${MMSegJava_LIBRARIES} mmseg_c glog pthread)
+  SWIG_link_libraries(MMSegJava ${MMSegJava_LIBRARIES} mmseg_c glog pthread liblua)
   set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/mmsegJAVA_wrap.cxx  PROPERTIES COMPILE_FLAGS "-w")
   #mmseg_strip_target( ${SWIG_MODULE_MMSegJava_TARGET_NAME} )
 

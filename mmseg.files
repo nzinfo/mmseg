@@ -46,7 +46,6 @@ src/mm_api_script.cc
 src/mm_segpolicy_mmseg.cc
 src/mm_segmentor.cc
 src/mmseg_cli.cpp
-src/mmseg_main.cpp
 src/utils/pystring.cc
 src/utils/cityhash.cc
 src/tst_cmake.cpp
@@ -63,7 +62,6 @@ src/utils/scoped_ptr.h
 src/utils/utf8_to_16.cpp
 src/config.win.h
 src/seg_result.c
-src/segmentor.cpp
 tests/tst_gtest.cpp
 README
 binding/CMakeLists.txt

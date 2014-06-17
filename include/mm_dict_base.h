@@ -113,6 +113,9 @@ public:
 
     mm::IStringPool* GetStringPool();
     const mm::DictSchema* GetSchema() const { return &_schema; }
+    const std::string GetColumnDefine() const {
+        return GetSchema()->GetColumnDefine();
+    }
 
     // return the entrydata corrosponding to the term.
     mm::EntryData*   GetEntryData(const char* term, u2 len, bool bAppendIfNotExist = false);
@@ -163,12 +166,12 @@ protected:
 // load
 class DictGlobalIndex : public DictBase {
 public:
-    int ExactMatch(const char* q, u2 len, DictMatchResult *rs);
+    int ExactMatch(const char* q, u2 len, mm::DictMatchResult *rs);
     int PrefixMatch(const u4* q, u2 len, mm::DictMatchResult* rs, bool extend_value = true);
     int PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs, bool extend_value = true);
 };
 
-u2 decode_entry_to_matchentry(const u1* entries, u2 data_len, u2 term_len, DictMatchResult* rs);
+u2 decode_entry_to_matchentry(const u1* entries, u2 data_len, u2 term_len, mm::DictMatchResult* rs);
 
 } //mm namespace
 

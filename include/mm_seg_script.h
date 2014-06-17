@@ -31,11 +31,7 @@ namespace mm {
  */
 class SegScript {
 public:
-    SegScript() {
-        _script = new LUAScript();
-        lua_script_init(_script);
-    }
-
+    SegScript();
     virtual ~SegScript();
 
 public:
@@ -44,10 +40,17 @@ public:
      * load script from disk.
      * load order by ascii orer
      */
-    int LoadScripts(const std::string script_path, std::string & s_err);
+    int LoadScripts(const std::string script_path);
+    const std::string & GetErrorMessage() const {
+        return _err_msg;
+    }
 
 protected:
     LUAScript* _script;
+    std::string _err_msg;
+
+protected:
+    void _KeepAPICode();// 进行API的无实际用途的调用，以保证代码不会被优化掉。
 };
 
 } // namespace mm
