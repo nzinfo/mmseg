@@ -33,6 +33,7 @@ class MMSegTermReader(BaseReader):
         #FIXME: check input file format.
         with codecs.open(fname, "r", "UTF-8") as fh:
             for line in fh:
+                line = line.strip()
                 if line[:2] == 'x:':
                     continue
                 if line[:2] == 't:':
