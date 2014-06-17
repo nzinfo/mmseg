@@ -136,7 +136,7 @@ def charmap(tolower, script, dict):
 @manager.option('-m', '--mmseg_source', dest='mmsegsource', default='data/unigram.txt')
 @manager.option('-d', '--dict', dest='dict', default='mmseg.term')
 def mmdict(mmsegsource, dict):
-    schema = "id:4;freq:4"
+    schema = "id:4;freq:4;thes:s"
     mmseg.basedict_mmseg_main("com.coreseek.mmseg.base", mmsegsource, dict, schema)
 
 @manager.option('-m', '--cedict_source', dest='cesource', default='data/cedict_1_0_ts_utf-8_mdbg.zip')

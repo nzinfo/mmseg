@@ -134,7 +134,10 @@ public:
 
 public: // script helper
     const char SchemaColumnType(const char* column_name) {
-        return _schema.GetColumn(column_name)->GetType();
+        const DictSchemaColumn* col = _schema.GetColumn(column_name);
+        if(col)
+            return col->GetType();
+        return 0; // column name might not exist.
     }
 
 protected:

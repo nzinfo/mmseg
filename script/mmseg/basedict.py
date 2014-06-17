@@ -35,9 +35,14 @@ class MMSegTermReader(BaseReader):
             for line in fh:
                 if line[:2] == 'x:':
                     continue
+                if line[:2] == 't:':
+                    # 需要处理同义词
+                    self._terms[-1][2]['thes'] = line[2:].encode('utf8')
+                    continue
+                #print line
                 term, freq = line.strip().split('\t')
                 self._terms.append( \
-                    (term, freq, [])
+                    (term, freq, {})
                     )
         return True
 
@@ -66,7 +71,7 @@ class BaseDict():
 
     def Init(self, dict_name, schema = None):
         if not schema:
-            schema = "4:id;4:freq"
+            schema = "id:4;freq:4;thes:s"
         BaseDict._mmseg.DictBase_Init(self._dt, dict_name, schema)
         #dict_schema = BaseDict._mmseg.DictBase_GetSchema(self._dt)
         #print dir(dict_schema)
@@ -136,11 +141,14 @@ def basedict_mmseg_main(dict_name, fsource, dict_fname, schema):
     i = 10
 
     for term in reader.get_terms():
-        term_txt, freq, _ = term
+        term_txt, freq, term_props = term
         term_txt = term_txt.encode('utf-8')
         freq = int(freq)
         #print term_txt, type(term_txt)
-        d.AddItem(term_txt, {"freq": freq})
+        props = {"freq": freq}
+        if 'thes' in term_props:
+            props['thes'] = term_props['thes']
+        d.AddItem(term_txt, props )
 
     d.Save(dict_fname, 1)  # rev: 1
 
