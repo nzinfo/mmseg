@@ -49,6 +49,51 @@ void SegOptions::SetSwitch(std::string& s) {
     }
 }
 
+std::string SegOptions::ProcessAnnotes(DictMgr *dict_mgr, std::string & annotes) {
+    /*
+     * "pinyin;thes;origin;stem;term" 只保留字典中存在的 columns
+     *
+     * 0 去掉系统保留的switch
+     * 1 查询 dict_mgr 得到全部词典
+     * 2 查询 每一个 dict 的 fields，检查
+     */
+    std::vector<std::string> columns;
+    std::vector<std::string> dict_columns;
+    pystring::split(annotes, columns, ";");
+    char* _annote_name_ptr = _annote_name_pool;
+
+    _annote2id.clear();
+    u2 annote_id = 1;
+    _id2annote = (char**)malloc( (columns.size()+1) * sizeof(char*));
+
+    for(std::vector<std::string>::iterator it = columns.begin(); it < columns.end(); it++ )
+    {
+        {
+            _annote2id[*it] = annote_id; 
+            memcpy(_annote_name_ptr, (*it).c_str(), (*it).length());
+            _id2annote[annote_id] = _annote_name_ptr;
+            _annote_name_ptr += (*it).length();
+            *_annote_name_ptr = 0;
+            _annote_name_ptr ++;
+			annote_id++;
+        }
+
+        if(*it== "origin")
+        {    _enable_keep_origin = true; continue; }
+        if(*it== "stem")
+        {    _enable_stem = true; continue; }
+        if(*it== "term")
+        {    _enable_fullseg = true; continue; }
+
+        // 检查字段是否存在
+        if(dict_mgr->FieldExist(*it)) {
+            // add to column
+            dict_columns.push_back(*it);
+        }
+    }
+    return pystring::join(";", dict_columns);
+}
+
 } // namespace mm
 
 

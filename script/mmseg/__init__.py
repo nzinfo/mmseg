@@ -4,7 +4,7 @@
     用于封装 _mmseg 的操作
 """
 from .charmap import CharMapDict
-from .dict_mgr import DictionaryManager, Tokenizer
+from .dict_mgr import DictionaryManager, Tokenizer, decode_global_entries
 from .basedict import BaseDict, basedict_mmseg_main
 from .basedict_cedict_import import basedict_cedict_main
 

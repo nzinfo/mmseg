@@ -25,8 +25,18 @@
 #define DICTIONARY_BASE     4
 #define MAX_TERM_DICTIONARY 20
 #define MAX_PHARSE_DICTIONARY 8
+#define TOTAL_DICTIONARY_COUNT 32
 
 namespace mm {
+
+typedef struct BaseDictColumnReadMarker{
+    u2          dict_id; // 如果是用户自定义词典等，使用预先保留的值
+    char        column_datatype;    // 对应的数据类型 u1 u2 u4 string
+    u2          prop_dict_idx;  // 对应的在 EntryData 中未压缩的值
+    u2          prop_id; // 额外的信息，在Options 中，该属性的 Annote 的编号
+}BaseDictColumnReadMarker;
+
+typedef std::vector<BaseDictColumnReadMarker> BaseDictColumnReadMarkerList;
 
 class DictUpdatable;
 
@@ -110,8 +120,24 @@ public:
 	int ExactMatch(u4* q, u2 len, mm::DictMatchResult* rs);
     int PrefixMatch(u4* q, u2 len, mm::DictMatchResult* rs, bool extend_value=true);
 
+    int GetMatchByDictionary(const mm::DictMatchEntry* entry, u2 term_len, mm::DictMatchResult* rs) const;
+
     mm::DictUpdatable* GetUpdatableDictionary() {
         return NULL;    // 目前不支持在线的更新
+    }
+
+    // 处理与字段有关
+    bool FieldExist(const std::string& field_name){
+        unordered_map<std::string, BaseDictColumnReadMarkerList>::const_iterator field_it;
+        field_it = _fields.find(field_name);
+        return ( field_it != _fields.end() );
+    }
+    const mm::BaseDictColumnReadMarkerList* GetFieldMarkers(const std::string& field_name) const {
+        unordered_map<std::string, BaseDictColumnReadMarkerList>::const_iterator field_it;
+        field_it = _fields.find(field_name);
+        if(field_it == _fields.end())
+            return NULL;
+        return &(field_it->second);
     }
 
 public:
@@ -136,6 +162,9 @@ protected:
     std::vector<std::string> _terms_fname;
     std::vector<std::string> _pharses_fname;
     std::vector<std::string> _specials_fname;
+
+    // for annote & script  <字段名， 包括该字段的词典的该字段读取方式的描述的列表>
+    unordered_map<std::string, BaseDictColumnReadMarkerList> _fields;
 };
 
 } // namespace mm

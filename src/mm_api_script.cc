@@ -79,6 +79,9 @@ int lua_script_clear(LUAScript* ctx)
  */
 int init_script(LUAScript* ctx, const char* script_fname)
 {
+    if(ctx->stage != LUASCRIPT_STATUS_INIT)
+        return -10; // 初始化已经完成，不可以再继续加载了。
+
     lua_State *L = ctx->L;
 
     int status = luaL_loadfile(L, script_fname);
@@ -125,6 +128,12 @@ int init_script(LUAScript* ctx, const char* script_fname)
         //printf("get function 'f' result=%f\n", z);
     }
 
+    return 0;
+}
+
+int init_script_done(LUAScript* ctx)
+{
+    ctx->stage = LUASCRIPT_STATUS_EXEC;
     return 0;
 }
 

@@ -141,4 +141,28 @@ class Tokenizer(object):
 
         return token
 
+def decode_global_entries(s, term_len):
+    matches = DictionaryManager._mmseg.new_DictMatchResult()
+    try:
+        items = []
+        # do segment.
+        rs = mmseg.swig_decode_global_idx_entry(s, len(s), term_len, matches)
+        # 循环处理
+        i = 0
+        while True:
+            dict_id = mmseg.swig_get_match_dictid(matches, i)
+            if dict_id == 0:
+                break
+            term_len = mmseg.swig_get_match_length(matches, i)
+            term_offset = mmseg.swig_get_match_value(matches, i)
+            items.append(
+                (dict_id, term_len, term_offset )
+            )
+            i += 1
+        return items
+    finally:
+        # free for all
+        DictionaryManager._mmseg.delete_DictMatchResult(matches)
+
+
 # -*- end of file -*-

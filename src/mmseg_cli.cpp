@@ -1,4 +1,4 @@
-/*
+﻿/*
  *  MMSeg Chinese tokenizer command line interface.
  */
 #include <glog/logging.h>
@@ -197,11 +197,23 @@ int segment(const char* utf8_file, const char* dict_path, const char* script_pat
         str = currentTimeMillis();
 
         // property to read from dict, special dict
-        mm::SegOptions seg_option("", "");
+        /*
+         * - pinyin 词对应的拼音；
+         * - thes   同义词
+         * - origin 不小写的原始词条形式
+         * - stem   进行词干提取后的结果， 应该可以选择不同的词干提取算法。
+         * - allterm 全切分，列出全部的候选词。
+         */
+        // mm::SegOptions seg_option(&mgr, "pinyin;thes;origin;stem;term", "");
+		mm::SegOptions seg_option(&mgr, "thes;origin;stem;term", "");
         mm::SegStatus* seg_stat = new mm::SegStatus(seg_option);  // huge memory alloc, needs alloc on heap.
         mm::Segmentor seg(mgr, script_mgr);
 
         mm::SegmentorResultReaderFile rs_out(stdout);
+
+        {
+            //printf("dict columns %s\n", seg_option.Columns().c_str());
+        }
 
         int task_id = 0;
         rs = seg.Tokenizer(task_id, buffer, length, seg_stat);

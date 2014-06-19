@@ -23,10 +23,43 @@
 
 namespace mm {
 
+int SegPolicy::BindAnnote(const DictMgr &dict_mgr, SegStatus& status)
+{
+    /*
+     * 填充 _prop2annote， 在使用该 Policy 分词时，同时填写 annotes.
+     */
+    std::string column_s = status.GetOption().Columns();
+    std::vector<std::string> columns;
+    pystring::split(column_s, columns, ";");
+
+    BaseDictColumnReadMarker marker;
+    for(std::vector<std::string>::iterator it = columns.begin(); it < columns.end(); it++ )
+    {
+        /*
+         *  1 read marker by name
+         *  2 push to _prop2annote
+         */
+        const BaseDictColumnReadMarkerList* field_marker = dict_mgr.GetFieldMarkers(*it);
+        if(field_marker) {
+            for(BaseDictColumnReadMarkerList::const_iterator mit = field_marker->begin();
+                mit < field_marker->end(); mit++ ){
+                marker = *mit;  //default copy
+                marker.prop_id = status.GetOption().GetAnnoteID(*it);
+                _prop2annote_map[marker.dict_id].push_back(marker); //copy
+            }
+        }
+    }
+    return 0;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
 typedef struct MMSegChunk {
    u4 term1_pos;  //存储的是词条的右侧的位置
    u4 term2_pos;
    u4 term3_pos;
+
+   const DictMatchEntry* match_entry; // term1_pos 对应的 match 信息，因为 mmseg 一次只输出一个 token
 
    float avg(u4 iBegin) {
        /*
@@ -96,6 +129,10 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 	u4 i_level3 = 0;
 	MMSegChunk current_chunk;
 	MMSegChunk best_chunk;
+    mm::DictMatchResult annote_match_rs;  // 256.. 一个词条在多少个词典中同时出现， 最多 32
+    const mm::DictMatchEntry* per_dict_match_entry = NULL;
+	u2	annote_data_len = 0;
+	const char* annote_data_ptr = NULL;
 
 	//for(u4 i = 0;  ; i++ ) 
 	u4 i = 0;
@@ -134,11 +171,13 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 		// 也许不节省内存，计算 bigram 更好。取决于 循环执行的速度快还是内存访问的速度快。
         for(int term1_i = (status._icode_matches[i] - status._icode_matches[i-1]); term1_i >= 0; term1_i--) {
 			//term1_i -= 1; //make it as an index
+            current_chunk.match_entry = NULL;
             if(term1_i) {
                 pos = status._icode_matches[i-1] + term1_i - 1;  // status._icode_matches[i-1] is the begin position of current char stored.
                 match_entry = status._matches->GetMatch(pos);
                 // should never be NULL;
                 i_level2 = i + match_entry->match._len; // advance to i + match_entry->match._len
+                current_chunk.match_entry = match_entry; // 记录对应的 match_entry
             }else
                 i_level2 = i + 1;
 
@@ -229,6 +268,10 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
               }
               break;
           } // end while
+          /*
+           * Annote:
+           *  处理 stem, 与 英文 | 数字有关的其他
+           */
           if(j==i)
             status._icodes[i].tagSegA = 'S';
           else
@@ -241,6 +284,49 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 			} // end for
 			status._icodes[best_chunk.term1_pos-1].tagSegA = 'E';
 		}// end if 
+
+		if(best_chunk.match_entry)  // 没有 match 也自然不会有 annote
+		{
+			 /*
+             *  Annote:
+             *    处理词组： 拼音 | 同义词等
+             *
+             *  如果是脚本，此处应该使用动态生成的 JIT 代码
+			 *  此时： i 是短语的开始， best_chunk.term1_pos - 1 是短语的结束
+			 *  match_entry  是 词库全局索引 对应的记录 到每个词库词条的偏移量
+			 *
+             *	FIXME: 此处没有考虑用户词典， 目前连加载用户词典(上下文词典)的策略都木有。
+             */
+            annote_match_rs.Reset();
+            int nrs = dict_mgr.GetMatchByDictionary(best_chunk.match_entry, best_chunk.term1_pos, &annote_match_rs);
+            for(int rs_i = 0; rs_i< nrs; rs_i++)
+            {
+                per_dict_match_entry = annote_match_rs.GetMatch(rs_i);
+                //printf("dict_id %d, rs=%d ", per_dict_match_entry->match._dict_id, annote_match_rs.GetMatch(rs_i)->match._value);
+                // dump pinyin ,  std mmseg have no pinyin , should output as NULL.
+                mm::DictBase* dict = dict_mgr.GetDictionary( per_dict_match_entry->match._dict_id );
+                mm::EntryData* entry = dict->GetEntryDataByOffset( per_dict_match_entry->match._value );
+				// 处理 Annote
+                CHECK_LT(per_dict_match_entry->match._dict_id, TOTAL_DICTIONARY_COUNT) << "dict_id out of range.";
+                for(BaseDictColumnReadMarkerList::const_iterator mit = _prop2annote_map[per_dict_match_entry->match._dict_id].begin();
+                    mit < _prop2annote_map[per_dict_match_entry->match._dict_id].end(); mit++ )
+                {
+                    // check column name.
+                    // printf("annote column name is %s \n", dict->GetSchema()->GetColumn((*mit).prop_dict_idx).GetName());
+                    // check datatype, only 's' is supported.
+                    if((*mit).column_datatype == 's') {
+                        annote_data_ptr = (const char*)entry->GetData(dict->GetSchema(),
+                                                            dict->GetStringPool(), (*mit).prop_dict_idx, &annote_data_len);
+                        if(annote_data_ptr) {
+                            //printf("entry offset in dict is %d. \n", per_dict_match_entry->match._value );
+							status.AnnoteByPropID(i, (u2)(best_chunk.term1_pos - i), (*mit).dict_id, (*mit).prop_id, (const u1*)annote_data_ptr, annote_data_len, false );
+						}
+                    }else{
+                        CHECK_EQ((*mit).column_datatype, 's') << "only string annote supported now";
+                    }
+                }
+            } // end for
+		}
 
         i = best_chunk.term1_pos; //step to next term.
 		// clear chunk status

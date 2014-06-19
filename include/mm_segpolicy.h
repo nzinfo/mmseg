@@ -15,13 +15,12 @@
 #if !defined(_SEGPOLICY_H)
 #define _SEGPOLICY_H
 
-//#include "mm_seg_status.h"
+#include "mm_dict_mgr.h"
 #include "csr_typedefs.h"
 
 namespace mm {
 
 class SegStatus;
-class DictMgr;
 
 class SegPolicy {
 public:
@@ -39,6 +38,12 @@ public:
     inline u2 GetTermWindowSize() {
         return 0;
     }
+
+    int BindAnnote(const DictMgr &dict_mgr, SegStatus& status);
+
+protected:
+    //BaseDictColumnReadMarkerList _prop2annote;
+    BaseDictColumnReadMarkerList _prop2annote_map[TOTAL_DICTIONARY_COUNT]; // use dict_id as the index.
 };
 
 } // end namespace mm

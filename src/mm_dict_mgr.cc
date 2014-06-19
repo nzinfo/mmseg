@@ -228,9 +228,9 @@ DictBase* DictMgr::GetDictionary(u2 dict_id) const
     // got a name
     return GetDictionary(it->second.c_str());
     */
-    if(dict_id > DICTIONARY_BASE && dict_id < MAX_TERM_DICTIONARY + DICTIONARY_BASE)
+    if(dict_id >= DICTIONARY_BASE && dict_id < MAX_TERM_DICTIONARY + DICTIONARY_BASE)
         return _term_dictionaries[dict_id - DICTIONARY_BASE];
-    if(dict_id > DICTIONARY_BASE+MAX_TERM_DICTIONARY
+    if(dict_id >= DICTIONARY_BASE+MAX_TERM_DICTIONARY
             && dict_id < DICTIONARY_BASE+MAX_TERM_DICTIONARY+MAX_PHARSE_DICTIONARY)
         return _pharse_dictionaries[dict_id - DICTIONARY_BASE+MAX_TERM_DICTIONARY];
     // FIXME: 不支持 < DICTIONARY_BASE 的查询
@@ -467,6 +467,62 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
         free(pool);
         //free(string_pool);
     }
+
+    // 遍历全部词典，确定 能够提供哪些 fields
+    {
+        unordered_map<std::string, BaseDictColumnReadMarkerList>::iterator field_it;
+        for(int i=0; i<MAX_TERM_DICTIONARY; i++) {
+            if(_term_dictionaries[i] != NULL ) {
+                const mm::DictSchema* schema = _term_dictionaries[i]->GetSchema();
+                for(u2 col_i = 0; col_i < schema->GetColumnCount(); col_i++) {
+                    BaseDictColumnReadMarker marker;
+                    marker.dict_id = _term_dictionaries[i]->DictionaryId();
+                    marker.column_datatype = schema->GetColumn(col_i).GetType();
+                    marker.prop_dict_idx = schema->GetColumn(col_i).GetIndex();
+
+                    // 1 check column is pre-existed.
+                    field_it = _fields.find(schema->GetColumn(col_i).GetName());
+                    if(field_it == _fields.end()) {
+                        // append new
+                        BaseDictColumnReadMarkerList list;
+                        list.push_back(marker);
+                        // 2 add access path
+                        _fields[schema->GetColumn(col_i).GetName()] = list;
+                    }else{
+                        // reuse existed.
+                        // 2 add access path
+                        field_it->second.push_back(marker);
+                    }
+                } // for each columns
+            }
+        }
+        // 理论上， pharse 应该没有 property 了。
+        for(int i=0; i<MAX_PHARSE_DICTIONARY; i++) {
+            if(_pharse_dictionaries[i] != NULL ) {
+                const mm::DictSchema* schema = _pharse_dictionaries[i]->GetSchema();
+                for(u2 col_i = 0; col_i < schema->GetColumnCount(); col_i++) {
+                    BaseDictColumnReadMarker marker;
+                    marker.dict_id = _term_dictionaries[i]->DictionaryId();
+                    marker.column_datatype = schema->GetColumn(col_i).GetType();
+                    marker.prop_dict_idx = schema->GetColumn(col_i).GetOffset();
+
+                    // 1 check column is pre-existed.
+                    field_it = _fields.find(schema->GetColumn(col_i).GetName());
+                    if(field_it == _fields.end()) {
+                        // append new
+                        BaseDictColumnReadMarkerList list;
+                        list.push_back(marker);
+                        // 2 add access path
+                        _fields[schema->GetColumn(col_i).GetName()] = list;
+                    }else{
+                        // reuse existed.
+                        // 2 add access path
+                        field_it->second.push_back(marker);
+                    }
+                } // for each columns
+            }
+        }
+    }
 	LOG(INFO) << "build index done ";
     return 0;
 }
@@ -537,6 +593,20 @@ int DictMgr::PrefixMatch(u4* q, u2 len, mm::DictMatchResult* rs, bool extend_val
 		BuildIndex();
     int num = _global_idx->PrefixMatch(q, len, rs, extend_value);
 	return num;
+}
+
+int DictMgr::GetMatchByDictionary(const mm::DictMatchEntry* mentry, u2 term_len, mm::DictMatchResult* rs) const
+{
+    /*
+     * 使用 _global_idx 返回的 entry, 展开结果集
+     */
+	mm::EntryData* entry = NULL;
+	u2 data_len = 0;
+
+	entry = _global_idx->GetEntryDataByOffset(mentry->match._value);
+    const char* sptr = (const char*)entry->GetData( _global_idx->GetSchema(),
+                                                    _global_idx->GetStringPool(), 0, &data_len);
+    return decode_entry_to_matchentry((const u1*)sptr, data_len, term_len, rs);
 }
 
 } //mm namespace

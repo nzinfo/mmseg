@@ -61,6 +61,28 @@
 
 namespace mm {
 
+/*
+ * 1 得到词典的全部属性的名字
+ *      属性名 -> ( 词典编号 | 词典的字段 ）
+ *
+ * 2 检查是否是保留的名字
+ *      - 创建词典时，也需要检查；
+ *      - 目前包括 origin;stem;allterm
+ *
+ * 3 如果标引是词典的某个字符串类型的属性的值，直接引用对应的地址
+ *
+ * 4 如果不是，引用某个字符串Pool 的地址
+ *
+ * 5 标引的类型编号，由 Option 控制
+ *
+ * 6 标引对应的是字符的位置上， 输出词条时，检查这个词典占用的全部字符位置上的标引信息（只检测首字的？）
+ *
+ * 7 allterm 需要特殊处理。
+ *
+ * 8 通过脚本增加标引 -> 脚本的 API
+ *
+ */
+
 typedef union AnnoteEntry {
 	struct {
         u4 _offset;			//  在标引数据区的偏移量。
@@ -69,7 +91,7 @@ typedef union AnnoteEntry {
 		u1 _source;			//  标引的来源， 从那个词典来的 0~31 词典； 31 以上， 由脚本定义
 	} entry;
 	u8 v;
-}AnnoteEntry;				// 本质是一个 u8 在 64 bit 机器上可以一次执行完。 （字符的信息如何存？）
+}AnnoteEntry;				//
 
 class AnnotePool {
     /*
@@ -132,6 +154,23 @@ public:
 	void BuildTermIndex();
     SegOptions& GetOption() { return _options; }
 
+public:
+    /*
+     * 在位置 pos, 给 token_len 的 token 添加标引信息。
+     *
+     * 标引类型为  prop_name; 数据为 data_ptr
+     *
+     * 设置标记为 bReplace, 如果为 True，则在同样的位置、同样的长度，只能有一个同名的标引
+     *
+     * u2 source_id 表示属于哪个词典 或 脚本给出的 tag
+     *
+     */
+    int Annote(u4 pos, u2 token_len, u2 source_id, const char* prop_name,
+               const u1* data_ptr, u4 data_len, bool bReplace = false);
+
+    int AnnoteByPropID(u4 pos, u2 token_len, u2 source_id, u2 prop_id,
+               const u1* data_ptr, u4 data_len, bool bReplace = false);
+
 protected:
     // Segmenter's Intractive functions.
     u4 FillWithICode(const DictMgr& dict_mgr, bool toLower = true); // 转换到 icode, 转换到小写（常用字）
@@ -148,19 +187,23 @@ protected:
 protected:
     u1*              _matches_data_ptr;  // 实际存 match 大的区域
     mm::DictMatchResult* _matches;  // 从词典中读取到的命中信息， 必须按照长度排序
-    mm::UnicodeSegChar* _icodes;	// 当前正在处理的上下文， 如果处理完毕， 会更新, 保存 tag 和 实际的 icode
+    mm::UnicodeSegChar*  _icodes;	// 当前正在处理的上下文， 如果处理完毕， 会更新, 保存 tag 和 实际的 icode
     u4*             _icode_chars; // 保存unicode 的原始值 和 tolower 后的值（如果有），用于 prefixmatch.
     u4*             _icode_matches; // 按照词的位置，给出都命中了多少词条。 处理为累计，使用 - 得到实际的数量
     u4 _icode_pos;  // 当前的位置，当切换时...
     u4 _icode_last_s_pos; // 最后一个 根据 unicode script 标注为 S 的字的位置；需要检查如果为0， 则 _icode_last_s_pos == _icode_pos
-    u4 _offset;		// 从起点开始， 现在的偏移量
+    u4 _offset;		// 从起点开始， 现在的偏移量 （目前好像没用到）
 	u4 _size;		// 整个 status 的最大字符容量
 
+    /*
     unordered_map<u4, AnnoteEntry> _annotes;    // offset -> annote 的表 , 可以被脚本操作。
     AnnotePool* _annote_pool1;                  // 存储 annote　的数据
     AnnotePool* _annote_pool2;
     AnnotePool* _annote_pool_active;  // a pointer of _annote_pool1 | _annote_pool2
+    */
+
     mm::SegOptions& _options;
+
 
 protected:
     const char* _text_buffer;

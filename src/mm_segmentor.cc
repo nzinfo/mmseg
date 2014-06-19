@@ -41,6 +41,7 @@ int Segmentor::Tokenizer(u8 task_id, const char* text_to_seg, u4 text_len, SegSt
     if(text_to_seg) {
         status->Reset();
         status->SetBuffer(text_to_seg, text_len);
+        _mmseg.BindAnnote(_dict_mgr, *status); // check return value?
     }else {
 		// move to next block.
 		status->MoveNext();
@@ -75,6 +76,8 @@ Segmentor::Segmentor(const DictMgr& dict_mgr, const SegScript& script_mgr, const
 
     // build the char's freq.
     _mmseg.BuildUSC2CharFreqMap(dict_mgr);
+    // 构造读取 dict_mgr 中属性的列表
+
 }
 
 //////////////////////////////////////////////////////////////////

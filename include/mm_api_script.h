@@ -31,6 +31,14 @@
  *
  * 系统可根据 LUA 脚本预先的通知，标注出潜在的结果。  -> 条件判断与结果的缓存
  *
+ * 需要处理的时机：
+ *
+ *  2 出现某个候选Term（在DAG中）, 因为可以把单字作为词条加入词典中，不额外提供单字的接口
+ *  3 出现某个短语（已经在结果中）
+ *  4 出现某个词典中的词（在结果中|在DAG中）
+ *  5 出现某个词典中的某个属性为 S1 的词（在DAG中）
+ *  6 出现某个词典中的某个属性为 S1 的词（在结果中）
+ *
  */
 
 // FIXME: add cplusplus detected.
@@ -50,7 +58,6 @@ extern "C" {
 #define LUASCRIPT_STATUS_INIT           1u
 #define LUASCRIPT_STATUS_EXEC           2u
 
-// typedef void* SegScriptPtr; // 一个指向
 /*
  *  分词使用的上下文，通过本结构体 & 其中的指针，可以 操作 SegStatus ，并修改结果
  */
@@ -58,6 +65,45 @@ typedef struct TokenContext
 {
     u4 id;
 }TokenContext;
+
+
+/*
+ *  加载脚本时， LUA 可以使用的回调
+ *
+ *  Ref: http://luajit.org/ext_ffi_tutorial.html
+ *
+ *  本结构体由LUAJIT创建 （系统固化的脚本）
+ *
+ *  全部初始化完成后， 会调用 warmup ， 执行 "hello world."
+ */
+typedef struct LUAScript
+{
+    u1 stage;          // 加载脚本 | 加载完成
+    lua_State *L;
+    //u4 balbalba;
+    TokenContext* ctx; //当前执行的分词上下文。不可以持续绑定到 LUAScript
+    char error_msg[LUASCRIPT_ERROR_MESSAGE_LENGTH];       // the errror message of lua script.
+    //LUAScriptCallBackList registed_cb;  // 用于保存 LUA 脚本传递来的回调， 需要 build_cb_index 来构造索引， 一旦构造完成， 就不可以增加新的 cb 了
+}LUAScript;
+
+/* 系统初始化有关 */
+LUAAPI int lua_script_init(LUAScript* ctx);
+
+// 清除全部 结构体包括的指针
+LUAAPI int lua_script_clear(LUAScript* ctx);
+
+/*
+ * 从文件中加载脚本
+ */
+LUAAPI int init_script(LUAScript* ctx, const char* script_fname);  // called c side
+
+LUAAPI int init_script_done(LUAScript* ctx);        // 用户脚本已经全部加载完毕。
+
+LUAAPI u2  get_dictionary_id_by_name(LUAScript* ctx, const char* dict_name);
+
+
+
+// typedef void* SegScriptPtr; // 一个指向
 
 /*
  * 被脚本使用的分词上下文 ? 用于在主持回调时，传递上下文信息，
@@ -129,24 +175,7 @@ typedef struct LUAScriptCallBackList
 }LUAScriptCallBackList;
 
 
-/*
- *  加载脚本时， LUA 可以使用的回调
- *
- *  Ref: http://luajit.org/ext_ffi_tutorial.html
- *
- *  本结构体由LUAJIT创建 （系统固化的脚本）
- *
- *  全部初始化完成后， 会调用 warmup ， 执行 "hello world."
- */
-typedef struct LUAScript
-{
-    u1 stage;          // 加载脚本 | 加载完成
-    lua_State *L;
-    //u4 balbalba;
-    TokenContext* ctx; //当前执行的分词上下文。不可以持续绑定到 LUAScript
-    char error_msg[LUASCRIPT_ERROR_MESSAGE_LENGTH];       // the errror message of lua script.
-    LUAScriptCallBackList registed_cb;  // 用于保存 LUA 脚本传递来的回调， 需要 build_cb_index 来构造索引， 一旦构造完成， 就不可以增加新的 cb 了
-}LUAScript;
+
 
 
 /*
@@ -164,19 +193,6 @@ typedef int (STDCALL * find_term_hit_cb) ( TokenContextScript* script_ctx, const
 typedef int (STDCALL * find_term_hit_dict_cb) ( TokenContextScript* script_ctx, const char* term,
                                                 u2 term_len, u4 offset,
                                                 u2 dict_id, u4 entry_offset );
-
-/* 系统初始化有关 */
-LUAAPI int lua_script_init(LUAScript* ctx);
-
-// 清除全部 结构体包括的指针
-LUAAPI int lua_script_clear(LUAScript* ctx);
-
-/*
- * 从文件中加载脚本
- */
-LUAAPI int init_script(LUAScript* ctx, const char* script_fname);  // called c side
-
-LUAAPI u2  get_dictionary_id_by_name(LUAScript* ctx, const char* dict_name);
 
 /*
  * 注册字符级别的回调函数

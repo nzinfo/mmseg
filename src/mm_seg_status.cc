@@ -40,9 +40,9 @@ SegStatus::SegStatus(SegOptions &option, u4 size)
     _matches = new DictMatchResult( _matches_data_ptr, size*32 );
 
     // 初始化 标引池
-    _annote_pool1 = new AnnotePool();
-    _annote_pool2 = new AnnotePool();
-    _annote_pool_active = _annote_pool1;
+    //_annote_pool1 = new AnnotePool();
+    //_annote_pool2 = new AnnotePool();
+    //_annote_pool_active = _annote_pool1;
 }
 
 SegStatus::~SegStatus() {
@@ -52,9 +52,9 @@ SegStatus::~SegStatus() {
     delete _matches;
     free(_matches_data_ptr);
 
-    _annote_pool_active = NULL;
-    delete _annote_pool1;
-    delete _annote_pool2;
+    //_annote_pool_active = NULL;
+    //delete _annote_pool1;
+    //delete _annote_pool2;
 
 }
 
@@ -72,9 +72,9 @@ void SegStatus::Reset() {
     _matches->Reset();
 
     // 处理标引
-    _annote_pool_active = _annote_pool1;
-    _annote_pool1->Reset();
-    _annote_pool2->Reset();
+    //_annote_pool_active = _annote_pool1;
+    //_annote_pool1->Reset();
+    //_annote_pool2->Reset();
 }
 
 int SegStatus::SetBuffer(const char* buf, u4 len) {
@@ -126,6 +126,7 @@ int SegStatus::MoveNext() {
     icode_last_s_pos = 0;
 
     // 处理 AnnotePool 的轮换; 使用轮换的初衷是不希望在 block 切换时，丢失上下文的标引信息。
+    /*
     {
         if(_annote_pool_active == _annote_pool1) {
             _annote_pool2->Reset();
@@ -136,6 +137,7 @@ int SegStatus::MoveNext() {
             _annote_pool_active = _annote_pool1;
         }
     }
+    */
     return _icode_pos;
 }
 
@@ -272,6 +274,12 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_us
      * 2 检索 special 词典
      * 3 检索 用户词典
      * 4 对检索结果进行排序
+     *
+     * 与 Annote 有关
+     * 1 根据 Option 与 dict_mgr 计算需要读取的属性信息
+     *      dict_id, field_type, field_offset
+     * 2
+     *
 	 */
 	mm::DictBase* special_dict = NULL;
     if(_options.GetSpecialDictionaryName() != "")
@@ -299,6 +307,30 @@ int SegStatus::Apply(const DictMgr& dict_mgr, SegPolicy* policy)
     if(policy == NULL)
         return -1; // should crash.
     return policy->Apply(dict_mgr, *this);
+}
+
+int SegStatus::Annote(u4 pos, u2 token_len, u2 source_id, const char* prop_name,
+           const u1* data_ptr, u4 data_len, bool bReplace)
+{
+    u2 prop_id = GetOption().GetAnnoteID(prop_name);
+    return AnnoteByPropID(pos, token_len, source_id, prop_id, data_ptr, data_len, bReplace);
+}
+
+int SegStatus::AnnoteByPropID(u4 pos, u2 token_len, u2 source_id, u2 prop_id,
+           const u1* data_ptr, u4 data_len, bool bReplace)
+{
+    if(0) // debug the annote append.
+    {
+        u1 buf[128];
+        int n = 0;
+        for(u4 i = pos; i< pos+token_len; i++ ){
+            n = csr::csrUTF8Encode(buf, _icode_chars[i]);
+            buf[n] = 0;
+            fprintf(stdout, "%s", buf );
+        }
+        printf(" annote at %d: key=%s; v= %.*s \n", pos, GetOption().GetAnnoteName(prop_id), data_len, data_ptr);
+    }
+    return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////

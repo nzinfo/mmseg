@@ -97,6 +97,34 @@
       return NULL;
   } // end of get_dict_property_string
 
+  u2 swig_decode_global_idx_entry(const char* entries, u2 data_len, u2 term_len, mm::DictMatchResult* rs)
+  {
+      return decode_entry_to_matchentry( (const u1*)entries, data_len, term_len, rs);
+  }
+
+  u4 swig_get_match_value(mm::DictMatchResult* rs, u4 idx) {
+      const mm::DictMatchEntry* entry = rs->GetMatch(idx);
+      if(entry){
+        return entry->match._value;
+      }
+      return 0;
+  }
+
+  u4 swig_get_match_length(mm::DictMatchResult* rs, u4 idx) {
+      const mm::DictMatchEntry* entry = rs->GetMatch(idx);
+      if(entry){
+        return entry->match._len;
+      }
+      return 0;
+  }
+
+  u4 swig_get_match_dictid(mm::DictMatchResult* rs, u4 idx) {
+      const mm::DictMatchEntry* entry = rs->GetMatch(idx);
+      if(entry){
+        return entry->match._dict_id;
+      }
+      return 0;
+  }
 %}
 
 
