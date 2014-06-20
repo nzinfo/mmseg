@@ -17,33 +17,6 @@
 #include "csr.h"
 #include "mm_api_script.h"
 
-// helper function
-LUAScriptCallBackEntry* get_next_callback_entry(LUAScriptCallBackList* list)
-{
-    /*
-     * 得到下一个可以写入回调函数的地址, eg.
-     *
-     * func_cb * ptr = (func_cb*)get_next_callback_entry(...)
-     * *ptr = <the new cb>
-     */
-    // quick test
-    while(list->next) {
-        list = list->next;
-    }
-    // the tail of callback list. quick check is full
-    if(list->callbacks[LUASCRIPT_CALLBACK_BLOCK_SIZE-1].cb) {
-        // the tail not nil, create a new list.
-        list->next = (LUAScriptCallBackList*) malloc(sizeof(LUAScriptCallBackList));
-        list = list->next;
-        memset(list, sizeof(LUAScriptCallBackList), 0);
-    }
-    // move to the current empty block
-    for(int i=0; i<LUASCRIPT_CALLBACK_BLOCK_SIZE;i++){
-        if(list->callbacks[i].cb == NULL)
-            return  &(list->callbacks[i]);
-    }
-    return NULL; // should never happen.
-}
 
 //extern "C" {
 /*
@@ -57,6 +30,7 @@ int lua_script_init(LUAScript* ctx)
     ctx->L = luaL_newstate();
     luaL_openlibs(ctx->L);
     ctx->stage = LUASCRIPT_STATUS_INIT;
+    ctx->task_ctx = NULL;
     return 0;
 }
 
@@ -143,53 +117,17 @@ u2  get_dictionary_id_by_name(LUAScript* ctx, const char* dict_name)
     return 0;
 }
 
-/*
- * 注册字符级别的回调函数
- * 在分词过程启动前被调用, 当发现某个字的时候
- */
-int reg_at_char_prepare(LUAScript* ctx, u4 icode, char_prepare_cb cb)
-{
-    if(ctx->stage != LUASCRIPT_STATUS_INIT)
-        return -1;  // invalid stage.
-    /*
-    LUAScriptCallBackEntry * entry = get_next_callback_entry(& (ctx->registed_cb) );
-    //*cb_ptr = cb;
-    */
-    printf("reg char called with %d\n", icode);
-    return 0;
-}
-
-/*
- * 当某类字符类型
- */
-int reg_at_chartag_prepare(LUAScript* ctx, u4 icode, char_prepare_cb cb)
+LUAAPI
+int reg_at_term(LUAScript* ctx, int rule_id, const char* term, u2 term_len, bool bInDAG)
 {
     return 0;
 }
 
 /*
- * 注册单一字的回调函数
- * 分词之后 进行处理。例如 A  AB  ， 如果只处理 B ， 则不被激活
+ * 当候选的词中出现来自某个词典的词时。
  */
-int reg_at_char_post(LUAScript* ctx, u4 icode, char_cb cb)
-{
-    return 0;
-}
-
-/*
- * 当发现某个 term 时， 回调
- */
-int reg_at_term(LUAScript* ctx, const char* term, u2 len, term_cb)
-{
-    return 0;
-}
-
-/*
- * 当发现来自某个词典的词条时， 如果这个词条同时出现在多个词典，也被此规则激活
- *
- * - 可以在脚本中，对具体的词条再进行判断
- */
-int reg_at_dict(LUAScript* ctx, u2 dict_id, dict_cb)
+LUAAPI
+int reg_at_dict(LUAScript* ctx, int rule_id, u2 dict_id, bool bInDAG)
 {
     return 0;
 }
@@ -200,23 +138,27 @@ int reg_at_dict(LUAScript* ctx, u2 dict_id, dict_cb)
  *  -2 属性不存在
  *  -3 属性类型不匹配
  */
-int reg_at_term_prop_u2(LUAScript* ctx, u2 dict_id, const char* prop, u2 v, dict_prop_u_cb)
+LUAAPI
+int reg_at_term_prop_u2(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u2 v, bool bInDAG)
 {
     return 0;
 }
 
-int reg_at_term_prop_u4(LUAScript* ctx, u2 dict_id, const char* prop, u4 v, dict_prop_u_cb)
+LUAAPI
+int reg_at_term_prop_u4(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u4 v, bool bInDAG)
 {
     return 0;
 }
 
-int reg_at_term_prop_u8(LUAScript* ctx, u2 dict_id, const char* prop, u8 v, dict_prop_u_cb)
+LUAAPI
+int reg_at_term_prop_u8(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u8 v, bool bInDAG)
 {
     return 0;
 }
 
-int reg_at_term_prop_s(LUAScript* ctx, u2 dict_id, const char* prop, const char* sv, u2 sl,
-                                    dict_prop_s_cb)
+LUAAPI
+int reg_at_term_prop_s(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop,
+                       const char* sv, u2 sl, bool bInDAG)
 {
     return 0;
 }
@@ -249,6 +191,7 @@ const char* get_term(TokenContext* ctx, u2 idx)
     return NULL;
 }
 
+#if 0
 /*
  *  在指定范围查找字符
  *  - 使用回调通知结果！！！ Great Idea！
@@ -291,6 +234,8 @@ int find_term_by_dict( TokenContext* ctx, TokenContextScript* script_ctx,
 {
     return 0;
 }
+
+#endif
 
 // 返回特定范围的原始字符串， utf8 格式
 const char* get_string( TokenContext* ctx, i2 begin, i2 end )

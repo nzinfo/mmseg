@@ -67,7 +67,7 @@ int SegScript::LoadScripts(const std::string script_path)
 }
 
 void SegScript::_KeepAPICode() {
-    reg_at_char_prepare(_script, 0, NULL);
+    //reg_at_char_prepare(_script, 0, NULL);
 }
 
 } // namespace mm

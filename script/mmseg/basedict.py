@@ -77,6 +77,9 @@ class BaseDict():
         #dict_schema = BaseDict._mmseg.DictBase_GetSchema(self._dt)
         #print dir(dict_schema)
 
+    def GetSchemaDefine(self):
+        return BaseDict._mmseg.DictBase_GetColumnDefine(self._dt)
+
     def AddItem(self, term, props):
         """
             props is
@@ -130,6 +133,14 @@ class BaseDict():
     def GetString(self, entry_offset, prop):
         entry = BaseDict._mmseg.DictBase_GetEntryDataByOffset(self._dt, entry_offset)
         return BaseDict._mmseg.get_dict_property_string(self._dt, entry, prop);
+
+    def GetU4(self, entry_offset, prop):
+        entry = BaseDict._mmseg.DictBase_GetEntryDataByOffset(self._dt, entry_offset)
+        return BaseDict._mmseg.EntryDataWrap_GetU4(self._entry_helper, entry, BaseDict._mmseg.DictBase_GetSchema(self._dt), prop, 0)
+
+    def SetU4(self, entry_offset, prop, u4_v):
+        entry = BaseDict._mmseg.DictBase_GetEntryDataByOffset(self._dt, entry_offset)
+        return BaseDict._mmseg.EntryDataWrap_SetU4(self._entry_helper, entry, BaseDict._mmseg.DictBase_GetSchema(self._dt), prop, u4_v)
 
 
 def basedict_mmseg_main(dict_name, fsource, dict_fname, schema):

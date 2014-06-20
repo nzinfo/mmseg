@@ -83,8 +83,9 @@
   {
       u2 data_len = 0;
       const mm::DictSchemaColumn* column = dict->GetSchema()->GetColumn(key);
-      if(column == NULL)
+      if(column == NULL) {
           return NULL;
+      }
       const char* sptr = (const char*)entry->GetData(dict->GetSchema(), dict->GetStringPool(),
                                                      column->GetIndex(), &data_len);
       char* buf = NULL;
@@ -94,6 +95,7 @@
           buf[data_len] = 0;
           return buf;
       }
+      //printf("no such data");
       return NULL;
   } // end of get_dict_property_string
 

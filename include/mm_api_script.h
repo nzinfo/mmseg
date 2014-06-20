@@ -63,7 +63,8 @@ extern "C" {
  */
 typedef struct TokenContext
 {
-    u4 id;
+    u4 id; // 我忘记做什么， 用的了
+    void* seg_status_ptr;   // 指向当前 SegStatus 的指针
 }TokenContext;
 
 
@@ -81,147 +82,62 @@ typedef struct LUAScript
     u1 stage;          // 加载脚本 | 加载完成
     lua_State *L;
     //u4 balbalba;
-    TokenContext* ctx; //当前执行的分词上下文。不可以持续绑定到 LUAScript
+    TokenContext* task_ctx; //当前执行的分词上下文。不可以持续绑定到 LUAScript
     char error_msg[LUASCRIPT_ERROR_MESSAGE_LENGTH];       // the errror message of lua script.
     //LUAScriptCallBackList registed_cb;  // 用于保存 LUA 脚本传递来的回调， 需要 build_cb_index 来构造索引， 一旦构造完成， 就不可以增加新的 cb 了
 }LUAScript;
 
 /* 系统初始化有关 */
-LUAAPI int lua_script_init(LUAScript* ctx);
+LUAAPI
+int lua_script_init(LUAScript* ctx);
 
 // 清除全部 结构体包括的指针
-LUAAPI int lua_script_clear(LUAScript* ctx);
+LUAAPI
+int lua_script_clear(LUAScript* ctx);
 
 /*
  * 从文件中加载脚本
  */
-LUAAPI int init_script(LUAScript* ctx, const char* script_fname);  // called c side
+LUAAPI
+int init_script(LUAScript* ctx, const char* script_fname);  // called c side
 
-LUAAPI int init_script_done(LUAScript* ctx);        // 用户脚本已经全部加载完毕。
+LUAAPI
+int init_script_done(LUAScript* ctx);        // 用户脚本已经全部加载完毕。
 
-LUAAPI u2  get_dictionary_id_by_name(LUAScript* ctx, const char* dict_name);
-
-
-
-// typedef void* SegScriptPtr; // 一个指向
-
-/*
- * 被脚本使用的分词上下文 ? 用于在主持回调时，传递上下文信息，
- * 不适用
- */
-typedef struct TokenContextScript
-{
-    u4 obj_id;
-}TokenContextScript;
-
-/*
- *  编码均使用 utf8
- */
-
-//typedef int (STDCALL *script_init_cb)(LUAScript* script);
-
-typedef int (STDCALL *char_prepare_cb)(TokenContext* ctx, TokenContextScript* script_ctx,
-                                       u4 icode, u4 icode_lower, u2 icode_tag);
-
-typedef int (STDCALL *char_cb)(TokenContext* ctx, TokenContextScript* script_ctx,
-                                       u4 icode, u2 icode_tag);
-
-typedef int (STDCALL *term_cb)(TokenContext* ctx, TokenContextScript* script_ctx,
-                                       const char* term, u2 term_len );
-
-typedef int (STDCALL *dict_cb)(TokenContext* ctx, TokenContextScript* script_ctx,
-                                       u2 dict_id, u4 entry_offset, const char* term, const u2 term_len );
-
-typedef int (STDCALL *dict_prop_u_cb)(TokenContext* ctx, TokenContextScript* script_ctx,
-                                       u2 dict_id, u4 entry_offset, const char* term, const u2 term_len,
-                                       const u8 v);
-
-// 注册某个属性的值，值的长度不能超过 255
-typedef int (STDCALL *dict_prop_s_cb)(TokenContext* ctx, TokenContextScript* script_ctx,
-                                       u2 dict_id, u4 entry_offset, const char* term, u2 term_len,
-                                       const char* sv, const u2 sl);
-
-typedef struct _LUAScriptCallBackEntryMeta
-{
-    u1 type; // c = char prepare; C =char; t=term; d = dict; D=dictwithprop; S=dictwithprops.
-    union _d {
-        u4 icode;       // 用于基于字的回调
-        struct {
-            u2 dict_id;
-            u2 prop_id;
-            u8 prop_v;  // hash of prop. 这样可以通过统一的二分查找表处理 字典属性的问题。
-        }dict_p;
-        u2 dict_id; // 处理字典的问题
-    };
-}_LUAScriptCallBackEntryMeta;
-
-//基于字的回调， 使用二分查找表。
-typedef struct LUAScriptCallBackEntry
-{
-    _LUAScriptCallBackEntryMeta meta;
-    void* cb;   // can be char_prepare_cb | char_cb | term_cb | dict_cb | dict_prop_u_cb | dict_prop_s_cb
-
-}LUAScriptCallBackEntry;
-
-// dict_id prop_id, prop_value
-// dict_id
-// entry_offset @globalidx? , 隐含的， 这个词必须在词表中。 使用二分查找
-
-typedef struct LUAScriptCallBackList
-{
-
-    LUAScriptCallBackEntry callbacks[LUASCRIPT_CALLBACK_BLOCK_SIZE];
-    LUAScriptCallBackList* next;
-}LUAScriptCallBackList;
-
-
-
+LUAAPI
+u2 get_dictionary_id_by_name(LUAScript* ctx, const char* dict_name);
 
 
 /*
- * 用于返回查询数据的 回调
- * - return 0 if continue
- * - return < 0 if no needs further look.
+ * 向系统中注册命中规则
  */
-typedef int (STDCALL * find_char_hit_cb) ( TokenContextScript* script_ctx, u4 icode,
-                                           i2 pos, u4 offset);
-
-typedef int (STDCALL * find_term_hit_cb) ( TokenContextScript* script_ctx, const char* term,
-                                           u2 term_len, u4 offset);
-
-// 此处不再给 属性信息，如果按照属性，需要独立的注册回调（每种情况一个）
-typedef int (STDCALL * find_term_hit_dict_cb) ( TokenContextScript* script_ctx, const char* term,
-                                                u2 term_len, u4 offset,
-                                                u2 dict_id, u4 entry_offset );
-
-/*
- * 注册字符级别的回调函数
- * 在分词过程启动前被调用, 当发现某个字的时候
- */
-LUAAPI int reg_at_char_prepare(LUAScript* ctx, u4 icode, char_prepare_cb cb); //, );
-
-/*
- * 当某类字符类型
- */
-LUAAPI int reg_at_chartag_prepare(LUAScript* ctx, u4 icode, char_prepare_cb cb);
-
-/*
- * 注册单一字的回调函数
- * 分词之后 进行处理。例如 A  AB  ， 如果只处理 B ， 则不被激活
- */
-LUAAPI int reg_at_char_post(LUAScript* ctx, u4 icode, char_cb cb);
 
 /*
  * 当发现某个 term 时， 回调
+ *
+ * @rule_id 本规则的变化，用于区分命中的结果；
+ * @term 关注的词
+ * @bInDAG == true, 出现在候选的词表中即激活该规则
+ *
+ * Note:
+ *  花了很长时间考虑如何处理词共现关系，可以考虑只注册词的关系，然后从命中结果中·分析·出词共现关系。
+ *  这样灵活性更高，而且易于实现。
+ *
+ * 维护一个列表，记录当命中该规则时，需要激活的 Rule （额外记录Term的长度， 用于辅助开发）
+ * 修改 全局的 Index， 内部存储一个 ID， 在全局 Index 中记录这个 ID
+ *
+ * MatchEntry  - {seg|dag} - innerID -> list of Rules. (因为同一个词条，可能命中多个规则)
+ * 并不是每个规则都需要直接命中的，对于 dict 类 的 Rule ，还需要额外检查 dict & property.
+ *
  */
-LUAAPI int reg_at_term(LUAScript* ctx, const char* term, u2 len, term_cb);
+LUAAPI
+int reg_at_term(LUAScript* ctx, int rule_id, const char* term, u2 term_len, bool bInDAG);
 
 /*
- * 当发现来自某个词典的词条时， 如果这个词条同时出现在多个词典，也被此规则激活
- *
- * - 可以在脚本中，对具体的词条再进行判断
+ * 当候选的词中出现来自某个词典的词时。
  */
-LUAAPI int reg_at_dict(LUAScript* ctx, u2 dict_id, dict_cb);
+LUAAPI
+int reg_at_dict(LUAScript* ctx, int rule_id, u2 dict_id, bool bInDAG);
 
 /*
  * 注册回调到term的属性，当符合条件的属性
@@ -229,14 +145,15 @@ LUAAPI int reg_at_dict(LUAScript* ctx, u2 dict_id, dict_cb);
  *  -2 属性不存在
  *  -3 属性类型不匹配
  */
-LUAAPI int reg_at_term_prop_u2(LUAScript* ctx, u2 dict_id, const char* prop, u2 v, dict_prop_u_cb);
-LUAAPI int reg_at_term_prop_u4(LUAScript* ctx, u2 dict_id, const char* prop, u4 v, dict_prop_u_cb);
-LUAAPI int reg_at_term_prop_u8(LUAScript* ctx, u2 dict_id, const char* prop, u8 v, dict_prop_u_cb);
-LUAAPI int reg_at_term_prop_s(LUAScript* ctx, u2 dict_id, const char* prop, const char* sv, u2 sl,
-                                    dict_prop_s_cb);
-
-
-int build_cb_index(LUAScript* ctx);
+LUAAPI
+int reg_at_term_prop_u2(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u2 v, bool bInDAG);
+LUAAPI
+int reg_at_term_prop_u4(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u4 v, bool bInDAG);
+LUAAPI
+int reg_at_term_prop_u8(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u8 v, bool bInDAG);
+LUAAPI
+int reg_at_term_prop_s(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop,
+                       const char* sv, u2 sl, bool bInDAG);
 
 /* 数据处理回调有关, 被 LUA 的脚本中回调 */
 
@@ -251,6 +168,7 @@ u2 get_dict_property_index(TokenContext* ctx, u2 dict_id, const char* prop);
 u4 get_char(TokenContext* ctx, u2 idx);
 const char* get_term(TokenContext* ctx, u2 idx); //返回特定的位置
 
+#if 0
 /*
  *  在指定范围查找字符
  *  - 使用回调通知结果！！！ Great Idea！
@@ -278,6 +196,8 @@ int find_terms_by_property_s( TokenContext* ctx, TokenContextScript* script_ctx,
 int find_term_by_dict( TokenContext* ctx, TokenContextScript* script_ctx,
                        u2 dict_id, i2 begin, i2 end,
                        find_term_hit_cb cb );
+
+#endif
 
 // 返回特定范围的原始字符串， utf8 格式
 const char* get_string( TokenContext* ctx, i2 begin, i2 end );

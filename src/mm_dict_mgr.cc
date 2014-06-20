@@ -259,7 +259,7 @@ int DictMgr::LoadIndexCache(const char* fname) {
     if(!_global_idx) {
         // FIXME: dup code. & and should reset _global_idx @ each load cache.
         _global_idx = new mm::DictGlobalIndex();
-        _global_idx->Init("com.coreseek.mm.global_idx", "entries:s"); // entries all the dict.
+        _global_idx->Init("com.coreseek.mm.global_idx", "seg:4;dag:4;entries:s"); // entries all the dict.
     }
     // checkfile.
     std::ifstream dfile(fname, std::ios::binary);
@@ -267,7 +267,10 @@ int DictMgr::LoadIndexCache(const char* fname) {
         return -1; //file not found.
     dfile.close();
     // reopen and load.
-    return _global_idx->Load(fname);
+    int nret = _global_idx->Load(fname);
+    if(nret == 0)
+        _global_idx_entry_propidx = _global_idx->GetSchema()->GetColumn("entries")->GetIndex();
+    return nret;
 }
 
 int DictMgr::SaveIndexCache(const char* fname) {
@@ -449,16 +452,18 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
             // build the global index.
             SafeDelete(_global_idx);
             _global_idx = new mm::DictGlobalIndex();
-            _global_idx->Init("com.coreseek.mm.global_idx", "entries:s"); // entries all the dict.
+            // FIXME: use macro | global const define global_idx's schema.
+            _global_idx->Init("com.coreseek.mm.global_idx", "seg:4;dag:4;entries:s"); // entries all the dict.
 
             mm::EntryData* entry = NULL;
+            _global_idx_entry_propidx = _global_idx->GetSchema()->GetColumn("entries")->GetIndex();
             for(keymap::iterator it = keys.begin();
                     it !=  keys.end(); ++it) {
                 entry = _global_idx ->Insert( it->first.c_str(), it->first.length() );
 				//printf("inser key =%s, %d, %p\n", it->first, strlen(it->first), it->first);
                 CHECK_NE(entry, (mm::EntryData*)NULL) << "dup key?";
                 buf_len = encode_entry_in_dict(it->second, entries);
-                entry->SetDataIdx(_global_idx->GetSchema(), _global_idx->GetStringPool(), 0, (const u1*)entries, buf_len);
+                entry->SetDataIdx(_global_idx->GetSchema(), _global_idx->GetStringPool(), _global_idx_entry_propidx, (const u1*)entries, buf_len);
             }
 			_global_idx->BuildIndex();
         }
@@ -605,7 +610,7 @@ int DictMgr::GetMatchByDictionary(const mm::DictMatchEntry* mentry, u2 term_len,
 
 	entry = _global_idx->GetEntryDataByOffset(mentry->match._value);
     const char* sptr = (const char*)entry->GetData( _global_idx->GetSchema(),
-                                                    _global_idx->GetStringPool(), 0, &data_len);
+                                                    _global_idx->GetStringPool(), _global_idx_entry_propidx, &data_len);
     return decode_entry_to_matchentry((const u1*)sptr, data_len, term_len, rs);
 }
 

@@ -28,7 +28,16 @@ if __name__ == "__main__":
         dict_obj.Load(global_idxdict_fname)
         entry_offset = dict_obj.Match(key)
         entries_data = dict_obj.GetString(entry_offset, "entries")
-        print entry_offset, mmseg.decode_global_entries(entries_data, len(key))
+
+        print entries_data
+        if entries_data:
+            print entry_offset, mmseg.decode_global_entries(entries_data, len(key))
+        else:
+            print entry_offset
+        # try set & get dag & seg
+        print dict_obj.GetSchemaDefine()
+        print dict_obj.SetU4(entry_offset, "dag", 1000)
+        print dict_obj.GetU4(entry_offset, "dag")
         #print dict_obj.GetString(entry_offset, "thes")
         #print entry_offset
 

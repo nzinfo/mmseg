@@ -91,6 +91,13 @@ public:
         return _mapper;
     }
 
+    /*
+     * 得到用于检索全局词条的 DictBase* 的指针。
+     */
+    mm::DictGlobalIndex* GetGlobalTermIndex(const char* dict_name){
+        return _global_idx;
+    }
+
     mm::DictBase* GetDictionary(const char* dict_name) const;
     int GetDictionaryID(const char* dict_name) const;
     // 性能并不比 直接用名字好，仅仅是为了检查加载的情况
@@ -153,6 +160,7 @@ protected:
     std::vector<DictTerm*> _special_dictionary;
 
     mm::DictGlobalIndex* _global_idx;
+    int                  _global_idx_entry_propidx; // 保存 entries 的 为位置，因为新增加了两个字段 so...
 
     unordered_map<std::string, mm::DictBase*> _name2dict;
     unordered_map<u2, std::string> _id2name;
