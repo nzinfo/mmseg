@@ -128,7 +128,7 @@ u4 DictSchema::GetSize() {
 	return GetColumnDefine().length() + 2; // with 2 byte save the string's length.
 }
 
-u2 DictSchema::GetEntryDataSize() {
+u2 DictSchema::GetEntryDataSize() const {
     return _data_entry_size;
 }
 

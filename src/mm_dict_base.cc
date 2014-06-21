@@ -236,8 +236,9 @@ int DictBase::Save(const char* fname, u8 rev) {
     if(1)
 	{
 		u1* ptr = (u1*)malloc(header.entry_pool_size);
-		_entry_pool->Dump(ptr, header.entry_pool_size);
+		int entry_write_size = _entry_pool->Dump(ptr, header.entry_pool_size);
 		LOG(INFO) << "write entry pool @"<<file_offset;
+		CHECK_EQ(entry_write_size, header.entry_pool_size) << "entry size mismatch.";
 		nwrite = std::fwrite(ptr, header.entry_pool_size, 1, fp); // entry pool
 		file_offset += header.entry_pool_size;
 		free(ptr);
@@ -330,6 +331,8 @@ int DictBase::Insert(string term) {
 */
 
 u4 DictBase::EntryCount() {
+    if(!_entry_count)
+        return _key2id.size(); //new built.
     return _entry_count;
 }
 
@@ -583,7 +586,7 @@ int DictGlobalIndex::ExactMatch(const char* q, u2 len, mm::DictMatchResult* rs)
         u2 data_len = 0;
         CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
         const char* sptr = (const char*)entry->GetData(GetSchema(),
-                                                       GetStringPool(), 0, &data_len);
+                                                       GetStringPool(), _entry_propidx, &data_len);
         // decode sptr
         return decode_entry_to_matchentry((const u1*)sptr, data_len, len, rs);
     }else
@@ -613,7 +616,7 @@ int DictGlobalIndex::PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs,
             entry = GetEntryDataByOffset(mrs.match._value);
             CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
             const char* sptr = (const char*)entry->GetData(GetSchema(),
-                                                            GetStringPool(), 0, &data_len);
+                                                            GetStringPool(), _entry_propidx, &data_len);
             total_num += decode_entry_to_matchentry((const u1*)sptr, data_len, mrs.match._len, rs);
         }
         return total_num;
@@ -648,7 +651,7 @@ int DictGlobalIndex::PrefixMatch(const u4* q, u2 len, mm::DictMatchResult* rs, b
 			entry = GetEntryDataByOffset(mrs.match._value);
 			CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
 			const char* sptr = (const char*)entry->GetData(GetSchema(),
-															GetStringPool(), 0, &data_len);
+                                                            GetStringPool(), _entry_propidx, &data_len);
 			total_num += decode_entry_to_matchentry((const u1*)sptr, data_len, mrs.match._len, rs);
 		}
 		return total_num;

@@ -101,7 +101,7 @@ const char* StringPoolMemory::GetString(u4 offset, u2* data_length){
      */
     StringPoolMemoryEntry* pool_ptr = _begin;
     while(pool_ptr) {
-        if(offset > pool_ptr->_used ) {
+        if(offset >= pool_ptr->_used ) { //_used 指向的是当前 pool 的最高位未使用的空间。如果 offset 已经指向此处，则当前 pool 必然无数据。
             offset -= pool_ptr->_used;
         } else {
             // meet the actually pool

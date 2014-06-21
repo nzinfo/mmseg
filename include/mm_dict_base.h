@@ -169,9 +169,21 @@ protected:
 // load
 class DictGlobalIndex : public DictBase {
 public:
+    int Load(const char* fname) {
+        int n = DictBase::Load(fname);
+        const DictSchemaColumn* colmn = GetSchema()->GetColumn("entries");
+        if(!colmn)
+            return -10;
+        _entry_propidx = colmn->GetIndex();
+        return n;
+    }
+
     int ExactMatch(const char* q, u2 len, mm::DictMatchResult *rs);
     int PrefixMatch(const u4* q, u2 len, mm::DictMatchResult* rs, bool extend_value = true);
     int PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs, bool extend_value = true);
+
+protected:
+    int _entry_propidx;
 };
 
 u2 decode_entry_to_matchentry(const u1* entries, u2 data_len, u2 term_len, mm::DictMatchResult* rs);

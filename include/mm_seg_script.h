@@ -18,6 +18,7 @@
 
 #include "mm_segpolicy.h"
 #include "mm_api_script.h"
+#include "mm_stringpool.h"
 
 namespace mm {
 
@@ -29,9 +30,36 @@ namespace mm {
  *
  *
  */
+//typedef u1* rule_list; //使用文本形式编码(big utf-8)过的rules
+
+class DictMgr;
+
+
+typedef union prop_v {
+    u2 v_u2;
+    u4 v_u4;
+    u8 v_u8;
+}prop_v;
+
+class SegScriptRule {
+    // 用于存储用户注册的规则
+public:
+    char rule_type; // t=term; d=dict; 2=u2; 4=u4; 8=u8; s=string
+    int  rule_id;
+    u2   dict_id;
+    std::string term;
+    i4          term_entry_offset;
+    int prop_idx;
+    prop_v      v;
+    std::string v_str; // 当 type=s 时，需要读取的值
+    bool in_dag;
+};
+
+typedef std::vector<SegScriptRule> SegScriptRuleList;
+
 class SegScript {
 public:
-    SegScript();
+    SegScript(DictMgr* dict_mgr);
     virtual ~SegScript();
 
 public:
@@ -45,9 +73,35 @@ public:
         return _err_msg;
     }
 
+public: // used @lua side
+    int RegTerm(int rule_id, const char* term, u2 term_len, bool bInDAG);
+    int RegDict(int rule_id, u2 dict_id, bool bInDAG);
+    int RegPropU2(int rule_id, u2 dict_id, const char* prop, u2 v, bool bInDAG);
+    int RegPropU4(int rule_id, u2 dict_id, const char* prop, u4 v, bool bInDAG);
+    int RegPropU8(int rule_id, u2 dict_id, const char* prop, u8 v, bool bInDAG);
+    int RegPropStr(int rule_id, u2 dict_id, const char* prop,
+                           const char* sv, u2 sl, bool bInDAG);
+
+    int BuildRegIndex();
+
+    const char* GetDictionaryName(u2 dict_id) const;
+    const std::string GetDictionaryNames(const char* category) const;
+    int   GetDictionaryID(const char* dict_name) const;
+
 protected:
+    // find is term in global_idx
+
+protected:
+    DictMgr*   _dict_mgr;
     LUAScript* _script;
     std::string _err_msg;
+
+    // 与 script 的 hook 有关，保存激活规则的 RuleID
+    //std::vector<rule_list> _dict_segtag2rulelist; //需要在初始化时，预先 push 一个元素，以避免属性的偏移量是0
+    //std::vector<rule_list> _dict_dagtag2rulelist;
+
+    SegScriptRuleList  _rules;
+    mm::StringPoolMemory _rulehits_pool;    //保存字符串形式的规则的命中， 自动去重。
 
 protected:
     void _KeepAPICode();// 进行API的无实际用途的调用，以保证代码不会被优化掉。

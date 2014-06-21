@@ -94,7 +94,7 @@ public:
     /*
      * 得到用于检索全局词条的 DictBase* 的指针。
      */
-    mm::DictGlobalIndex* GetGlobalTermIndex(const char* dict_name){
+    mm::DictGlobalIndex* GetGlobalTermIndex(){
         return _global_idx;
     }
 

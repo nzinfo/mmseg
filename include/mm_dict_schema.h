@@ -94,7 +94,7 @@ public:
     void SetDefault(const EntryData& entry_default);
     const DictSchemaColumn* GetColumn(const char* column_name) const;
     u4 GetSize();   // 用于持久化, 缺少 Load & Save
-    u2 GetEntryDataSize();  //定义的 EntryData 的最大尺寸, 实际根据定义 应该 u1 即可。
+    u2 GetEntryDataSize() const;  //定义的 EntryData 的最大尺寸, 实际根据定义 应该 u1 即可。
 	u2 GetColumnCount() const {   return _columns.size(); } 
 
 	// if some column missing, @return will >0, the count is the missing columns.

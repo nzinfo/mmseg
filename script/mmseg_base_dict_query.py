@@ -17,13 +17,14 @@ if __name__ == "__main__":
     # check key
     if type(key) == unicode:
         key = key.encode('utf-8')
+        prop = prop.encode('utf-8')
         dict_fname = dict_fname.encode('utf-8')
 
     if True:
         dict_obj = mmseg.BaseDict()
         dict_obj.Load(dict_fname)
         entry_offset = dict_obj.Match(key)
-        print dict_obj.GetString(entry_offset, "thes")
+        print dict_obj.GetString(entry_offset, prop)
         print entry_offset
 
 # -*- end of file -*-

@@ -16,7 +16,7 @@
 
 #include "csr.h"
 #include "mm_api_script.h"
-
+#include "mm_seg_script.h"
 
 //extern "C" {
 /*
@@ -108,19 +108,57 @@ int init_script(LUAScript* ctx, const char* script_fname)
 int init_script_done(LUAScript* ctx)
 {
     ctx->stage = LUASCRIPT_STATUS_EXEC;
+    mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
+    script->BuildRegIndex();
     return 0;
 }
 
+int get_dictionary_names(LUAScript* ctx, const char* category, char* data_ptr, int data_len)
+{
+    mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
+    const std::string& dict_names = script->GetDictionaryNames(category);
+    if(0 <data_len - dict_names.length())
+    {
+        memcpy(data_ptr, dict_names.c_str(), dict_names.length());
+        data_ptr[dict_names.length()] = 0;
+    } else {
+        // insufficent output buffer.
+        memcpy(data_ptr, dict_names.c_str(), data_len);
+        return dict_names.length();
+    }
+    return 0;
+}
+
+int get_dictionary_name(LUAScript* ctx, int dict_id, char* data_ptr, int data_len)
+{
+    mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
+    const char* dict_name = script->GetDictionaryName(dict_id);
+    if(dict_name) {
+       int dict_name_len = strlen(dict_name);
+       if(dict_name_len >= data_len) {
+         memcpy(data_ptr, dict_name, data_len);
+         return dict_name_len;
+       }else {
+         memcpy(data_ptr, dict_name, dict_name_len);
+         data_ptr[dict_name_len] = 0;
+         return 0;
+       }
+    }
+    return -1;  // not such dictionary
+}
+
+
 u2  get_dictionary_id_by_name(LUAScript* ctx, const char* dict_name)
 {
-
-    return 0;
+    mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
+    return script->GetDictionaryID(dict_name);
 }
 
 LUAAPI
 int reg_at_term(LUAScript* ctx, int rule_id, const char* term, u2 term_len, bool bInDAG)
 {
-    return 0;
+    mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
+    return script->RegTerm(rule_id, term, term_len, bInDAG);
 }
 
 /*
@@ -129,7 +167,8 @@ int reg_at_term(LUAScript* ctx, int rule_id, const char* term, u2 term_len, bool
 LUAAPI
 int reg_at_dict(LUAScript* ctx, int rule_id, u2 dict_id, bool bInDAG)
 {
-    return 0;
+    mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
+    return script->RegDict(rule_id, dict_id, bInDAG);
 }
 
 /*
@@ -141,26 +180,30 @@ int reg_at_dict(LUAScript* ctx, int rule_id, u2 dict_id, bool bInDAG)
 LUAAPI
 int reg_at_term_prop_u2(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u2 v, bool bInDAG)
 {
-    return 0;
+    mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
+    return script->RegPropU2(rule_id, dict_id, prop, v, bInDAG);
 }
 
 LUAAPI
 int reg_at_term_prop_u4(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u4 v, bool bInDAG)
 {
-    return 0;
+    mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
+    return script->RegPropU4(rule_id, dict_id, prop, v, bInDAG);
 }
 
 LUAAPI
 int reg_at_term_prop_u8(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u8 v, bool bInDAG)
 {
-    return 0;
+    mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
+    return script->RegPropU8(rule_id, dict_id, prop, v, bInDAG);
 }
 
 LUAAPI
 int reg_at_term_prop_s(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop,
                        const char* sv, u2 sl, bool bInDAG)
 {
-    return 0;
+    mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
+    return script->RegPropStr(rule_id, dict_id, prop, sv, sl, bInDAG);
 }
 
 

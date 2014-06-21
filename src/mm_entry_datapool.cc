@@ -23,7 +23,7 @@ int EntryDataPool::STATUS_INSUFFICIENT_BUFFER = -413;
 EntryData* EntryDataPoolEntry::NewEntry(u4 entry_size)
 {
 	// check is fill
-	if(_used + entry_size < _size) {
+    if(_used + entry_size < _size) {
 		//u1* ptr = (_data_ptr+_used);
 		EntryData* entry_ptr = (mm::EntryData*) &_data_ptr[_used];
 		_used += entry_size;
@@ -54,6 +54,7 @@ int EntryDataPool::Dump(u1* ptr, u4 size)
 {
     /*
      *  此处可以通过写入文件句柄, 但是为了实现简化起见，处理为写入内存。
+	 *  返回，实际写入的字节数。
      */
     if (size < GetSize() )
         return STATUS_INSUFFICIENT_BUFFER;
@@ -65,7 +66,7 @@ int EntryDataPool::Dump(u1* ptr, u4 size)
         current_ptr += pool_ptr->_used;
         pool_ptr = pool_ptr->_next;
     }
-    return STATUS_OK;
+    return current_ptr - ptr;
 }
 
 int EntryDataPool::Load(u1* ptr, u4 size)
@@ -126,7 +127,7 @@ u4 EntryDataPool::NewEntryOffset() {
 EntryData* EntryDataPool::GetEntry(u4 offset) {
     EntryDataPoolEntry* pool_ptr = _begin;
     while(pool_ptr) {
-        if(offset > pool_ptr->_used ) {
+        if(offset >= pool_ptr->_used ) {
             offset -= pool_ptr->_used;
         } else {
             // meet the actually pool

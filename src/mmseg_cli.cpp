@@ -162,16 +162,8 @@ int segment(const char* utf8_file, const char* dict_path, const char* script_pat
 		
         std::string s_dict_path(dict_path);
         mm::DictMgr mgr;
-        mm::SegScript script_mgr;
+        mm::SegScript script_mgr(&mgr);
         std::string s_error;
-        // load script stage, if script execute wrang, no needs load dictionary any more
-        // FIXME: deal with script engine later.
-        int rs = script_mgr.LoadScripts( script_path);
-        if(rs < 0) // the script loaded, if <0, error 
-        {
-			s_error = script_mgr.GetErrorMessage();
-            LOG(ERROR) << "script load error. " <<  s_error;
-        }
 
         if(1)
         {
@@ -192,6 +184,16 @@ int segment(const char* utf8_file, const char* dict_path, const char* script_pat
                 mgr.BuildIndex();
             }
         } // end load dict.
+
+        // 必须先加载完毕词库，才能加载脚本。否则脚本无法查询 | 注册 条件到词库上。
+        // load script stage, if script execute wrang, no needs load dictionary any more
+        // FIXME: deal with script engine later.
+        int rs = script_mgr.LoadScripts( script_path);
+        if(rs < 0) // the script loaded, if <0, error
+        {
+            s_error = script_mgr.GetErrorMessage();
+            LOG(ERROR) << "script load error. " <<  s_error;
+        }
 
         unsigned long srch,str;
         str = currentTimeMillis();

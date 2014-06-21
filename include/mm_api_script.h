@@ -12,6 +12,9 @@
  *
  */
 
+#if !defined(_LUA_SCRIPT_API_H)
+#define _LUA_SCRIPT_API_H
+
 #include <stdio.h>
 #include "csr_typedefs.h"
 
@@ -84,7 +87,7 @@ typedef struct LUAScript
     //u4 balbalba;
     TokenContext* task_ctx; //当前执行的分词上下文。不可以持续绑定到 LUAScript
     char error_msg[LUASCRIPT_ERROR_MESSAGE_LENGTH];       // the errror message of lua script.
-    //LUAScriptCallBackList registed_cb;  // 用于保存 LUA 脚本传递来的回调， 需要 build_cb_index 来构造索引， 一旦构造完成， 就不可以增加新的 cb 了
+    void* seg_script_ptr;
 }LUAScript;
 
 /* 系统初始化有关 */
@@ -104,6 +107,12 @@ int init_script(LUAScript* ctx, const char* script_fname);  // called c side
 LUAAPI
 int init_script_done(LUAScript* ctx);        // 用户脚本已经全部加载完毕。
 
+// 向系统中查询与词典相关的信息
+
+LUAAPI
+int get_dictionary_names(LUAScript* ctx, const char* category, char* data_ptr, int data_len);
+LUAAPI
+int get_dictionary_name(LUAScript* ctx, int dict_id, char* data_ptr, int data_len);
 LUAAPI
 u2 get_dictionary_id_by_name(LUAScript* ctx, const char* dict_name);
 
@@ -209,3 +218,5 @@ int add_annote_u(i2 idx, u2 len, u2 annote_type_id, u8 annote);
 
 
 } // end extern "C"
+
+#endif //_LUA_SCRIPT_API_H
