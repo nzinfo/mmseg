@@ -83,25 +83,13 @@ namespace mm {
  *
  */
 
-typedef union AnnoteEntry {
-	struct {
-        u4 _offset;			//  在标引数据区的偏移量。
-		u2 _len;			//  标引需要的长度
-		u1 _type;			//	标引的类型，一个任务的最多 255 种 不同的标引类型
-		u1 _source;			//  标引的来源， 从那个词典来的 0~31 词典； 31 以上， 由脚本定义
-	} entry;
-	u8 v;
+typedef struct AnnoteEntry {
+    u4 flag_value;          //  flag + type + value|offset_in_stringpool
+    u4 source_next_idx;     //  source + next_element_in_array.
 }AnnoteEntry;				//
 
-class AnnotePool {
-    /*
-     *  存储 Annote 的数据，通过 AnnoteEntry 的 _offset 指向
-     *  类型，长度，数据。类型定义同 dictentry
-     *  当 SegStatus MoveNext 后， AnnotePool 在特定的时间会被清空。
-     */
-public:
-    void Reset() {}
-};
+typedef std::vector<AnnoteEntry> AnnoteEntryList;
+
 
 class Segmentor;
 class SegPolicyMMSeg;
@@ -195,15 +183,13 @@ protected:
     u4 _offset;		// 从起点开始， 现在的偏移量 （目前好像没用到）
 	u4 _size;		// 整个 status 的最大字符容量
 
-    /*
-    unordered_map<u4, AnnoteEntry> _annotes;    // offset -> annote 的表 , 可以被脚本操作。
-    AnnotePool* _annote_pool1;                  // 存储 annote　的数据
-    AnnotePool* _annote_pool2;
-    AnnotePool* _annote_pool_active;  // a pointer of _annote_pool1 | _annote_pool2
-    */
+    AnnoteEntryList _annote_list1;
+    AnnoteEntryList _annote_list2;
+    AnnoteEntryList* _annote_list_active;   //因为要给脚本提供足够的上下文数据支持，需要保留前次的 Annote 的记录
+    mm::StringPoolMemory _annote_pool;
+
 
     mm::SegOptions& _options;
-
 
 protected:
     const char* _text_buffer;

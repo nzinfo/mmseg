@@ -161,7 +161,9 @@ u1 SegStatus::SetTagPush(u4 pos, u1 tag) {
 }
 
 void SegStatus::BuildTermIndex() {
-
+    /*
+     * 因为新的 RuleHit机制， TermIndex 不再重要。可以把需要检索的词，分配一类编号。检查这类编号即可。
+     */
 }
 
 u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
@@ -319,6 +321,24 @@ int SegStatus::Annote(u4 pos, u2 token_len, u2 source_id, const char* prop_name,
 int SegStatus::AnnoteByPropID(u4 pos, u2 token_len, u2 source_id, u2 prop_id,
            const u1* data_ptr, u4 data_len, bool bReplace)
 {
+    /*
+     * Annote 的存储格式；
+     * 8 byte
+     *  - 4 byte 存储 类型 | 偏移量 或 实际的值
+     *  - 4 byte 存储在 Annote 数组中，同一个位置的 Annote 的下一条记录的 idx
+     *
+     * 在存储类型的 1 byte 中，如果最高位的bit 为 1 ，该位置存储的是实际的值（占后续 3byte），而非偏移量
+     *      如最高位 为 0， 则后续的 3byte 为对应 stringpool 的偏移量 (最多 24M， 由于当前的Block长度为 ~ 8K，似乎足够)
+     *
+     * 类型的表示，占用 7个 bit，最多 127； 0 系统保留，用于 Annote 对应位置的 Term 的基本类型 （ 中文［包括日韩］ | 西文 | 数字 |　标点）
+     *
+     * 1 Annote 可以在运行时，由脚本增加，脚本增加的类型，不受 Option 指定的限制，如果该类型不存在，则自动增加
+     * 2 写结果时，只返回 Option 指定的 Annote
+     * 3 系统保留的（全切分等），由系统规则自动增加，不占用类型编号，也不可以被脚本查询
+     * 4 Annote  基本的（AnnoteType=0）Annote，与 DAG 一一对应，可以利用对应的DAG的TermLen信息，得到要标引的文字长度
+     * 5 位置 Offset（低4byte)中最高的1byte，保存Annote的来源，来自词典的，为词典编号；来自脚本的，取其给定值，必须 > 32;
+     *
+     */
     if(0) // debug the annote append.
     {
         u1 buf[128];
