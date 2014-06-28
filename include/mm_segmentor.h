@@ -36,11 +36,11 @@ public:
 	}
 
 	inline UnicodeSegChar* get_seg_char(SegStatus* status) {
-		return status->_icodes;
+		return status->ActiveBlock()->_icodes;
 	}
 
 	inline u4*			   get_icodes(SegStatus* status) {
-		return status->_icode_chars;
+		return status->ActiveBlock()->_icode_chars;
 	}
 
 protected:

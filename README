@@ -87,4 +87,11 @@ Note
 - 如果要使用 字母与汉字 混合， 需要用 charmap 进行大小写转换，否则，查不出词来。
 
 
+Usage
+===============================
+- 启动分词
+    .\bin\{xx}\mmseg -dict_path . -script_path ..\lua  ..\data\test_doc2.txt
+
+
+
 

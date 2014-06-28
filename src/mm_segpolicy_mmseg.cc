@@ -134,6 +134,10 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 	u2	annote_data_len = 0;
 	const char* annote_data_ptr = NULL;
 
+	mm::UnicodeSegChar* _icodes = status.ActiveBlock()->_icodes;
+	u4*  _icode_chars = status.ActiveBlock()->_icode_chars;
+	u4* _icode_matches = status.ActiveBlock()->_icode_matches;
+
 	//for(u4 i = 0;  ; i++ ) 
 	u4 i = 0;
     while(i< status._icode_pos -2 ) //最后 2 个 不是被截断的文字，就是E2E1; 需要回溯到上一个 tagB ， 才能移动数据。
@@ -157,24 +161,24 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
         }
         */
 
-        if(status._icodes[i].tagB == 'S' ) {
-            status._icodes[i].tagSegA = 'S';
+        if(_icodes[i].tagB == 'S' ) {
+            _icodes[i].tagSegA = 'S';
             i++; continue; // 已经被标记为单字的，在 MMSeg 阶段继续保持（在 CRF 阶段则不同，因为需要进行新词发现）
         }
-		if(status._icode_matches[i] == 0) {
+		if(_icode_matches[i] == 0) {
 			// 词库里一条记录都没有的家伙， 单着去。
-			status._icodes[i].tagSegA = 'S';
+			_icodes[i].tagSegA = 'S';
 			i++; continue; 
 		}
 
         // 处理为三层循环，会有额外的计算量。从长到短， 贪心算优化; 晕， 盗梦空间
 		// 也许不节省内存，计算 bigram 更好。取决于 循环执行的速度快还是内存访问的速度快。
-        for(int term1_i = (status._icode_matches[i] - status._icode_matches[i-1]); term1_i >= 0; term1_i--) {
+        for(int term1_i = (_icode_matches[i] - _icode_matches[i-1]); term1_i >= 0; term1_i--) {
 			//term1_i -= 1; //make it as an index
             current_chunk.match_entry = NULL;
             if(term1_i) {
-                pos = status._icode_matches[i-1] + term1_i - 1;  // status._icode_matches[i-1] is the begin position of current char stored.
-                match_entry = status._matches->GetMatch(pos);
+                pos = _icode_matches[i-1] + term1_i - 1;  // status._icode_matches[i-1] is the begin position of current char stored.
+                match_entry = status.ActiveBlock()->_matches->GetMatch(pos);
                 // should never be NULL;
                 i_level2 = i + match_entry->match._len; // advance to i + match_entry->match._len
                 current_chunk.match_entry = match_entry; // 记录对应的 match_entry
@@ -182,6 +186,7 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                 i_level2 = i + 1;
 
             current_chunk.term1_pos = i_level2;
+			//if(match_entry)
             {
                 // 规则：用户自定义词典优先，如果是用户自定义词 ( dict_id != 0 ), 则直接返回
                if(match_entry->match._dict_id)
@@ -191,12 +196,12 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 			if(i_level2 >= status._icode_pos) // 因为 status._icode_pos -2 , 所以，必然存在最后两个字都是单字的路径。
 				continue;
 
-            for(int term2_i = (status._icode_matches[i_level2] - status._icode_matches[i_level2-1]); term2_i >= 0; term2_i--) {
+            for(int term2_i = (_icode_matches[i_level2] - _icode_matches[i_level2-1]); term2_i >= 0; term2_i--) {
 				// 第二层循环
 				//term2_i -= 1; //make it as an index
                 if(term2_i) {
-                    pos = status._icode_matches[i_level2-1] + term2_i - 1;
-                    match_entry2 = status._matches->GetMatch(pos);
+                    pos = _icode_matches[i_level2-1] + term2_i - 1;
+                    match_entry2 = status.ActiveBlock()->_matches->GetMatch(pos);
                     i_level3 = i_level2 + match_entry2->match._len; // advence to term3.
                 }else
                     i_level3 = i_level2 + 1;
@@ -206,11 +211,11 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 				if(i_level3 >= status._icode_pos)
 					continue;
 
-                for(int term3_i = (status._icode_matches[i_level3] - status._icode_matches[i_level3-1]); term3_i >= 0; term3_i--) {
+                for(int term3_i = (_icode_matches[i_level3] - _icode_matches[i_level3-1]); term3_i >= 0; term3_i--) {
 					//term3_i -= 1; //make it as an index
                     if(term3_i) {
-                        pos = status._icode_matches[i_level3-1] + term3_i -1;
-                        match_entry3= status._matches->GetMatch(pos);
+                        pos = _icode_matches[i_level3-1] + term3_i -1;
+                        match_entry3= status.ActiveBlock()->_matches->GetMatch(pos);
                         // check len i_level3 - i + len
                         current_chunk.term3_pos = i_level3 + match_entry3->match._len;
                     }else
@@ -233,9 +238,9 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                         if(abs(avg - min_avg) < 1E-6) {  //应该是  avg == min_avg, 最好不要依赖编译器判断 float 是否相同
                             // R4: 最大自由度
                             if( abs(max_freedom -0) < 1E-6 ) {
-                              max_freedom = best_chunk.free(i, status._icode_chars, _ucs2_freq_log);
+                              max_freedom = best_chunk.free(i, _icode_chars, _ucs2_freq_log);
                             }
-                            float free_score = current_chunk.free(i, status._icode_chars, _ucs2_freq_log);
+                            float free_score = current_chunk.free(i, _icode_chars, _ucs2_freq_log);
 
                             /*
                             printf("chunk %d %d %d, score %f\n", current_chunk.term1_pos,
@@ -262,8 +267,8 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
         if(best_chunk.term1_pos == i+1) {
           int j = i;
           while(0 < status._icode_pos - 2 -j ) {
-              if(status._icodes[j].tagA != _cjk_chartag) {
-                status._icodes[j].tagSegA = status._icodes[j].tagB;
+              if(_icodes[j].tagA != _cjk_chartag) {
+                _icodes[j].tagSegA = _icodes[j].tagB;
                 j++; continue; // 无视不是中文的。
               }
               break;
@@ -273,16 +278,16 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
            *  处理 stem, 与 英文 | 数字有关的其他
            */
           if(j==i)
-            status._icodes[i].tagSegA = 'S';
+            _icodes[i].tagSegA = 'S';
           else
             best_chunk.term1_pos = j;
         }else{
-			status._icodes[i].tagSegA = 'B';
+			_icodes[i].tagSegA = 'B';
 			for(u4 j = i+1; j<best_chunk.term1_pos-1;j++)
 			{
-				status._icodes[j].tagSegA = 'M';
+				_icodes[j].tagSegA = 'M';
 			} // end for
-			status._icodes[best_chunk.term1_pos-1].tagSegA = 'E';
+			_icodes[best_chunk.term1_pos-1].tagSegA = 'E';
 		}// end if 
 
 		if(best_chunk.match_entry)  // 没有 match 也自然不会有 annote

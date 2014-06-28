@@ -20,6 +20,7 @@
 #include "mm_dict_mgr.h"
 #include "mm_dict_term_user.h"
 #include "mm_segpolicy.h"
+#include "mm_stringpool.h"
 
 // A temporary place store token result & intermedia data
 // 
@@ -104,6 +105,42 @@ typedef struct UnicodeSegChar {
     u1 tagSegB;   // 最终的分词结果。 如果最终定下来后，在处理词性标注|NER之前，可以将数据存入 tagA 或 tagB
 }UnicodeSegChar;
 
+class SegStatusSwapBlock {
+   /*
+    * 一个 Status 包括两个 SwapBlock， 用于保障处理分词流时的上下文一致性。
+    * 1 需要传递整个的 Buffer， 以便于 Block 可以自行　Verify 数据的一致性
+    * 2 保存： iMatch Match Annote， 当Status切换时，清除上上个
+    */
+public:
+    SegStatusSwapBlock(int block_size = SEG_STATUS_DEFAULT_BATCH);
+    virtual ~SegStatusSwapBlock();
+
+public:
+    int     SetBuffer(const char* buf, u4 len);     // 此处设置的是整段的 buffer
+    void    Reset();   //清除全部数据， 包括 SetBuffer 的
+    void    SetiCodeEndMarker(u4 icode_last_s_pos) {
+        /*
+         * 设置本区段的最高有效偏移量， 因为部分数据与后续的Block 重复
+         */
+        _icode_last_s_pos = icode_last_s_pos;
+    }
+
+public:
+    mm::DictMatchResult* _matches;    // 从词典中读取到的命中信息， 必须按照长度排序, 对应到当前的 Block
+    mm::UnicodeSegChar*  _icodes;	  // 当前正在处理的上下文， 如果处理完毕， 会更新, 保存 tag 和 实际的 icode
+    u4*             _icode_chars;     // 保存unicode 的原始值 和 tolower 后的值（如果有），用于 prefixmatch.
+    u4*             _icode_matches;   // 按照词的位置，给出都命中了多少词条。 处理为累计，使用 - 得到实际的数量
+    AnnoteEntryList _annote_list;     // 本区块对应的 Annote
+    mm::StringPoolMemory _annote_pool;  // annote 被处理为字符串.. so...
+
+    u4               _icode_last_s_pos; // 保存最后一个有效的 icode 位置
+
+protected:
+    u1*              _matches_data_ptr;  // 实际存 match 大的区域
+    u4               _size;              // 整个 status 的最大字符容量
+
+};
+
 class SegStatus {
 
     // 这里暗示了一个 设计缺陷， 但是我没想好怎么改。
@@ -173,21 +210,36 @@ protected:
     void _DebugMMSegResult();
 
 protected:
-    u1*              _matches_data_ptr;  // 实际存 match 大的区域
-    mm::DictMatchResult* _matches;  // 从词典中读取到的命中信息， 必须按照长度排序
-    mm::UnicodeSegChar*  _icodes;	// 当前正在处理的上下文， 如果处理完毕， 会更新, 保存 tag 和 实际的 icode
-    u4*             _icode_chars; // 保存unicode 的原始值 和 tolower 后的值（如果有），用于 prefixmatch.
-    u4*             _icode_matches; // 按照词的位置，给出都命中了多少词条。 处理为累计，使用 - 得到实际的数量
-    u4 _icode_pos;  // 当前的位置，当切换时...
+    inline SegStatusSwapBlock* ActiveBlock() {
+        return _block_active;
+    }
+
+    inline SegStatusSwapBlock* NextBlock() {
+        if(_block1 == _block_active)
+            return _block2;
+        return _block1;
+    }
+
+    inline void SwapBlock() {
+        if(_block1 == _block_active) {
+            _block2->Reset();
+            _block_active = _block2;
+        }else{
+            _block1->Reset();
+            _block_active = _block1;
+        }
+    }
+
+protected:
+
+    u4 _icode_pos;  // 当前的位置，当切换时会被重置
     u4 _icode_last_s_pos; // 最后一个 根据 unicode script 标注为 S 的字的位置；需要检查如果为0， 则 _icode_last_s_pos == _icode_pos
     u4 _offset;		// 从起点开始， 现在的偏移量 （目前好像没用到）
 	u4 _size;		// 整个 status 的最大字符容量
 
-    AnnoteEntryList _annote_list1;
-    AnnoteEntryList _annote_list2;
-    AnnoteEntryList* _annote_list_active;   //因为要给脚本提供足够的上下文数据支持，需要保留前次的 Annote 的记录
-    mm::StringPoolMemory _annote_pool;
-
+    SegStatusSwapBlock* _block1;
+    SegStatusSwapBlock* _block2;
+    SegStatusSwapBlock* _block_active;
 
     mm::SegOptions& _options;
 

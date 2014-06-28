@@ -21,41 +21,64 @@
 
 namespace mm {
 
-SegStatus::SegStatus(SegOptions &option, u4 size) 
-	:_options(option), _size(size)
+SegStatusSwapBlock::SegStatusSwapBlock(int block_size)
+    :_size(block_size), _icode_last_s_pos(0)
 {
-    u4 size_of_icodes = 2*(_size+4)*sizeof(UnicodeSegChar);
+    u4 size_of_icodes = (_size+4)*sizeof(UnicodeSegChar);   //额外冗余 4 个字符，用于 B1B2 E2E1
     _icodes = (UnicodeSegChar*)malloc(size_of_icodes); // include padding. B1B2; E2E1
     memset(_icodes, 0, size_of_icodes);
-    _icode_chars = (u4*)malloc(2*(_size+4)*sizeof(u4)); // 反正  match 已经开到1M了，这里额外用32K，大丈夫无所谓了。
-    memset(_icode_chars, 0, 2*(_size+4)*sizeof(u4));
-    _icode_matches = (u4*)malloc(2*(_size+4)*sizeof(u4)); // 用于记录在特定位置，都有多少候选词。存在技巧压缩，不折腾了。
-    memset(_icode_matches, 0, 2*(_size+4)*sizeof(u4));
-    _icode_pos = 0;
 
-    u4 size_of_matches = size*sizeof(DictMatchEntry)*32; // 1M, less than one picture.
+    _icode_chars = (u4*)malloc((_size+4)*sizeof(u4)); // 反正  match 已经开到1M了，这里额外用32K，大丈夫无所谓了。
+    memset(_icode_chars, 0, (_size+4)*sizeof(u4));
+    _icode_matches = (u4*)malloc((_size+4)*sizeof(u4)); // 用于记录在特定位置，都有多少候选词。存在技巧压缩，不折腾了。
+    memset(_icode_matches, 0, (_size+4)*sizeof(u4));
+
+    u4 size_of_matches = _size*sizeof(DictMatchEntry)*32; // 1M, less than one picture.
     _matches_data_ptr = (u1*)malloc( size_of_matches );
     memset(_matches_data_ptr, 0, size_of_matches);
-
-    _matches = new DictMatchResult( _matches_data_ptr, size*32 );
-
-    // 初始化 标引池
-    //_annote_pool1 = new AnnotePool();
-    //_annote_pool2 = new AnnotePool();
-    //_annote_pool_active = _annote_pool1;
+    _matches = new DictMatchResult( _matches_data_ptr, _size*32 );
 }
 
-SegStatus::~SegStatus() {
+SegStatusSwapBlock::~SegStatusSwapBlock()
+{
     free(_icodes);
     free(_icode_chars);
     free(_icode_matches);
+
     delete _matches;
     free(_matches_data_ptr);
+}
 
-    //_annote_pool_active = NULL;
-    //delete _annote_pool1;
-    //delete _annote_pool2;
 
+int SegStatusSwapBlock::SetBuffer(const char* buf, u4 len){
+    return 0;
+}
+
+void SegStatusSwapBlock::Reset()
+{
+    u4 size_of_icodes = (_size+4)*sizeof(UnicodeSegChar);
+    memset(_icodes, 0, size_of_icodes);
+    memset(_icode_chars, 0, (_size+4)*sizeof(u4));
+    memset(_icode_matches, 0, (_size+4)*sizeof(u4));
+    _matches->Reset();
+}
+
+SegStatus::SegStatus(SegOptions &option, u4 size) 
+	:_options(option), _size(size)
+{
+
+    _icode_pos = 0;
+
+    // 初始化 blocks
+    _block1 = new SegStatusSwapBlock(size);
+    _block2 = new SegStatusSwapBlock(size);
+    _block_active = _block1;
+}
+
+SegStatus::~SegStatus() {
+    _block_active = NULL;
+    delete _block1;
+    delete _block2;
 }
 
 void SegStatus::Reset() {
@@ -63,36 +86,35 @@ void SegStatus::Reset() {
     _text_buffer_ptr = _text_buffer = NULL;
     _text_buffer_len = 0;
 
-	u4 size_of_icodes = 2*(_size+4)*sizeof(UnicodeSegChar);
-    memset(_icodes, 0, size_of_icodes);
-    memset(_icode_chars, 0, 2*(_size+4)*sizeof(u4));
-    memset(_icode_matches, 0, 2*(_size+4)*sizeof(u4));
+    _block_active = _block1;
+    _block1->Reset();
+    _block2->Reset();
+
     _icode_pos = 0;
     _icode_last_s_pos = 0;
-    _matches->Reset();
 
-    // 处理标引
-    //_annote_pool_active = _annote_pool1;
-    //_annote_pool1->Reset();
-    //_annote_pool2->Reset();
 }
 
 int SegStatus::SetBuffer(const char* buf, u4 len) {
     _text_buffer_ptr = _text_buffer = buf; // 此处不保持对 buffer 的占有
     _text_buffer_len = len;
 
+    _block1->SetBuffer(buf, len);
+    _block2->SetBuffer(buf, len);
+
+
     /*
      * 使用 PUA 区域的 icode  { B1B2 ctx E2E1 }
      */
-    _icodes[_icode_pos].origin_code = SEG_PADING_B1;
-    _icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE; // 127
-    _icodes[_icode_pos].tagB = 'S';
-    _icode_chars[_icode_pos] = SEG_PADING_B1;
+    ActiveBlock()->_icodes[_icode_pos].origin_code = SEG_PADING_B1;
+    ActiveBlock()->_icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE; // 127
+    ActiveBlock()->_icodes[_icode_pos].tagB = 'S';
+    ActiveBlock()->_icode_chars[_icode_pos] = SEG_PADING_B1;
     _icode_pos ++;
-    _icodes[_icode_pos].origin_code = SEG_PADING_B2;
-    _icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
-    _icodes[_icode_pos].tagB = 'S';
-    _icode_chars[_icode_pos] = SEG_PADING_B2;
+    ActiveBlock()->_icodes[_icode_pos].origin_code = SEG_PADING_B2;
+    ActiveBlock()->_icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
+    ActiveBlock()->_icodes[_icode_pos].tagB = 'S';
+    ActiveBlock()->_icode_chars[_icode_pos] = SEG_PADING_B2;
     _icode_pos++;
 
     return 0;
@@ -106,38 +128,35 @@ int SegStatus::MoveNext() {
      * 返回，当前 的 _icode_pos
      *
      */
-    //LOG(INFO) << "MNext " <<  _icode_last_s_pos << "->" << _icode_pos;
+    NextBlock()->Reset();
+
+    LOG(INFO) << "MNext " <<  _icode_last_s_pos << "->" << _icode_pos;
     u4 icode_last_s_pos = _icode_last_s_pos;
     if(!_icode_last_s_pos)
-        icode_last_s_pos = _icode_pos - 50;
+        icode_last_s_pos = _icode_pos - 50; //如果小于 50 ? 则本函数根本不该调用
+    if(_icode_pos - 50 < 0 )
+        return -1; // verify avoid crash.
 
     // move remain char.
     if(icode_last_s_pos != _icode_pos-1) {
-        memmove(_icodes, _icodes+icode_last_s_pos, sizeof(UnicodeSegChar)*(_icode_pos - icode_last_s_pos) );
-        memmove(_icode_chars, _icode_chars+icode_last_s_pos, sizeof(u4)*(_icode_pos - icode_last_s_pos) );
+        memmove(NextBlock()->_icodes, (ActiveBlock()->_icodes) + icode_last_s_pos,
+                sizeof(UnicodeSegChar)*(_icode_pos - icode_last_s_pos) );
+        memmove(NextBlock()->_icode_chars, (ActiveBlock()->_icode_chars) + icode_last_s_pos,
+                sizeof(u4)*(_icode_pos - icode_last_s_pos) );
+        /*
+         *  此处，前后两个 block 存在一部分数据的重合
+         */
+        ActiveBlock()->_icode_last_s_pos = icode_last_s_pos;
+
         // 不需要移动 _icode_matches 因为要重新找。
-        _icode_pos = _icode_pos - icode_last_s_pos;
+        _icode_pos = _icode_pos - icode_last_s_pos; // 新区段的 icode_pos
     }else{
 		_icode_pos = 0;
 	}
-    memset(_icode_matches, 0, 2*(_size+4)*sizeof(u4));
-    _matches->Reset();
-
     icode_last_s_pos = 0;
 
     // 处理 AnnotePool 的轮换; 使用轮换的初衷是不希望在 block 切换时，丢失上下文的标引信息。
-    /*
-    {
-        if(_annote_pool_active == _annote_pool1) {
-            _annote_pool2->Reset();
-            _annote_pool_active = _annote_pool2;
-        }else
-        if(_annote_pool_active == _annote_pool2) {
-            _annote_pool1->Reset();
-            _annote_pool_active = _annote_pool1;
-        }
-    }
-    */
+    SwapBlock();
     return _icode_pos;
 }
 
@@ -194,8 +213,10 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
 
     u2 utf8_icode_len = 0;
 	bool b_decode_error = false;
+    mm::UnicodeSegChar* _icodes = ActiveBlock()->_icodes;
+	u4*  _icode_chars = ActiveBlock()->_icode_chars;
 
-    while( (_icode_pos < _size*2)
+    while( (_icode_pos < _size)
      && (_text_buffer_ptr < _text_buffer + _text_buffer_len)
     ) {
         icode = csr::csrUTF8Decode (
@@ -213,7 +234,7 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
 		// look up via dict_mgr.
         icode_lower = dict_mgr.GetCharMapper()->Transform
                     ( (u4)icode, &icode_tag ); // the fact is only 11 byte of tag, currently we use only 8bit
-		_icodes[_icode_pos].origin_code = icode;
+        _icodes[_icode_pos].origin_code = icode;
         _icodes[_icode_pos].tagA = (u1)icode_tag;  // force case, change here if charmap's tag larger than 8bit.
         // 如果有小写的定义，则使用小写，否则，使用原始值。
         if(icode_lower)
@@ -283,6 +304,7 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_us
      * 2
      *
 	 */
+
 	mm::DictBase* special_dict = NULL;
     if(_options.GetSpecialDictionaryName() != "")
         special_dict = dict_mgr.GetDictionary(_options.GetSpecialDictionaryName().c_str());
@@ -291,13 +313,13 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_us
 	DictMgr& mgr = (DictMgr&)dict_mgr;
     for(u4 i = 0; i < _icode_pos; i++) {
         // 从全局中检索，并不对读取到的值进行扩展 （ 1 不一定需要属性信息，如词频； 2 降低 _matches 的数量（长度相同没必要重复了） ）
-        int rs = mgr.PrefixMatch(_icode_chars + i, _icode_pos - i, _matches, false); // matches will advence
+        int rs = mgr.PrefixMatch(ActiveBlock()->_icode_chars + i, _icode_pos - i, ActiveBlock()->_matches, false); // matches will advence
         if(rs == -1)
             return -1; // should assert too many matches.
         if(i)
-            _icode_matches[i] = rs + _icode_matches[i-1];
+            ActiveBlock()->_icode_matches[i] = rs + ActiveBlock()->_icode_matches[i-1];
         else
-            _icode_matches[i] = rs;
+            ActiveBlock()->_icode_matches[i] = rs;
         //printf("match @ %d, count %d.\n", i, _icode_matches[i]);
         num += rs;
     }
@@ -344,7 +366,7 @@ int SegStatus::AnnoteByPropID(u4 pos, u2 token_len, u2 source_id, u2 prop_id,
         u1 buf[128];
         int n = 0;
         for(u4 i = pos; i< pos+token_len; i++ ){
-            n = csr::csrUTF8Encode(buf, _icode_chars[i]);
+            n = csr::csrUTF8Encode(buf, ActiveBlock()->_icode_chars[i]);
             buf[n] = 0;
             fprintf(stdout, "%s", buf );
         }
@@ -360,10 +382,10 @@ void SegStatus::_DebugCodeConvert()
 	u1 buf[128];
 	int n = 0;
 	for(u4 i = 0; i< _icode_pos; i++ ){
-		n = csr::csrUTF8Encode(buf, _icode_chars[i]);
+        n = csr::csrUTF8Encode(buf, ActiveBlock()->_icode_chars[i]);
 		buf[n] = 0;
-		printf("%s(%lu->%lu) ", buf, _icodes[i].origin_code, _icode_chars[i]);
-        if( _icodes[i].tagB == 'E' || _icodes[i].tagB == 'S' )
+        printf("%s(%lu->%lu) ", buf, ActiveBlock()->_icodes[i].origin_code, ActiveBlock()->_icode_chars[i]);
+        if( ActiveBlock()->_icodes[i].tagB == 'E' || ActiveBlock()->_icodes[i].tagB == 'S' )
         {
             printf("/ ");
         }
@@ -381,12 +403,12 @@ void SegStatus::_DebugDumpDAG()
   int pos = 0;
   const DictMatchEntry* match_entry = NULL;
   for(u4 i = 2; i< _icode_pos; i++ ){
-      n = csr::csrUTF8Encode(buf, _icode_chars[i]);
+      n = csr::csrUTF8Encode(buf, ActiveBlock()->_icode_chars[i]);
       buf[n] = 0;
       fprintf(stdout, "%s ", buf );
       // 因为 B1 B2 不可能出现在词库中，因此此处 i 必然 > 0
-      for(u2 j = 0; j < (u2)(_icode_matches[i] - _icode_matches[i-1] ); j++) {
-          match_entry = _matches->GetMatch(pos);
+      for(u2 j = 0; j < (u2)(ActiveBlock()->_icode_matches[i] - ActiveBlock()->_icode_matches[i-1] ); j++) {
+          match_entry = ActiveBlock()->_matches->GetMatch(pos);
           if(match_entry) {
               fprintf(stdout, "d = %d, c = %d; ", match_entry->match._dict_id, match_entry->match._len );
           }
@@ -407,9 +429,9 @@ void SegStatus::_DebugMMSegResult()
     int pos = 0;
     const DictMatchEntry* match_entry = NULL;
     for(u4 i = 0; i< _icode_pos; i++ ){
-        n = csr::csrUTF8Encode(buf, _icode_chars[i]);
+        n = csr::csrUTF8Encode(buf, ActiveBlock()->_icode_chars[i]);
         buf[n] = 0;
-        printf("%s %c", buf , _icodes[i].tagSegA);
+        printf("%s %c", buf , ActiveBlock()->_icodes[i].tagSegA);
         // 因为 B1 B2 不可能出现在词库中，因此此处 i 必然 > 0
 
         printf("\n");
