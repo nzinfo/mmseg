@@ -37,6 +37,9 @@ SegStatusSwapBlock::SegStatusSwapBlock(int block_size)
     _matches_data_ptr = (u1*)malloc( size_of_matches );
     memset(_matches_data_ptr, 0, size_of_matches);
     _matches = new DictMatchResult( _matches_data_ptr, _size*32 );
+
+    // 初始化 AnnoteList，保留足够大的空间
+    _annote_list.reserve(block_size*3);
 }
 
 SegStatusSwapBlock::~SegStatusSwapBlock()
@@ -305,6 +308,20 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_us
      *
 	 */
 
+    // 确定 CJK 区的 Tag
+    u2 _cjk_chartag = 0;
+    u2 _num_chartag = 0;
+    u2 _ascii_chartag = 0;
+    u2 _sym_chartag = 0;
+    {
+        u2 icode_tag = 0;
+        dict_mgr.GetCharMapper()->Transform( (u4)0x4E2D, &icode_tag );  // Chinese Char `中`
+        _cjk_chartag = icode_tag;
+        dict_mgr.GetCharMapper()->Transform( (u4)'1', &_num_chartag );
+        dict_mgr.GetCharMapper()->Transform( (u4)'A', &_ascii_chartag );
+        dict_mgr.GetCharMapper()->Transform( (u4)',', &_sym_chartag );
+    }
+
 	mm::DictBase* special_dict = NULL;
     if(_options.GetSpecialDictionaryName() != "")
         special_dict = dict_mgr.GetDictionary(_options.GetSpecialDictionaryName().c_str());
@@ -314,13 +331,56 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_us
     for(u4 i = 0; i < _icode_pos; i++) {
         // 从全局中检索，并不对读取到的值进行扩展 （ 1 不一定需要属性信息，如词频； 2 降低 _matches 的数量（长度相同没必要重复了） ）
         int rs = mgr.PrefixMatch(ActiveBlock()->_icode_chars + i, _icode_pos - i, ActiveBlock()->_matches, false); // matches will advence
-        if(rs == -1)
-            return -1; // should assert too many matches.
+        // 不在词库中，需要检查 1 是否是英文； 2 是否是数字； 如果是，额外增加一个 matches
+		/*
+		 * 原本此处在 Policy 部分， 但是因为难以处理 Term 的 类型 的 Annote, 改为在 DAG 部分处理
+		 * 
+		 * 目前，没有处理 字母与数字相连， 字母与符号相连 的情况。此处的规则在 LUA 脚本中处理。
+	     */
+		if(ActiveBlock()->_icodes[i].tagA != _cjk_chartag) {
+			int j = i;
+			DictMatchEntry mrs;
+			while(0 < _icode_pos - 2 -j ) {
+				if( ActiveBlock()->_icodes[j].tagB == 'E'
+					||  ActiveBlock()->_icodes[j].tagB == 'S') {
+						break;
+				}
+				j ++;
+			}
+			mrs.match._dict_id = 0; // system dict & as virtualhit of globalidx
+			mrs.match._len = j - i + 1;
+			mrs.match._value = 0;   // no such entry.
+			ActiveBlock()->_matches->Match(mrs);
+			rs += 1;
+		} // end of if not cjk
+
+		if(rs == -1) {
+          return -1; // should assert too many matches.
+        }
         if(i)
             ActiveBlock()->_icode_matches[i] = rs + ActiveBlock()->_icode_matches[i-1];
         else
             ActiveBlock()->_icode_matches[i] = rs;
-        //printf("match @ %d, count %d.\n", i, _icode_matches[i]);
+        //annote the term. 根据 Term 中 ，第一个字符的类型判断。 如果，term 不在词典中，则...
+        {
+            // c: cjk; a: english & euro lang;  n: number; s: symbol
+            char term_tag = 'c';
+            if(ActiveBlock()->_icodes[i].tagA == _num_chartag)
+                term_tag = 'n';
+            if(ActiveBlock()->_icodes[i].tagA == _ascii_chartag)
+                term_tag = 'a';
+            if(ActiveBlock()->_icodes[i].tagA == _sym_chartag)
+                term_tag = 's';
+            for(int j = 0; j< rs; j++) {
+                if( ActiveBlock()->_matches->GetMatch(i+j)->match._value == 0)
+                    AnnoteTermType(i+j, term_tag); // do not check return value ?
+                else {
+                    // FIXME: 此次应该检查每个字的类型，再进行判断。比如，用户在词库中加入了一个英文单词。
+                    // 或者，把Term的类型，作为一个属性？
+                    AnnoteTermType(i+j, 'c');  // in dict, always CJK Term.
+                }
+            }
+        }
         num += rs;
     }
     return num;
@@ -350,7 +410,7 @@ int SegStatus::AnnoteByPropID(u4 pos, u2 token_len, u2 source_id, u2 prop_id,
      *  - 4 byte 存储在 Annote 数组中，同一个位置的 Annote 的下一条记录的 idx
      *
      * 在存储类型的 1 byte 中，如果最高位的bit 为 1 ，该位置存储的是实际的值（占后续 3byte），而非偏移量
-     *      如最高位 为 0， 则后续的 3byte 为对应 stringpool 的偏移量 (最多 24M， 由于当前的Block长度为 ~ 8K，似乎足够)
+     *      如最高位 为 0， 则后续的 3byte 为对应 stringpool 的偏移量 (最多 24M， 由于当前的Block长度为 ~ 4K，似乎足够)
      *
      * 类型的表示，占用 7个 bit，最多 127； 0 系统保留，用于 Annote 对应位置的 Term 的基本类型 （ 中文［包括日韩］ | 西文 | 数字 |　标点）
      *
@@ -360,7 +420,12 @@ int SegStatus::AnnoteByPropID(u4 pos, u2 token_len, u2 source_id, u2 prop_id,
      * 4 Annote  基本的（AnnoteType=0）Annote，与 DAG 一一对应，可以利用对应的DAG的TermLen信息，得到要标引的文字长度
      * 5 位置 Offset（低4byte)中最高的1byte，保存Annote的来源，来自词典的，为词典编号；来自脚本的，取其给定值，必须 > 32;
      *
+     * ------------------------------------
+     *
+     * 当需要合词， 如 识别 电子邮件 | 网址 ， 则复用第一个 Term 的记录位置，修改其长度和 value. (因为是合词，value==0)
+     * 或者，可以不合词，改为 清空 Annote
      */
+
     if(0) // debug the annote append.
     {
         u1 buf[128];
@@ -371,6 +436,29 @@ int SegStatus::AnnoteByPropID(u4 pos, u2 token_len, u2 source_id, u2 prop_id,
             fprintf(stdout, "%s", buf );
         }
         printf(" annote at %d: key=%s; v= %.*s \n", pos, GetOption().GetAnnoteName(prop_id), data_len, data_ptr);
+    }
+    return 0;
+}
+
+int SegStatus::AnnoteTermType(u4 dag_pos, char term_type)
+{
+    /*
+     *  按照 _matches 的情况，对 DAG 中的 Term 节点进行类型标引：
+     *  - CJK                c
+     *  - 西方文字            a
+     *  - 符号               s
+     *  - 数字 （阿拉伯数字）  n
+     */
+    /*
+     * 1 检查 AnnoteList 的大小是否够
+     */
+    if( ActiveBlock()->_annote_list.size() - dag_pos < 0) {
+        ActiveBlock()->_annote_list.resize(dag_pos + 8); // 额外增加 8 个 element，一般用不到
+        // 构造实际的标引
+        AnnoteEntry entry;
+        entry.flag_value = (1<<31) | (term_type) ;  // annote_type == 0, 系统保留用于  TermType
+        entry.source_next_idx = 0; // 既不是来自词典，也不是来自脚本。 并且 TermType 处理的时刻， 也不存在同一位置后续的 Annote
+        ActiveBlock()->_annote_list[dag_pos] = entry;
     }
     return 0;
 }

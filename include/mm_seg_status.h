@@ -126,18 +126,18 @@ public:
     }
 
 public:
-    mm::DictMatchResult* _matches;    // 从词典中读取到的命中信息， 必须按照长度排序, 对应到当前的 Block
-    mm::UnicodeSegChar*  _icodes;	  // 当前正在处理的上下文， 如果处理完毕， 会更新, 保存 tag 和 实际的 icode
-    u4*             _icode_chars;     // 保存unicode 的原始值 和 tolower 后的值（如果有），用于 prefixmatch.
-    u4*             _icode_matches;   // 按照词的位置，给出都命中了多少词条。 处理为累计，使用 - 得到实际的数量
-    AnnoteEntryList _annote_list;     // 本区块对应的 Annote
-    mm::StringPoolMemory _annote_pool;  // annote 被处理为字符串.. so...
+    mm::DictMatchResult* _matches;          // 从词典中读取到的命中信息， 必须按照长度排序, 对应到当前的 Block
+    mm::UnicodeSegChar*  _icodes;           // 当前正在处理的上下文， 如果处理完毕， 会更新, 保存 tag 和 实际的 icode
+    u4*             _icode_chars;           // 保存unicode 的原始值 和 tolower 后的值（如果有），用于 prefixmatch.
+    u4*             _icode_matches;         // 按照词的位置，给出都命中了多少词条。 处理为累计，使用 - 得到实际的数量
+    AnnoteEntryList _annote_list;           // 本区块对应的 Annote
+    mm::StringPoolMemory _annote_pool;      // annote 被处理为字符串.. so...
 
-    u4               _icode_last_s_pos; // 保存最后一个有效的 icode 位置
+    u4               _icode_last_s_pos;     // 保存最后一个有效的 icode 位置
 
 protected:
-    u1*              _matches_data_ptr;  // 实际存 match 大的区域
-    u4               _size;              // 整个 status 的最大字符容量
+    u1*              _matches_data_ptr;     // 实际存 match 大的区域
+    u4               _size;                 // 整个 status 的最大字符容量
 
 };
 
@@ -195,6 +195,8 @@ public:
 
     int AnnoteByPropID(u4 pos, u2 token_len, u2 source_id, u2 prop_id,
                const u1* data_ptr, u4 data_len, bool bReplace = false);
+
+    int AnnoteTermType(u4 dag_pos, char term_type);
 
 protected:
     // Segmenter's Intractive functions.

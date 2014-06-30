@@ -265,6 +265,7 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
         // check is a mixterm
 
         if(best_chunk.term1_pos == i+1) {
+#if 0
           int j = i;
           while(0 < status._icode_pos - 2 -j ) {
               if(_icodes[j].tagA != _cjk_chartag) {
@@ -281,6 +282,8 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
             _icodes[i].tagSegA = 'S';
           else
             best_chunk.term1_pos = j;
+#endif
+          _icodes[i].tagSegA = 'S';
         }else{
 			_icodes[i].tagSegA = 'B';
 			for(u4 j = i+1; j<best_chunk.term1_pos-1;j++)
@@ -290,7 +293,7 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 			_icodes[best_chunk.term1_pos-1].tagSegA = 'E';
 		}// end if 
 
-		if(best_chunk.match_entry)  // 没有 match 也自然不会有 annote
+        if(best_chunk.match_entry)  // 没有 match 也自然不会有 annote; 但是不影响在 DAG 上注册的 LUA Script Rule
 		{
 			 /*
              *  Annote:
