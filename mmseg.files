@@ -69,3 +69,4 @@ binding/mmseg.i
 src/CMakeLists.txt
 CMakeLists.txt
 build_dicts.bat
+design/script_interface.txt

@@ -42,17 +42,19 @@ typedef union prop_v {
 }prop_v;
 
 class SegScriptRule {
+
     // 用于存储用户注册的规则
 public:
-    char rule_type; // t=term; d=dict; 2=u2; 4=u4; 8=u8; s=string
-    int  rule_id;
-    u2   dict_id;
+    char        rule_type; // t=term; d=dict; 2=u2; 4=u4; 8=u8; s=string
+    int         rule_id;
+    int         script_id;
+    u2          dict_id;
     std::string term;
     i4          term_entry_offset;
-    int prop_idx;
+    int         prop_idx;
     prop_v      v;
     std::string v_str; // 当 type=s 时，需要读取的值
-    bool in_dag;
+    bool        in_dag;
 };
 
 typedef std::vector<SegScriptRule> SegScriptRuleList;
@@ -74,12 +76,12 @@ public:
     }
 
 public: // used @lua side
-    int RegTerm(int rule_id, const char* term, u2 term_len, bool bInDAG);
-    int RegDict(int rule_id, u2 dict_id, bool bInDAG);
-    int RegPropU2(int rule_id, u2 dict_id, const char* prop, u2 v, bool bInDAG);
-    int RegPropU4(int rule_id, u2 dict_id, const char* prop, u4 v, bool bInDAG);
-    int RegPropU8(int rule_id, u2 dict_id, const char* prop, u8 v, bool bInDAG);
-    int RegPropStr(int rule_id, u2 dict_id, const char* prop,
+    int RegTerm(int rule_id, int script_id, const char* term, u2 term_len, bool bInDAG);
+    int RegDict(int rule_id, int script_id, u2 dict_id, bool bInDAG);
+    int RegPropU2(int rule_id, int script_id, u2 dict_id, const char* prop, u2 v, bool bInDAG);
+    int RegPropU4(int rule_id, int script_id, u2 dict_id, const char* prop, u4 v, bool bInDAG);
+    int RegPropU8(int rule_id, int script_id, u2 dict_id, const char* prop, u8 v, bool bInDAG);
+    int RegPropStr(int rule_id, int script_id, u2 dict_id, const char* prop,
                            const char* sv, u2 sl, bool bInDAG);
 
     int BuildRegIndex();

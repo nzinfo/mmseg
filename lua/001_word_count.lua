@@ -33,7 +33,7 @@ ffi.cdef[[
 ]]
 
 function mm_init( ctx )
-	-- print ("in mm_init")
+	-- print ("in mm_init word count")
 	local C = ffi.C
 	local name_buf = ffi.new("char[?]", 4096)
 	-- local mmseg_api = ffi.load("_mmseg.pyd")

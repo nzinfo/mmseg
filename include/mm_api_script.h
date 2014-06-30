@@ -84,7 +84,7 @@ typedef struct LUAScript
 {
     u1 stage;          // 加载脚本 | 加载完成
     lua_State *L;
-    //u4 balbalba;
+    int script_id;      // 用于判断当前执行的那个脚本。 0 表示系统初始化完成，处于数据处理阶段
     TokenContext* task_ctx; //当前执行的分词上下文。不可以持续绑定到 LUAScript
     char error_msg[LUASCRIPT_ERROR_MESSAGE_LENGTH];       // the errror message of lua script.
     void* seg_script_ptr;
@@ -102,7 +102,7 @@ int lua_script_clear(LUAScript* ctx);
  * 从文件中加载脚本
  */
 LUAAPI
-int init_script(LUAScript* ctx, const char* script_fname);  // called c side
+int init_script(LUAScript* ctx, int script_id, const char* script_fname);  // called c side
 
 LUAAPI
 int init_script_done(LUAScript* ctx);        // 用户脚本已经全部加载完毕。

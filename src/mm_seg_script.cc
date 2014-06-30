@@ -56,6 +56,7 @@ int SegScript::LoadScripts(const std::string script_path)
     // load each
     int rs = 0;
 	std::string script_fname;
+    int script_id = 0;
     for(std::vector<std::string>::iterator it = lua_scripts.begin();
          it != lua_scripts.end(); ++it) {
 #ifndef WIN32
@@ -63,19 +64,20 @@ int SegScript::LoadScripts(const std::string script_path)
 #else
 			 script_fname = pystring::os::path::join_nt(script_path, *it);
 #endif // !WIN32
-        rs = init_script(_script,  script_fname.c_str());  //FIXME: how to report error ?
+        rs = init_script(_script,  script_id, script_fname.c_str());  //FIXME: how to report error ?
         if(rs < 0) {
             // FIXME: addtional error from _script
             _err_msg = "error execute " + *it + _script->error_msg;
             return rs;
         }
         LOG(INFO) << "load script " << *it;
+        script_id ++;
     }
 	init_script_done(_script);
     return nfiles;
 }
 
-int SegScript::RegTerm(int rule_id, const char* term, u2 term_len, bool bInDAG)
+int SegScript::RegTerm(int rule_id, int script_id, const char* term, u2 term_len, bool bInDAG)
 {
     if(rule_id == 0) return -1; // 0 is string's end marker, will make encode/decode puzzle
     /*
@@ -91,6 +93,7 @@ int SegScript::RegTerm(int rule_id, const char* term, u2 term_len, bool bInDAG)
         return -1; // term not found.
 
     SegScriptRule rule;
+    rule.script_id = script_id;
     rule.dict_id = 0;
     rule.in_dag = bInDAG;
     rule.rule_id = rule_id;
@@ -101,7 +104,7 @@ int SegScript::RegTerm(int rule_id, const char* term, u2 term_len, bool bInDAG)
     return 0;
 }
 
-int SegScript::RegDict(int rule_id, u2 dict_id, bool bInDAG){
+int SegScript::RegDict(int rule_id, int script_id, u2 dict_id, bool bInDAG){
     /*
      *  add to each item in dict ?
      *  1 check dic_id exist
@@ -109,6 +112,7 @@ int SegScript::RegDict(int rule_id, u2 dict_id, bool bInDAG){
      */
     if(rule_id == 0) return -1;
     SegScriptRule rule;
+    rule.script_id = script_id;
     rule.dict_id = dict_id;
     rule.in_dag = bInDAG;
     rule.rule_id = rule_id;
@@ -118,7 +122,7 @@ int SegScript::RegDict(int rule_id, u2 dict_id, bool bInDAG){
     return 0;
 }
 
-int SegScript::RegPropU2(int rule_id, u2 dict_id, const char* prop, u2 v, bool bInDAG)
+int SegScript::RegPropU2(int rule_id, int script_id, u2 dict_id, const char* prop, u2 v, bool bInDAG)
 {
     /*
      * add to each item meet require props?
@@ -140,6 +144,7 @@ int SegScript::RegPropU2(int rule_id, u2 dict_id, const char* prop, u2 v, bool b
     if(colmn->GetType()!= '2')  return -4; //column type mismatch.
 
     SegScriptRule rule;
+    rule.script_id = script_id;
     rule.dict_id = dict_id;
     rule.in_dag = bInDAG;
     rule.rule_id = rule_id;
@@ -151,7 +156,7 @@ int SegScript::RegPropU2(int rule_id, u2 dict_id, const char* prop, u2 v, bool b
     return 0;
 }
 
-int SegScript::RegPropU4(int rule_id, u2 dict_id, const char* prop, u4 v, bool bInDAG)
+int SegScript::RegPropU4(int rule_id, int script_id, u2 dict_id, const char* prop, u4 v, bool bInDAG)
 {
     if(rule_id == 0) return -1;
     mm::DictBase* dict_ptr = _dict_mgr->GetDictionary(dict_id);
@@ -161,6 +166,7 @@ int SegScript::RegPropU4(int rule_id, u2 dict_id, const char* prop, u4 v, bool b
     if(colmn->GetType()!= '4')  return -4; //column type mismatch.
 
     SegScriptRule rule;
+    rule.script_id = script_id;
     rule.dict_id = dict_id;
     rule.in_dag = bInDAG;
     rule.rule_id = rule_id;
@@ -172,7 +178,7 @@ int SegScript::RegPropU4(int rule_id, u2 dict_id, const char* prop, u4 v, bool b
     return 0;
 }
 
-int SegScript::RegPropU8(int rule_id, u2 dict_id, const char* prop, u8 v, bool bInDAG)
+int SegScript::RegPropU8(int rule_id, int script_id, u2 dict_id, const char* prop, u8 v, bool bInDAG)
 {
     if(rule_id == 0) return -1;
     mm::DictBase* dict_ptr = _dict_mgr->GetDictionary(dict_id);
@@ -182,6 +188,7 @@ int SegScript::RegPropU8(int rule_id, u2 dict_id, const char* prop, u8 v, bool b
     if(colmn->GetType()!= '8')  return -4; //column type mismatch.
 
     SegScriptRule rule;
+    rule.script_id = script_id;
     rule.dict_id = dict_id;
     rule.in_dag = bInDAG;
     rule.rule_id = rule_id;
@@ -193,7 +200,7 @@ int SegScript::RegPropU8(int rule_id, u2 dict_id, const char* prop, u8 v, bool b
     return 0;
 }
 
-int SegScript::RegPropStr(int rule_id, u2 dict_id, const char* prop,
+int SegScript::RegPropStr(int rule_id, int script_id, u2 dict_id, const char* prop,
                        const char* sv, u2 sl, bool bInDAG)
 {
     if(rule_id == 0) return -1;
@@ -204,6 +211,7 @@ int SegScript::RegPropStr(int rule_id, u2 dict_id, const char* prop,
     if(colmn->GetType()!= 's')  return -4; //column type mismatch.
 
     SegScriptRule rule;
+    rule.script_id = script_id;
     rule.dict_id = dict_id;
     rule.in_dag = bInDAG;
     rule.rule_id = rule_id;

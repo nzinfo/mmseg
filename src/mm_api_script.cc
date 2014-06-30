@@ -51,11 +51,12 @@ int lua_script_clear(LUAScript* ctx)
  *  -2 脚本本身执行出错
  *  -3 脚本的注册函数执行错误
  */
-int init_script(LUAScript* ctx, const char* script_fname)
+int init_script(LUAScript* ctx, int script_id, const char* script_fname)
 {
     if(ctx->stage != LUASCRIPT_STATUS_INIT)
         return -10; // 初始化已经完成，不可以再继续加载了。
 
+    ctx->script_id = script_id;
     lua_State *L = ctx->L;
 
     int status = luaL_loadfile(L, script_fname);
@@ -102,6 +103,7 @@ int init_script(LUAScript* ctx, const char* script_fname)
         //printf("get function 'f' result=%f\n", z);
     }
 
+    ctx->script_id = 0;
     return 0;
 }
 
@@ -110,6 +112,7 @@ int init_script_done(LUAScript* ctx)
     ctx->stage = LUASCRIPT_STATUS_EXEC;
     mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
     script->BuildRegIndex();
+    ctx->script_id = 0;
     return 0;
 }
 
@@ -158,7 +161,7 @@ LUAAPI
 int reg_at_term(LUAScript* ctx, int rule_id, const char* term, u2 term_len, bool bInDAG)
 {
     mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
-    return script->RegTerm(rule_id, term, term_len, bInDAG);
+    return script->RegTerm(rule_id, ctx->script_id, term, term_len, bInDAG);
 }
 
 /*
@@ -168,7 +171,7 @@ LUAAPI
 int reg_at_dict(LUAScript* ctx, int rule_id, u2 dict_id, bool bInDAG)
 {
     mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
-    return script->RegDict(rule_id, dict_id, bInDAG);
+    return script->RegDict(rule_id, ctx->script_id, dict_id, bInDAG);
 }
 
 /*
@@ -181,21 +184,21 @@ LUAAPI
 int reg_at_term_prop_u2(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u2 v, bool bInDAG)
 {
     mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
-    return script->RegPropU2(rule_id, dict_id, prop, v, bInDAG);
+    return script->RegPropU2(rule_id, ctx->script_id, dict_id, prop, v, bInDAG);
 }
 
 LUAAPI
 int reg_at_term_prop_u4(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u4 v, bool bInDAG)
 {
     mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
-    return script->RegPropU4(rule_id, dict_id, prop, v, bInDAG);
+    return script->RegPropU4(rule_id, ctx->script_id, dict_id, prop, v, bInDAG);
 }
 
 LUAAPI
 int reg_at_term_prop_u8(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u8 v, bool bInDAG)
 {
     mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
-    return script->RegPropU8(rule_id, dict_id, prop, v, bInDAG);
+    return script->RegPropU8(rule_id, ctx->script_id, dict_id, prop, v, bInDAG);
 }
 
 LUAAPI
@@ -203,7 +206,7 @@ int reg_at_term_prop_s(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop
                        const char* sv, u2 sl, bool bInDAG)
 {
     mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
-    return script->RegPropStr(rule_id, dict_id, prop, sv, sl, bInDAG);
+    return script->RegPropStr(rule_id, ctx->script_id, dict_id, prop, sv, sl, bInDAG);
 }
 
 
