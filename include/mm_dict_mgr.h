@@ -112,11 +112,11 @@ public:
     int VerifyIndex();
 
     // 重新加载词典
-	int Reload();
-	void UnloadAll();
+    int Reload();
+    void UnloadAll();
 
-	// As we have many dictionary, each diction might contain same term.
-	// Even a single term might case multi hit-entry, so we needs MatchResult here.
+    // As we have many dictionary, each diction might contain same term.
+    // Even a single term might case multi hit-entry, so we needs MatchResult here.
     /*
      * 此处返回的并不是实际的 Match 结果，
      * Segmentor 仍然需要根据 User > Sepcial 填充 DictMatchResult
@@ -124,7 +124,7 @@ public:
     int ExactMatch(const char* q, u2 len, mm::DictMatchResult* rs);
     int PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs);
 
-	int ExactMatch(u4* q, u2 len, mm::DictMatchResult* rs);
+    int ExactMatch(u4* q, u2 len, mm::DictMatchResult* rs);
     int PrefixMatch(u4* q, u2 len, mm::DictMatchResult* rs, bool extend_value=true);
 
     int GetMatchByDictionary(const mm::DictMatchEntry* entry, u2 term_len, mm::DictMatchResult* rs) const;

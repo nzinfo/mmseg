@@ -58,8 +58,8 @@ DictBase::DictBase() {
     _dict_id     = 0;
     _darts_idx   = NULL;
     _cedar_idx   = NULL;
-	_string_pool = NULL;
-	_entry_pool = NULL;
+    _string_pool = NULL;
+    _entry_pool = NULL;
 
     _entry_string2offset = NULL;
     Reset();
@@ -87,9 +87,9 @@ int DictBase::Load(const char* fname) {
 
     Reset();
 
-	// init idx
-	if(_darts_idx == NULL)
-		_darts_idx = new DartsDoubleArray();
+    // init idx
+    if(_darts_idx == NULL)
+        _darts_idx = new DartsDoubleArray();
 
     // read header
     mmseg_dict_file_header header;
@@ -103,13 +103,13 @@ int DictBase::Load(const char* fname) {
 int DictBase::Load_201200(std::FILE *fp, const mmseg_dict_file_header* header) {
     // FIXME: should check each read amount.
     u4 file_offset = sizeof(mmseg_dict_file_header);
-	u4 nwrite = 0;
-	// load schema
+    u4 nwrite = 0;
+    // load schema
     {
         char schema[4096];
-		LOG(INFO) << "read schema @"<<file_offset;
+        LOG(INFO) << "read schema @"<<file_offset;
         nwrite = std::fread(schema, header->schema_size, 1, fp);
-		file_offset += nwrite * header->schema_size;
+        file_offset += nwrite * header->schema_size;
         schema[header->schema_size] = 0;
         _schema.InitString(schema);
 
@@ -118,20 +118,20 @@ int DictBase::Load_201200(std::FILE *fp, const mmseg_dict_file_header* header) {
     // load string pool
     {
         u1* ptr = (u1*)malloc(header->string_pool_size);
-		LOG(INFO) << "read string pool @"<<file_offset;
+        LOG(INFO) << "read string pool @"<<file_offset;
         nwrite = std::fread(ptr, header->string_pool_size, 1, fp);
-		file_offset += nwrite * header->string_pool_size;
+        file_offset += nwrite * header->string_pool_size;
         _string_pool->Load(ptr, header->string_pool_size); // the ptr's owner ship pass to string_pool , so no free here.
     }
     // load entry pool
     {
-		// init entry pool
-		if(_entry_pool == NULL)
-			_entry_pool = new EntryDataPool(_schema.GetEntryDataSize()); 
+        // init entry pool
+        if(_entry_pool == NULL)
+            _entry_pool = new EntryDataPool(_schema.GetEntryDataSize()); 
         u1* ptr = (u1*)malloc(header->entry_pool_size);
-		LOG(INFO) << "entry pool @"<<file_offset;
+        LOG(INFO) << "entry pool @"<<file_offset;
         nwrite = std::fread(ptr, header->entry_pool_size, 1, fp);
-		file_offset += nwrite * header->entry_pool_size;
+        file_offset += nwrite * header->entry_pool_size;
         _entry_pool->Load(ptr, header->entry_pool_size);
         _entry_count = header->entry_count;
     }
@@ -140,21 +140,21 @@ int DictBase::Load_201200(std::FILE *fp, const mmseg_dict_file_header* header) {
     {
         _entry_string2offset = (u4*) malloc(header->key_pair_size);
         // these data will be used when support in dict update.
-		LOG(INFO) << "read(seek) idmap @"<<file_offset;
+        LOG(INFO) << "read(seek) idmap @"<<file_offset;
         nwrite = std::fread(_entry_string2offset, header->key_pair_size, 1, fp);
         //std::fseek(fp, header->key_pair_size, SEEK_CUR);
-		file_offset += header->key_pair_size;
+        file_offset += header->key_pair_size;
     }
     // load darts
     if(header->flags & DICT_FLAG_IDX_DARTS)  //FIXME: how too load cedar ?
     {
-		// reset idx
-		_darts_idx->clear();
+        // reset idx
+        _darts_idx->clear();
 
         u1* ptr = (u1*)malloc(header->index_size);
-		LOG(INFO) << "read darts @"<<file_offset;
+        LOG(INFO) << "read darts @"<<file_offset;
         nwrite = std::fread(ptr, header->index_size, 1, fp);
-		file_offset += header->index_size;
+        file_offset += header->index_size;
         _darts_idx->set_array(ptr, header->index_size);
     }
     return 0;
@@ -165,9 +165,9 @@ int DictBase::Save(const char* fname, u8 rev) {
     u4 nwrite = 0;
 
     _reversion = rev;
-	// check entry_pool
-	if(_entry_pool == NULL) 
-		return -1; // no item
+    // check entry_pool
+    if(_entry_pool == NULL) 
+        return -1; // no item
     mmseg_dict_file_header header;
     memcpy(header.mg, basedict_head_mgc, 4);
     header.version = DICT_VERSION;
@@ -211,7 +211,7 @@ int DictBase::Save(const char* fname, u8 rev) {
 #if USE_CEDAR
         assert(0); // givme cedar index!!!
 #else
-		header.index_size = _darts_idx->size() * _darts_idx->unit_size();
+        header.index_size = _darts_idx->size() * _darts_idx->unit_size();
 #endif
     }
     header.key_pair_size = 0;
@@ -221,34 +221,34 @@ int DictBase::Save(const char* fname, u8 rev) {
     LOG(INFO) << "build entry index done";
     // write ...
     nwrite = std::fwrite(&header, sizeof(header), 1, fp); //header
-	file_offset += sizeof(header);
-	LOG(INFO) << "write schema @"<<file_offset;
+    file_offset += sizeof(header);
+    LOG(INFO) << "write schema @"<<file_offset;
     nwrite = std::fwrite(schema_str.c_str(), sizeof(char), schema_str.length(), fp); // scheam
-	file_offset += sizeof(char)*schema_str.length();
-	{
-		u1* ptr = (u1*)malloc(header.string_pool_size);
-		_string_pool->Dump(ptr, header.string_pool_size);
-		LOG(INFO) << "write string pool @"<<file_offset;
-		nwrite = std::fwrite(ptr, header.string_pool_size, 1, fp); // string pool
-		file_offset += header.string_pool_size;
-		free(ptr);
-	}
+    file_offset += sizeof(char)*schema_str.length();
+    {
+        u1* ptr = (u1*)malloc(header.string_pool_size);
+        _string_pool->Dump(ptr, header.string_pool_size);
+        LOG(INFO) << "write string pool @"<<file_offset;
+        nwrite = std::fwrite(ptr, header.string_pool_size, 1, fp); // string pool
+        file_offset += header.string_pool_size;
+        free(ptr);
+    }
     if(1)
-	{
-		u1* ptr = (u1*)malloc(header.entry_pool_size);
-		int entry_write_size = _entry_pool->Dump(ptr, header.entry_pool_size);
-		LOG(INFO) << "write entry pool @"<<file_offset;
-		CHECK_EQ(entry_write_size, header.entry_pool_size) << "entry size mismatch.";
-		nwrite = std::fwrite(ptr, header.entry_pool_size, 1, fp); // entry pool
-		file_offset += header.entry_pool_size;
-		free(ptr);
-	}
+    {
+        u1* ptr = (u1*)malloc(header.entry_pool_size);
+        int entry_write_size = _entry_pool->Dump(ptr, header.entry_pool_size);
+        LOG(INFO) << "write entry pool @"<<file_offset;
+        CHECK_EQ(entry_write_size, header.entry_pool_size) << "entry size mismatch.";
+        nwrite = std::fwrite(ptr, header.entry_pool_size, 1, fp); // entry pool
+        file_offset += header.entry_pool_size;
+        free(ptr);
+    }
 
-	if(header.flags & DICT_FLAG_IDX_DARTS)
-	{
+    if(header.flags & DICT_FLAG_IDX_DARTS)
+    {
         // build darts's only string offset, id's mapping.
         // string offset -> id , unsort order, coder(me) is lazy...
-		LOG(INFO) << "write idmap @"<<file_offset;
+        LOG(INFO) << "write idmap @"<<file_offset;
         for(unordered_map<std::string, u4>::iterator it = _key2id.begin();
                 it !=  _key2id.end(); ++it) {
             // use a string_pool's feature, each unique string exist only one copy.
@@ -258,14 +258,14 @@ int DictBase::Save(const char* fname, u8 rev) {
             u4 entry_offset = _id2entryoffset[it->second];
             std::fwrite(&entry_offset, sizeof(u4), 1, fp);
         }// end for
-		file_offset += header.key_pair_size;
-	}
+        file_offset += header.key_pair_size;
+    }
     // the darts part, in prev version (inner version) of mmseg, there is no dart
     if(header.flags & DICT_FLAG_IDX_DARTS)
     {
-		LOG(INFO) << "write darts @"<<file_offset;
+        LOG(INFO) << "write darts @"<<file_offset;
         nwrite = std::fwrite(_darts_idx->array(), _darts_idx->unit_size(), _darts_idx->size(), fp);
-		file_offset += _darts_idx->size();
+        file_offset += _darts_idx->size();
     }
     std::fclose(fp);
     LOG(INFO) << "save dictionary done " << fname;
@@ -283,7 +283,7 @@ const char* DictBase::GetDiskEntryByIndex(u4 idx, u2* key_len, u4* entry_offset)
         // a verify.
         //i4 query_entry_offset = this->ExactMatch(key, *key_len);
         //CHECK_EQ(*entry_offset, query_entry_offset);
-		return key;
+        return key;
     }
     return NULL;
 }
@@ -307,7 +307,7 @@ void DictBase::Reset() {
     _schema.Reset();
 
     SafeDelete(_string_pool);
-	SafeDelete(_entry_pool);
+    SafeDelete(_entry_pool);
     _entry_pool  = NULL;
     _string_pool = new StringPoolMemory();
 
@@ -345,7 +345,7 @@ u4 DictBase::BuildIndex(bool bShowProc) {
     _darts_idx->clear();
     // this code will be fucking slow.  // use 2min build 100M keys, seems acceptable.
     std::vector<DartsEntry> v;
-	v.reserve(1024*1024*10);
+    v.reserve(1024*1024*10);
     DartsEntry entry;
     for(unordered_map<std::string, u4>::iterator it = _key2id.begin();
             it !=  _key2id.end(); ++it) {
@@ -358,8 +358,8 @@ u4 DictBase::BuildIndex(bool bShowProc) {
     // build darts's key & value pair.
     std::vector <Darts::DoubleArray::key_type *> key;
     std::vector <Darts::DoubleArray::value_type> value;
-	key.reserve(1024*1024*10);
-	value.reserve(1024*1024*10);
+    key.reserve(1024*1024*10);
+    value.reserve(1024*1024*10);
 
     for(std::vector<DartsEntry>::iterator it = v.begin(); it != v.end(); ++it) {
         char* ptr = &( it->term[0] );
@@ -391,20 +391,20 @@ int DictBase::ExactMatch(const char* q, u2 len) {
 }
 
 int DictBase::PrefixMatch(const char* q, u2 len, DictMatchResult* rs) {
-	Darts::DoubleArray::result_pair_type result[MAX_PREFIX_SEARCH_RESULT];
-	DictMatchEntry mrs;
-	mrs.match._dict_id = _dict_id;
-	int num = _darts_idx->commonPrefixSearch(q, result, MAX_PREFIX_SEARCH_RESULT, len);
-	if(rs) {
-		for(int i=0; i<num; i++) {
-			mrs.match._len = result[i].length;
-			mrs.match._value = result[i].value;
+    Darts::DoubleArray::result_pair_type result[MAX_PREFIX_SEARCH_RESULT];
+    DictMatchEntry mrs;
+    mrs.match._dict_id = _dict_id;
+    int num = _darts_idx->commonPrefixSearch(q, result, MAX_PREFIX_SEARCH_RESULT, len);
+    if(rs) {
+        for(int i=0; i<num; i++) {
+            mrs.match._len = result[i].length;
+            mrs.match._value = result[i].value;
             //might be full (return -1 ), just ignore .
             if(rs->Match(mrs) == -1)
                 return -1; // result is full.
-		}
-	}
-	return num;
+        }
+    }
+    return num;
 }
 
 int DictBase::ExactMatch(const u4* q, u2 len)
@@ -474,7 +474,7 @@ IStringPool* DictBase::GetStringPool() {
 EntryData* DictBase::Insert(const char* term, u2 len)
 {
     if(_entry_pool == NULL) 
-		_entry_pool = new EntryDataPool(_schema.GetEntryDataSize()); 
+        _entry_pool = new EntryDataPool(_schema.GetEntryDataSize()); 
 
     /*
      * 增加新的词条
@@ -515,8 +515,8 @@ EntryData* DictBase::GetEntryData(const char* term, u2 len, bool bAppendIfNotExi
     std::string key(term, len);
     unordered_map<std::string, u4>::iterator it = _key2id.find(key);
     if(it != _key2id.end() ) {
-		// exist , lookup for offset
-		u4 offset = _id2entryoffset[it->second]; // because I certanly sure about key exist in the map.
+        // exist , lookup for offset
+        u4 offset = _id2entryoffset[it->second]; // because I certanly sure about key exist in the map.
         return GetEntryDataByOffset((i4)offset);
     }
     //FIXME: check in darts.  目前不需要
@@ -541,7 +541,7 @@ i4  DictBase::GetEntryOffset(const char* term, u2 len){
 }
 
 EntryData* DictBase::GetEntryDataByOffset(i4 term_offset) {
-	if(_entry_pool == NULL) return NULL;
+    if(_entry_pool == NULL) return NULL;
     return _entry_pool->GetEntry(term_offset);
 }
 
@@ -609,10 +609,10 @@ int DictGlobalIndex::PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs,
             mrs.match._len = result[i].length;
             mrs.match._value = result[i].value;
             if(extend_value == false) {
-				rs->Match(mrs); // not fill the match,
-				total_num ++;
-				continue;
-			}
+                rs->Match(mrs); // not fill the match,
+                total_num ++;
+                continue;
+            }
             entry = GetEntryDataByOffset(mrs.match._value);
             CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
             const char* sptr = (const char*)entry->GetData(GetSchema(),
@@ -640,21 +640,21 @@ int DictGlobalIndex::PrefixMatch(const u4* q, u2 len, mm::DictMatchResult* rs, b
     int total_num = 0;
     int num = _darts_idx->commonPrefixSearch(q, result, MAX_PREFIX_SEARCH_RESULT, len);
     if(rs) {
-		for(int i=0; i<num; i++) {
-			mrs.match._len = result[i].length;
-			mrs.match._value = result[i].value;
-			if(extend_value == false) {
-				rs->Match(mrs); // not fill the match,
-				total_num ++;
-				continue;
-			}
-			entry = GetEntryDataByOffset(mrs.match._value);
-			CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
-			const char* sptr = (const char*)entry->GetData(GetSchema(),
+        for(int i=0; i<num; i++) {
+            mrs.match._len = result[i].length;
+            mrs.match._value = result[i].value;
+            if(extend_value == false) {
+                rs->Match(mrs); // not fill the match,
+                total_num ++;
+                continue;
+            }
+            entry = GetEntryDataByOffset(mrs.match._value);
+            CHECK_NE(entry, (EntryData*)NULL) << "entry is null!";
+            const char* sptr = (const char*)entry->GetData(GetSchema(),
                                                             GetStringPool(), _entry_propidx, &data_len);
-			total_num += decode_entry_to_matchentry((const u1*)sptr, data_len, mrs.match._len, rs);
-		}
-		return total_num;
+            total_num += decode_entry_to_matchentry((const u1*)sptr, data_len, mrs.match._len, rs);
+        }
+        return total_num;
     }
     return num;
 }

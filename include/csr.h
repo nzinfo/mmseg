@@ -17,7 +17,7 @@
 * Copyright (C) 2007-2008. All Rights Reserved.
 *
 * Author:
-*	Li monan <li.monan@gmail.com>
+*    Li monan <li.monan@gmail.com>
 *
 * ***** END LICENSE BLOCK ***** */
 
@@ -32,6 +32,9 @@
 
 #ifdef WIN32
 #define snprintf        _snprintf
+// disable 4819 Chinese Char in source file
+#pragma warning(disable:4819)
+
 #endif
 
 #endif

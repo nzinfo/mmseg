@@ -72,7 +72,7 @@ public:
     virtual ~SegScript();
 
 public:
-	//SegScriptPeer _peer;
+    //SegScriptPeer _peer;
     /*
      * load script from disk.
      * load order by ascii orer

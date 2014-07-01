@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
 
     char resolved_dict_buf[255];
     const char* dict_path = NULL;
-	const char* script_path = NULL;
+    const char* script_path = NULL;
     const char* out_file = NULL;
     u1 bQuite = 0;
     int rs = 0;
@@ -97,13 +97,13 @@ int main(int argc, char **argv) {
     out_file = argv[1]; // file to be process
 
     dict_path = FLAGS_dict_path.c_str();
-	script_path = FLAGS_script_path.c_str();
+    script_path = FLAGS_script_path.c_str();
 
     const char* resolved_dict_path = realpath(dict_path, resolved_dict_buf);
-	std::string s_dict_path(resolved_dict_path);
+    std::string s_dict_path(resolved_dict_path);
 
-	resolved_dict_path = realpath(script_path, resolved_dict_buf);
-	std::string s_script_path(resolved_dict_path);
+    resolved_dict_path = realpath(script_path, resolved_dict_buf);
+    std::string s_script_path(resolved_dict_path);
 
 #if MMSEG_DEBUG
     //printf("dict=%s; file=%s\n", s_dict_path.c_str(), out_file);
@@ -140,7 +140,7 @@ int segment(const char* utf8_file, const char* dict_path, const char* script_pat
         buffer = new char [length+1];
         is.read (buffer, length);
         buffer[length] = 0;
-		
+        
         buffer_ptr = buffer;
         // check header UTF-8 BOM
         if(memcmp(buffer,txtHead,sizeof(char)*3) == 0) {
@@ -159,7 +159,7 @@ int segment(const char* utf8_file, const char* dict_path, const char* script_pat
          * 5 init options
          * 6 do token
          */
-		
+        
         std::string s_dict_path(dict_path);
         mm::DictMgr mgr;
         mm::SegScript script_mgr(&mgr);
@@ -207,7 +207,7 @@ int segment(const char* utf8_file, const char* dict_path, const char* script_pat
          * - allterm 全切分，列出全部的候选词。
          */
         // mm::SegOptions seg_option(&mgr, "pinyin;thes;origin;stem;term", "");
-		mm::SegOptions seg_option(&mgr, "thes;origin;stem;term", "");
+        mm::SegOptions seg_option(&mgr, "thes;origin;stem;term", "");
         mm::SegStatus* seg_stat = new mm::SegStatus(seg_option);  // huge memory alloc, needs alloc on heap.
         mm::Segmentor seg(mgr, script_mgr);
 

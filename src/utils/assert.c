@@ -17,7 +17,7 @@
 * Copyright (C) 2007-2008. All Rights Reserved.
 *
 * Author:
-*	Li monan <li.monan@gmail.com>
+*    Li monan <li.monan@gmail.com>
 *
 * ***** END LICENSE BLOCK ***** */
 
@@ -35,7 +35,7 @@ extern "C" {
 void
 _NTAbort(void)
 {
-    _asm int 3h;		/* always trap. */
+    _asm int 3h;        /* always trap. */
 }
 #endif
 
@@ -44,7 +44,7 @@ void
 AssertionFailed(char *file, int line)
 {  
     fprintf(stderr, "Assertion failed! file %s, line %d.\n", file,
-	    line);
+        line);
     fflush(stderr);
 #ifdef _NT40_ENV
     _NTAbort();

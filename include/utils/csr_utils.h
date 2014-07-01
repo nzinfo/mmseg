@@ -17,7 +17,7 @@
 * Copyright (C) 2007-2008. All Rights Reserved.
 *
 * Author:
-*	Li monan <li.monan@gmail.com>
+*    Li monan <li.monan@gmail.com>
 *
 * ***** END LICENSE BLOCK ***** */
 
@@ -30,13 +30,13 @@ extern "C" {
 #endif
 
 //helper function
-//#undef	atoi
+//#undef    atoi
 /* Convert a string to an int.  */
 int
 csr_atoi (const char *nptr);
 
-void	csr_perror(const char *s);
-void	csr_exit_perror(const char *s);
+void    csr_perror(const char *s);
+void    csr_exit_perror(const char *s);
 
 unsigned long currentTimeMillis();
 u4 countBitsU4(u4 num);

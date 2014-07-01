@@ -20,7 +20,7 @@
 #include "mm_hashmap.h"
 
 #define MAX_COLUMN_NAME_LENGTH 64u  // 词库中， 字段名称的最大长度
-#define MAX_COLUMN_COUNT	   15u  // the highest field use as a flag of compress or not.
+#define MAX_COLUMN_COUNT       15u  // the highest field use as a flag of compress or not.
 
 // Debug Schema
 #define DEBUG_MM_SCHEMA 0
@@ -43,20 +43,20 @@ public:
 
     inline short GetIndex() const { return _idx; }
     inline const char GetType() const { return _type; }
-    inline u1	 GetSize() const {
-		switch(_type) {
-		case '2':
-			return 2;
-		case '4':
-			return 4;
-		case '8':
-			return 8;
-		case 's':
-			return 4;	// the offset in the string pool.
-		}
-		// unsupported type.
-		return 0;
-	}
+    inline u1     GetSize() const {
+        switch(_type) {
+        case '2':
+            return 2;
+        case '4':
+            return 4;
+        case '8':
+            return 8;
+        case 's':
+            return 4;    // the offset in the string pool.
+        }
+        // unsupported type.
+        return 0;
+    }
     inline void SetOffset(u2 u) { _uncompress_offset = u; }
     inline u2   GetOffset() const { return _uncompress_offset; }
 
@@ -77,12 +77,12 @@ public:
     }
 
 
-	void Reset() {
-		if(_schema_define) { free(_schema_define); _schema_define = NULL; }
-		_data_entry_size = 0;
-		_columns.clear();
-		_column_by_name.clear();
-	}
+    void Reset() {
+        if(_schema_define) { free(_schema_define); _schema_define = NULL; }
+        _data_entry_size = 0;
+        _columns.clear();
+        _column_by_name.clear();
+    }
 public:
     /*
      *  The Schema Define format:
@@ -95,9 +95,9 @@ public:
     const DictSchemaColumn* GetColumn(const char* column_name) const;
     u4 GetSize();   // 用于持久化, 缺少 Load & Save
     u2 GetEntryDataSize() const;  //定义的 EntryData 的最大尺寸, 实际根据定义 应该 u1 即可。
-	u2 GetColumnCount() const {   return _columns.size(); } 
+    u2 GetColumnCount() const {   return _columns.size(); } 
 
-	// if some column missing, @return will >0, the count is the missing columns.
+    // if some column missing, @return will >0, the count is the missing columns.
     // if no suite column found, will return 0; the mask used by select data, eg. select id, pinyin from dictionary ...
     int GetFieldMask(const char* columns, u2* mask);
     inline u2  GetCompressedOffset(u2 idx, u2 mask) const {
@@ -109,10 +109,10 @@ public:
     }
 
 protected:
-    std::vector<DictSchemaColumn> _columns;		// use copy construct, as build schema do not care about preformace, just let it be.
+    std::vector<DictSchemaColumn> _columns;        // use copy construct, as build schema do not care about preformace, just let it be.
     unordered_map<std::string, u2> _column_by_name;  // idx -> column name
     char*   _schema_define;
-	u2		_data_entry_size;
+    u2        _data_entry_size;
 
     // 用于压缩存储 EntryData 时，快速计算 offset 的速查表。因为最多 15个字段， 最长 32768, 1char
     u1 _mask_offset_lookup[32768];

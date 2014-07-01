@@ -60,7 +60,7 @@ CharMapper::Load(const char* filename)
     //printf("I got %s %d.\n", filename, this->_bDefaultPass);
     // legacy code, use load into memory switch only. bLoadMem = true
     u1* ptr = NULL;
-	u1* ptr_begin = NULL;
+    u1* ptr_begin = NULL;
     u4  ptr_length = 0;
     {
         std::ifstream ifs(filename, std::ios::binary|std::ios::ate);

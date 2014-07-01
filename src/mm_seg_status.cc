@@ -67,7 +67,7 @@ void SegStatusSwapBlock::Reset()
 }
 
 SegStatus::SegStatus(SegOptions &option, u4 size) 
-	:_options(option), _size(size)
+    :_options(option), _size(size)
 {
 
     _icode_pos = 0;
@@ -154,8 +154,8 @@ int SegStatus::MoveNext() {
         // 不需要移动 _icode_matches 因为要重新找。
         _icode_pos = _icode_pos - icode_last_s_pos; // 新区段的 icode_pos
     }else{
-		_icode_pos = 0;
-	}
+        _icode_pos = 0;
+    }
     icode_last_s_pos = 0;
 
     // 处理 AnnotePool 的轮换; 使用轮换的初衷是不希望在 block 切换时，丢失上下文的标引信息。
@@ -167,19 +167,19 @@ const DictMatchResult* SegStatus::GetMatchesAt(u4 pos, u2* count) {
     /*
      * 得到某个 icode 位置上的全部候选的词。
      */
-	return NULL;
+    return NULL;
 }
 
 u1 SegStatus::SetTagA(u4 pos, u1 tag) {
-	return 0;
+    return 0;
 }
 
 u1 SegStatus::SetTagB(u4 pos, u1 tag) {
-	return 0;
+    return 0;
 }
 
 u1 SegStatus::SetTagPush(u4 pos, u1 tag) {
-	return 0;
+    return 0;
 }
 
 void SegStatus::BuildTermIndex() {
@@ -196,7 +196,7 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
      * 此步完成后 tagA 是字符的类型， tagB 是按照类型计算的切分信息。BMES
      *
      */
-	if(0) // disabled test code.
+    if(0) // disabled test code.
     {
         // check icode with ucs32; --> decode is good.
         u1 buf[128];
@@ -215,26 +215,26 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
     u2  icode_tag = 0;
 
     u2 utf8_icode_len = 0;
-	bool b_decode_error = false;
+    bool b_decode_error = false;
     mm::UnicodeSegChar* _icodes = ActiveBlock()->_icodes;
-	u4*  _icode_chars = ActiveBlock()->_icode_chars;
+    u4*  _icode_chars = ActiveBlock()->_icode_chars;
 
     while( (_icode_pos < _size)
      && (_text_buffer_ptr < _text_buffer + _text_buffer_len)
     ) {
         icode = csr::csrUTF8Decode (
                     (const u1*)_text_buffer_ptr, utf8_icode_len);
-		if(icode < 0) {
-			/*  因为不能假设 输入是一个有效的 utf-8， 因此 此处 不能让系统崩溃。 但是从此以后的数据不再解码。 */
-			b_decode_error = true;
+        if(icode < 0) {
+            /*  因为不能假设 输入是一个有效的 utf-8， 因此 此处 不能让系统崩溃。 但是从此以后的数据不再解码。 */
+            b_decode_error = true;
             // give some ctx info. 肯定 break 了部分字符。但是足以给出上下文信息提示。
             //const char* text_buffer_ctx_ptr = (_text_buffer_ptr - _text_buffer) < 10 ? _text_buffer:_text_buffer_ptr-10;
             //LOG(ERROR) << "error decode utf-8 @pos " << (_text_buffer_ptr - _text_buffer) << text_buffer_ctx_ptr;
-			break;
-		}
-		_text_buffer_ptr += utf8_icode_len; //move to next char.
+            break;
+        }
+        _text_buffer_ptr += utf8_icode_len; //move to next char.
 
-		// look up via dict_mgr.
+        // look up via dict_mgr.
         icode_lower = dict_mgr.GetCharMapper()->Transform
                     ( (u4)icode, &icode_tag ); // the fact is only 11 byte of tag, currently we use only 8bit
         _icodes[_icode_pos].origin_code = icode;
@@ -260,32 +260,32 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
                 _icodes[_icode_pos].tagB = 'M';
             }
         }
-		_icode_pos++;
+        _icode_pos++;
     } // end while
 
     // check is reach the end of text
     if( b_decode_error  ||  ! (_text_buffer_ptr < _text_buffer + _text_buffer_len) ) {
 
-		if(_icode_pos != icode_pos_begin) {  //else no char advance error @begin.
-			// fix prev B->S
-			if(_icodes[_icode_pos-1].tagB == 'B')
-				_icodes[_icode_pos-1].tagB = 'S';
-			// fix prev M->E
-			if(_icodes[_icode_pos-1].tagB == 'M')
-				_icodes[_icode_pos-1].tagB = 'E';
+        if(_icode_pos != icode_pos_begin) {  //else no char advance error @begin.
+            // fix prev B->S
+            if(_icodes[_icode_pos-1].tagB == 'B')
+                _icodes[_icode_pos-1].tagB = 'S';
+            // fix prev M->E
+            if(_icodes[_icode_pos-1].tagB == 'M')
+                _icodes[_icode_pos-1].tagB = 'E';
 
-			// the end of buffer. 或者 解码出现错误。
-			_icodes[_icode_pos].origin_code = SEG_PADING_E2;
-			_icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
-			_icodes[_icode_pos].tagB = 'S';
-			_icode_chars[_icode_pos] = SEG_PADING_E2;
-			_icode_pos++;
-			_icodes[_icode_pos].origin_code = SEG_PADING_E1;
-			_icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
-			_icodes[_icode_pos].tagB = 'S';
-			_icode_chars[_icode_pos] = SEG_PADING_E1;
-			_icode_last_s_pos = _icode_pos;
-			_icode_pos++;
+            // the end of buffer. 或者 解码出现错误。
+            _icodes[_icode_pos].origin_code = SEG_PADING_E2;
+            _icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
+            _icodes[_icode_pos].tagB = 'S';
+            _icode_chars[_icode_pos] = SEG_PADING_E2;
+            _icode_pos++;
+            _icodes[_icode_pos].origin_code = SEG_PADING_E1;
+            _icodes[_icode_pos].tagA = SEG_PADING_TAGTYPE;
+            _icodes[_icode_pos].tagB = 'S';
+            _icode_chars[_icode_pos] = SEG_PADING_E1;
+            _icode_last_s_pos = _icode_pos;
+            _icode_pos++;
             //LOG(INFO) << "Add Doc EndMark " << _icode_pos << " " << icode_pos_begin;
         }
     }
@@ -294,8 +294,8 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
 
 u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_user)
 {
-	/*
-	 * 使用前缀搜索，构造 词网格
+    /*
+     * 使用前缀搜索，构造 词网格
      * 1 检索全局词典
      * 2 检索 special 词典
      * 3 检索 用户词典
@@ -306,7 +306,7 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_us
      *      dict_id, field_type, field_offset
      * 2
      *
-	 */
+     */
 
     // 确定 CJK 区的 Tag
     u2 _cjk_chartag = 0;
@@ -322,39 +322,39 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_us
         dict_mgr.GetCharMapper()->Transform( (u4)',', &_sym_chartag );
     }
 
-	mm::DictBase* special_dict = NULL;
+    mm::DictBase* special_dict = NULL;
     if(_options.GetSpecialDictionaryName() != "")
         special_dict = dict_mgr.GetDictionary(_options.GetSpecialDictionaryName().c_str());
 
     int num = 0;
-	DictMgr& mgr = (DictMgr&)dict_mgr;
+    DictMgr& mgr = (DictMgr&)dict_mgr;
     for(u4 i = 0; i < _icode_pos; i++) {
         // 从全局中检索，并不对读取到的值进行扩展 （ 1 不一定需要属性信息，如词频； 2 降低 _matches 的数量（长度相同没必要重复了） ）
         int rs = mgr.PrefixMatch(ActiveBlock()->_icode_chars + i, _icode_pos - i, ActiveBlock()->_matches, false); // matches will advence
         // 不在词库中，需要检查 1 是否是英文； 2 是否是数字； 如果是，额外增加一个 matches
-		/*
-		 * 原本此处在 Policy 部分， 但是因为难以处理 Term 的 类型 的 Annote, 改为在 DAG 部分处理
-		 * 
-		 * 目前，没有处理 字母与数字相连， 字母与符号相连 的情况。此处的规则在 LUA 脚本中处理。
-	     */
-		if(ActiveBlock()->_icodes[i].tagA != _cjk_chartag) {
-			int j = i;
-			DictMatchEntry mrs;
-			while(0 < _icode_pos - 2 -j ) {
-				if( ActiveBlock()->_icodes[j].tagB == 'E'
-					||  ActiveBlock()->_icodes[j].tagB == 'S') {
-						break;
-				}
-				j ++;
-			}
-			mrs.match._dict_id = 0; // system dict & as virtualhit of globalidx
-			mrs.match._len = j - i + 1;
-			mrs.match._value = 0;   // no such entry.
-			ActiveBlock()->_matches->Match(mrs);
-			rs += 1;
-		} // end of if not cjk
+        /*
+         * 原本此处在 Policy 部分， 但是因为难以处理 Term 的 类型 的 Annote, 改为在 DAG 部分处理
+         * 
+         * 目前，没有处理 字母与数字相连， 字母与符号相连 的情况。此处的规则在 LUA 脚本中处理。
+         */
+        if(ActiveBlock()->_icodes[i].tagA != _cjk_chartag) {
+            int j = i;
+            DictMatchEntry mrs;
+            while(0 < _icode_pos - 2 -j ) {
+                if( ActiveBlock()->_icodes[j].tagB == 'E'
+                    ||  ActiveBlock()->_icodes[j].tagB == 'S') {
+                        break;
+                }
+                j ++;
+            }
+            mrs.match._dict_id = 0; // system dict & as virtualhit of globalidx
+            mrs.match._len = j - i + 1;
+            mrs.match._value = 0;   // no such entry.
+            ActiveBlock()->_matches->Match(mrs);
+            rs += 1;
+        } // end of if not cjk
 
-		if(rs == -1) {
+        if(rs == -1) {
           return -1; // should assert too many matches.
         }
         if(i)
@@ -466,18 +466,18 @@ int SegStatus::AnnoteTermType(u4 dag_pos, char term_type)
 //////////////////////////////////////////////////////////////////////////
 void SegStatus::_DebugCodeConvert()
 {
-	/* 调试使用的 iCode ， 输出 UTF8 字符串 & 对应的 icode， 用 ' ' 分割 */
-	u1 buf[128];
-	int n = 0;
-	for(u4 i = 0; i< _icode_pos; i++ ){
+    /* 调试使用的 iCode ， 输出 UTF8 字符串 & 对应的 icode， 用 ' ' 分割 */
+    u1 buf[128];
+    int n = 0;
+    for(u4 i = 0; i< _icode_pos; i++ ){
         n = csr::csrUTF8Encode(buf, ActiveBlock()->_icode_chars[i]);
-		buf[n] = 0;
+        buf[n] = 0;
         printf("%s(%lu->%lu) ", buf, ActiveBlock()->_icodes[i].origin_code, ActiveBlock()->_icode_chars[i]);
         if( ActiveBlock()->_icodes[i].tagB == 'E' || ActiveBlock()->_icodes[i].tagB == 'S' )
         {
             printf("/ ");
         }
-	}
+    }
 }
 
 void SegStatus::_DebugDumpDAG()

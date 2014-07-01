@@ -17,7 +17,7 @@
 * Copyright (C) 2007-2008. All Rights Reserved.
 *
 * Author:
-*	Li monan <li.monan@gmail.com>
+*    Li monan <li.monan@gmail.com>
 *
 * ***** END LICENSE BLOCK ***** */
 
@@ -47,14 +47,14 @@ extern "C" {
 int
 csr_atoi (const char *nptr)
 {
-	return (int) strtol (nptr, (char **) NULL, 10);
+    return (int) strtol (nptr, (char **) NULL, 10);
 }
 
 u2 u2_length(const u2* p){
-	const u2* ptr = p;
-	while(*ptr)
-		ptr++;
-	return ptr-p;
+    const u2* ptr = p;
+    while(*ptr)
+        ptr++;
+    return ptr-p;
 }
 
 int Cha_lineno, Cha_lineno_error;
@@ -64,78 +64,78 @@ static FILE *cha_stderr = NULL;
 void
 csr_exit(int status, char *format, ...)
 {
-	va_list ap;
+    va_list ap;
 
-	if (Cha_errno)
-		return;
+    if (Cha_errno)
+        return;
 
-	if (!cha_stderr)
-		cha_stderr = stderr;
-	else if (cha_stderr != stderr)
-		fputs("500 ", cha_stderr);
+    if (!cha_stderr)
+        cha_stderr = stderr;
+    else if (cha_stderr != stderr)
+        fputs("500 ", cha_stderr);
 
-	va_start(ap, format);
-	vfprintf(cha_stderr, format, ap);
-	va_end(ap);
-	if (status >= 0) {
-		fputc('\n', cha_stderr);
-		if (cha_stderr == stderr)
-			exit(status);
-		Cha_errno = 1;
-	}
+    va_start(ap, format);
+    vfprintf(cha_stderr, format, ap);
+    va_end(ap);
+    if (status >= 0) {
+        fputc('\n', cha_stderr);
+        if (cha_stderr == stderr)
+            exit(status);
+        Cha_errno = 1;
+    }
 }
 
 void
 csr_perror(const char *s)
 {
-	csr_exit(-1, "");
-	perror(s);
+    csr_exit(-1, "");
+    perror(s);
 }
 
 void
 csr_exit_perror(const char *s)
 {
-	csr_perror(s);
-	exit(1);
+    csr_perror(s);
+    exit(1);
 }
 
 unsigned long currentTimeMillis() {
 #if WIN32 //|| defined(__MINGW32__)
-	struct _timeb tstruct;
-	_ftime(&tstruct);
+    struct _timeb tstruct;
+    _ftime(&tstruct);
 
-	return (((unsigned long) tstruct.time) * 1000) + tstruct.millitm;
+    return (((unsigned long) tstruct.time) * 1000) + tstruct.millitm;
 #else
 
-	struct timeval tstruct;
-	if (gettimeofday(&tstruct, NULL) < 0) {
-		fprintf(stderr,"Error in gettimeofday call.");
-	}
+    struct timeval tstruct;
+    if (gettimeofday(&tstruct, NULL) < 0) {
+        fprintf(stderr,"Error in gettimeofday call.");
+    }
 
-	return (((long) tstruct.tv_sec) * 1000) + tstruct.tv_usec / 1000;
+    return (((long) tstruct.tv_sec) * 1000) + tstruct.tv_usec / 1000;
 #endif
 }
 
 u4 countBitsU4(u4 bits)
 {
-	bits = bits - ((bits >> 1) & 0x55555555);
-	bits = ((bits >> 2) & 0x33333333) + (bits & 0x33333333);
-	bits = ((bits >> 4) + bits) & 0x0F0F0F0F;
-	return (bits * 0x01010101) >> 24;
+    bits = bits - ((bits >> 1) & 0x55555555);
+    bits = ((bits >> 2) & 0x33333333) + (bits & 0x33333333);
+    bits = ((bits >> 4) + bits) & 0x0F0F0F0F;
+    return (bits * 0x01010101) >> 24;
 }
 u2 countBitsU2(u2 bits)
 {
-	bits = bits - ((bits >> 1) & 0x5555);
-	bits = ((bits >> 2) & 0x3333) + (bits & 0x3333);
-	bits = ((bits >> 4) + bits) & 0x0F0F;
-	return ((bits * 0x0101) >> 8)&0x0F;
+    bits = bits - ((bits >> 1) & 0x5555);
+    bits = ((bits >> 2) & 0x3333) + (bits & 0x3333);
+    bits = ((bits >> 4) + bits) & 0x0F0F;
+    return ((bits * 0x0101) >> 8)&0x0F;
 }
 u1 countBitsU1(u1 bits)
 {
-	bits = bits - ((bits >> 1) & 0x55);
-	bits = ((bits >> 2) & 0x33) + (bits & 0x33);
-	bits = ((bits >> 4) + bits) & 0x0F;
-	return (bits * 0x01);
+    bits = bits - ((bits >> 1) & 0x55);
+    bits = ((bits >> 2) & 0x33) + (bits & 0x33);
+    bits = ((bits >> 4) + bits) & 0x0F;
+    return (bits * 0x01);
 }
 
 

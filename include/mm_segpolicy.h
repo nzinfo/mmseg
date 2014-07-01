@@ -24,8 +24,8 @@ class SegStatus;
 
 class SegPolicy {
 public:
-	// do char-tag based segmentation, 
-	// return how many char been taged, from the begin of SegStatus
+    // do char-tag based segmentation, 
+    // return how many char been taged, from the begin of SegStatus
     virtual int Apply(const DictMgr &dict_mgr, SegStatus& status) {
         return 0; // tar each char.
     }

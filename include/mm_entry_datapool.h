@@ -45,12 +45,12 @@ public:
         :_data_ptr(ptr), _size(len), _used(len), _next(NULL) {
         _entry_count = 0;
     }
-	
-	virtual ~EntryDataPoolEntry() {
-		if(_data_ptr)
-			free(_data_ptr);
-		_data_ptr = NULL;
-	}
+    
+    virtual ~EntryDataPoolEntry() {
+        if(_data_ptr)
+            free(_data_ptr);
+        _data_ptr = NULL;
+    }
     // return NULL if no space for new entry.
     EntryData* NewEntry(u4 entry_size);
     EntryData* GetEntry(u4 offset);
@@ -65,53 +65,53 @@ protected:
 
 class EntryDataPool {
 public:
-	/*
-	 * 因为在初始化的时刻，可以通过 Schema 得到 Entry 不压缩的尺寸。但是不知道是从磁盘加载还是直接内存分配。此刻并不实际初始化内存。
-	 * 当 SetData 或 NewEntry 被调用时，再次判断
-	 */
+    /*
+     * 因为在初始化的时刻，可以通过 Schema 得到 Entry 不压缩的尺寸。但是不知道是从磁盘加载还是直接内存分配。此刻并不实际初始化内存。
+     * 当 SetData 或 NewEntry 被调用时，再次判断
+     */
 
     // first 2 byte as the mask.
-	EntryDataPool(u2 entry_size_uncompressed):
+    EntryDataPool(u2 entry_size_uncompressed):
         _entry_size_uncompressed(entry_size_uncompressed) {
-			_begin = NULL;
-			_current = NULL;
-			_updatable = true;
+            _begin = NULL;
+            _current = NULL;
+            _updatable = true;
             _entry_next_offset = 0;
-	}
+    }
 
-	virtual ~EntryDataPool();
+    virtual ~EntryDataPool();
 
 public:
     EntryData* NewEntry();
     u4         NewEntryOffset();
-	EntryData* GetEntry(u4 offset);
+    EntryData* GetEntry(u4 offset);
 
-	// Compat EntryDataPool , 
-	// Update the _entries mapping;
-	// return DataPool's real size (compat size)
-	int Compat();
+    // Compat EntryDataPool , 
+    // Update the _entries mapping;
+    // return DataPool's real size (compat size)
+    int Compat();
     void SetData(u1* ptr, u4 len); // load from disk. after load from disk, user still can create new entry.
-	// return a newly created entry, every field is exactly the same with entry.
-	// if origin entry is compat, and _updatable == true, return a newly uncompat engry.
-	// if _updatable == false, return NULL.
+    // return a newly created entry, every field is exactly the same with entry.
+    // if origin entry is compat, and _updatable == true, return a newly uncompat engry.
+    // if _updatable == false, return NULL.
     EntryData* CloneEntry(const EntryData* entry);
-	
-	// EntryPool Related
+    
+    // EntryPool Related
     int MakeNewEntryPool(); // create a new EntryDataPoolEntry 追加到当前的列表上.
 
 public:
-	int Dump(u1* ptr, u4 size);
-	int Load(u1* ptr, u4 size); //此处应该是 const, 实际也不会修改。但是为了能够 复用代码...
-	int Reset();
+    int Dump(u1* ptr, u4 size);
+    int Load(u1* ptr, u4 size); //此处应该是 const, 实际也不会修改。但是为了能够 复用代码...
+    int Reset();
     u4  GetSize() { return _entry_next_offset; }
 
 protected:
-	// Record Entry's index and offset in real databuffer's mapping.
+    // Record Entry's index and offset in real databuffer's mapping.
     //map<id, offset> _entries;
     bool _updatable;
-	EntryDataPoolEntry *_begin;
-	EntryDataPoolEntry *_current;
-	u2	_entry_size_uncompressed;
+    EntryDataPoolEntry *_begin;
+    EntryDataPoolEntry *_current;
+    u2    _entry_size_uncompressed;
     u4  _entry_next_offset;
 
 public:

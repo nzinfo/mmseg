@@ -31,8 +31,8 @@
 #define UNICODE_BITS            21u            // Unicode's bits count.
 #define UNICODE_PAGE_SIZE       0xFFFFu        // 65536
 
-#define SafeDelete(_arg)		{ if ( _arg ) delete ( _arg );		(_arg) = NULL; }
-#define SafeDeleteArray(_arg)	{ if ( _arg ) delete [] ( _arg );	(_arg) = NULL; }
+#define SafeDelete(_arg)        { if ( _arg ) delete ( _arg );        (_arg) = NULL; }
+#define SafeDeleteArray(_arg)    { if ( _arg ) delete [] ( _arg );    (_arg) = NULL; }
 
 namespace mm {
 
@@ -95,17 +95,17 @@ protected:
     inline u4* GetPage(u4 icode, u4 *page_base)  {
         /*
          *
-            平面	始末字符值	中文名称	英文名称
-            0号平面	U+0000 - U+FFFF	基本多文种平面	Basic Multilingual Plane,简称BMP
-            1号平面	U+10000 - U+1FFFF	多文种补充平面	Supplementary Multilingual Plane,简称SMP
-            2号平面	U+20000 - U+2FFFF	表意文字补充平面	Supplementary Ideographic Plane,简称SIP
-            3号平面	U+30000 - U+3FFFF	表意文字第三平面（未正式使用[1]）	Tertiary Ideographic Plane,简称TIP
+            平面    始末字符值    中文名称    英文名称
+            0号平面    U+0000 - U+FFFF    基本多文种平面    Basic Multilingual Plane,简称BMP
+            1号平面    U+10000 - U+1FFFF    多文种补充平面    Supplementary Multilingual Plane,简称SMP
+            2号平面    U+20000 - U+2FFFF    表意文字补充平面    Supplementary Ideographic Plane,简称SIP
+            3号平面    U+30000 - U+3FFFF    表意文字第三平面（未正式使用[1]）    Tertiary Ideographic Plane,简称TIP
             4号平面
             至
-            13号平面	U+40000 - U+DFFFF	（尚未使用）
-            14号平面	U+E0000 - U+EFFFF	特别用途补充平面	Supplementary Special-purpose Plane,简称SSP
-            15号平面	U+F0000 - U+FFFFF	保留作为私人使用区（A区）[2]	Private Use Area-A,简称PUA-A
-            16号平面	U+100000 - U+10FFFF	保留作为私人使用区（B区）[2]	Private Use Area-B,简称PUA-B
+            13号平面    U+40000 - U+DFFFF    （尚未使用）
+            14号平面    U+E0000 - U+EFFFF    特别用途补充平面    Supplementary Special-purpose Plane,简称SSP
+            15号平面    U+F0000 - U+FFFFF    保留作为私人使用区（A区）[2]    Private Use Area-A,简称PUA-A
+            16号平面    U+100000 - U+10FFFF    保留作为私人使用区（B区）[2]    Private Use Area-B,简称PUA-B
                 Ref: http://zh.wikipedia.org/wiki/Unicode%E5%AD%97%E7%AC%A6%E5%B9%B3%E9%9D%A2%E6%98%A0%E5%B0%84
          */
         if( (icode <= 0xFFFF) ) {

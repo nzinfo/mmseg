@@ -22,18 +22,18 @@ int EntryDataPool::STATUS_INSUFFICIENT_BUFFER = -413;
 
 EntryData* EntryDataPoolEntry::NewEntry(u4 entry_size)
 {
-	// check is fill
+    // check is fill
     if(_used + entry_size < _size) {
-		//u1* ptr = (_data_ptr+_used);
-		EntryData* entry_ptr = (mm::EntryData*) &_data_ptr[_used];
-		_used += entry_size;
+        //u1* ptr = (_data_ptr+_used);
+        EntryData* entry_ptr = (mm::EntryData*) &_data_ptr[_used];
+        _used += entry_size;
 
-		// mark as uncompresed.
-		entry_ptr->SetAsUnCompressed();
+        // mark as uncompresed.
+        entry_ptr->SetAsUnCompressed();
         CHECK_EQ(entry_ptr, (mm::EntryData*)_data_ptr +_used - entry_size) << "new entry error.";
         return entry_ptr;
-	}
-	return NULL;
+    }
+    return NULL;
 }
 
 EntryData* EntryDataPoolEntry::GetEntry(u4 offset)
@@ -47,14 +47,14 @@ EntryData* EntryDataPoolEntry::GetEntry(u4 offset)
 }
 
 EntryDataPool::~EntryDataPool() {
-	Reset();
+    Reset();
 }
 
 int EntryDataPool::Dump(u1* ptr, u4 size)
 {
     /*
      *  此处可以通过写入文件句柄, 但是为了实现简化起见，处理为写入内存。
-	 *  返回，实际写入的字节数。
+     *  返回，实际写入的字节数。
      */
     if (size < GetSize() )
         return STATUS_INSUFFICIENT_BUFFER;
@@ -92,13 +92,13 @@ int EntryDataPool::Reset()
     _begin = _current = NULL;
     _updatable = true;
     _entry_next_offset = 0;
-	return 0;
+    return 0;
 }
 
 EntryData* EntryDataPool::NewEntry() {
-	/*
+    /*
      * Alloca a block of memory, return.
-	 */
+     */
     if(_current == NULL) {
         // uninit pool.
         EntryDataPoolEntry* entry = new EntryDataPoolEntry(_entry_size_uncompressed, MAX_ENTRYPOOL_SIZE);
@@ -108,7 +108,7 @@ EntryData* EntryDataPool::NewEntry() {
     if(entry_ptr == NULL) {
         // current pool is full.
         MakeNewEntryPool();
-		entry_ptr = _current->NewEntry(_entry_size_uncompressed);
+        entry_ptr = _current->NewEntry(_entry_size_uncompressed);
     }
 
     _entry_next_offset += _entry_size_uncompressed;
@@ -157,7 +157,7 @@ int EntryDataPool::MakeNewEntryPool() {
     EntryDataPoolEntry* entry = new EntryDataPoolEntry(_entry_size_uncompressed, MAX_ENTRYPOOL_SIZE);
     _current->_next = entry;
     _current = entry;
-	LOG(INFO) << "new entry pool created.";
+    LOG(INFO) << "new entry pool created.";
     return 0;
 }
 

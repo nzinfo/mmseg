@@ -74,88 +74,88 @@ typedef int Py_ssize_t;
     }
 
 
-	namespace {
+    namespace {
 
-		//////////////////////////////////////////////////////////////////////////////////////////////
-		/// why doesn't the std::reverse work?
-		///
-		void reverse_strings( std::vector< std::string > & result)
-		{
-			for (std::vector< std::string >::size_type i = 0; i < result.size() / 2; i++ )
-			{
-				std::swap(result[i], result[result.size() - 1 - i]);
-			}
-		}
+        //////////////////////////////////////////////////////////////////////////////////////////////
+        /// why doesn't the std::reverse work?
+        ///
+        void reverse_strings( std::vector< std::string > & result)
+        {
+            for (std::vector< std::string >::size_type i = 0; i < result.size() / 2; i++ )
+            {
+                std::swap(result[i], result[result.size() - 1 - i]);
+            }
+        }
 
-		//////////////////////////////////////////////////////////////////////////////////////////////
-		///
-		///
-		void split_whitespace( const std::string & str, std::vector< std::string > & result, int maxsplit )
-		{
-			std::string::size_type i, j, len = str.size();
-			for (i = j = 0; i < len; )
-			{
+        //////////////////////////////////////////////////////////////////////////////////////////////
+        ///
+        ///
+        void split_whitespace( const std::string & str, std::vector< std::string > & result, int maxsplit )
+        {
+            std::string::size_type i, j, len = str.size();
+            for (i = j = 0; i < len; )
+            {
 
-				while ( i < len && ::isspace( str[i] ) ) i++;
-				j = i;
+                while ( i < len && ::isspace( str[i] ) ) i++;
+                j = i;
 
-				while ( i < len && ! ::isspace( str[i]) ) i++;
-
-
-
-				if (j < i)
-				{
-					if ( maxsplit-- <= 0 ) break;
-
-					result.push_back( str.substr( j, i - j ));
-
-					while ( i < len && ::isspace( str[i])) i++;
-					j = i;
-				}
-			}
-			if (j < len)
-			{
-				result.push_back( str.substr( j, len - j ));
-			}
-		}
-
-
-		//////////////////////////////////////////////////////////////////////////////////////////////
-		///
-		///
-		void rsplit_whitespace( const std::string & str, std::vector< std::string > & result, int maxsplit )
-		{
-			std::string::size_type len = str.size();
-			std::string::size_type i, j;
-			for (i = j = len; i > 0; )
-			{
-
-				while ( i > 0 && ::isspace( str[i - 1] ) ) i--;
-				j = i;
-
-				while ( i > 0 && ! ::isspace( str[i - 1]) ) i--;
+                while ( i < len && ! ::isspace( str[i]) ) i++;
 
 
 
-				if (j > i)
-				{
-					if ( maxsplit-- <= 0 ) break;
+                if (j < i)
+                {
+                    if ( maxsplit-- <= 0 ) break;
 
-					result.push_back( str.substr( i, j - i ));
+                    result.push_back( str.substr( j, i - j ));
 
-					while ( i > 0 && ::isspace( str[i - 1])) i--;
-					j = i;
-				}
-			}
-			if (j > 0)
-			{
-				result.push_back( str.substr( 0, j ));
-			}
-			//std::reverse( result, result.begin(), result.end() );
-			reverse_strings( result );
-		}
+                    while ( i < len && ::isspace( str[i])) i++;
+                    j = i;
+                }
+            }
+            if (j < len)
+            {
+                result.push_back( str.substr( j, len - j ));
+            }
+        }
 
-	} //anonymous namespace
+
+        //////////////////////////////////////////////////////////////////////////////////////////////
+        ///
+        ///
+        void rsplit_whitespace( const std::string & str, std::vector< std::string > & result, int maxsplit )
+        {
+            std::string::size_type len = str.size();
+            std::string::size_type i, j;
+            for (i = j = len; i > 0; )
+            {
+
+                while ( i > 0 && ::isspace( str[i - 1] ) ) i--;
+                j = i;
+
+                while ( i > 0 && ! ::isspace( str[i - 1]) ) i--;
+
+
+
+                if (j > i)
+                {
+                    if ( maxsplit-- <= 0 ) break;
+
+                    result.push_back( str.substr( i, j - i ));
+
+                    while ( i > 0 && ::isspace( str[i - 1])) i--;
+                    j = i;
+                }
+            }
+            if (j > 0)
+            {
+                result.push_back( str.substr( 0, j ));
+            }
+            //std::reverse( result, result.begin(), result.end() );
+            reverse_strings( result );
+        }
+
+    } //anonymous namespace
 
 
     //////////////////////////////////////////////////////////////////////////////////////////////

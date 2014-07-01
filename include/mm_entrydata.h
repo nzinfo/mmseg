@@ -84,8 +84,8 @@ public:
         return SetU8(schema, column->GetIndex(), v);
     }
 
-	// SetTheStringValue. In fact store the string offset of the string pool.
-	// As a shortcut of SetU4
+    // SetTheStringValue. In fact store the string offset of the string pool.
+    // As a shortcut of SetU4
     inline int SetData(const DictSchema* schema, IStringPool* pool, const char* prop, const u1* v, u2 v_size) {
         const DictSchemaColumn* column = schema->GetColumn(prop);
         if(!column) return -1;

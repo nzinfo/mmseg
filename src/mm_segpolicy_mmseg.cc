@@ -118,30 +118,30 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
      */
     int pos = 0;
     const DictMatchEntry* match_entry = NULL;
-	const DictMatchEntry* match_entry2 = NULL;
+    const DictMatchEntry* match_entry2 = NULL;
     const DictMatchEntry* match_entry3 = NULL;
 
-	int chunk_max_len = 0;
-	int chunk_len = 0;
+    int chunk_max_len = 0;
+    int chunk_len = 0;
     float min_avg = FLT_MAX ;  //
-	float max_freedom = 0.0; // 最大单字自由度， 只有单字才有意义。
-	u4 i_level2 = 0;
-	u4 i_level3 = 0;
-	MMSegChunk current_chunk;
-	MMSegChunk best_chunk;
+    float max_freedom = 0.0; // 最大单字自由度， 只有单字才有意义。
+    u4 i_level2 = 0;
+    u4 i_level3 = 0;
+    MMSegChunk current_chunk;
+    MMSegChunk best_chunk;
     mm::DictMatchResult annote_match_rs;  // 256.. 一个词条在多少个词典中同时出现， 最多 32
     const mm::DictMatchEntry* per_dict_match_entry = NULL;
-	u2	annote_data_len = 0;
-	const char* annote_data_ptr = NULL;
+    u2    annote_data_len = 0;
+    const char* annote_data_ptr = NULL;
 
-	mm::UnicodeSegChar* _icodes = status.ActiveBlock()->_icodes;
-	u4*  _icode_chars = status.ActiveBlock()->_icode_chars;
-	u4* _icode_matches = status.ActiveBlock()->_icode_matches;
+    mm::UnicodeSegChar* _icodes = status.ActiveBlock()->_icodes;
+    u4*  _icode_chars = status.ActiveBlock()->_icode_chars;
+    u4* _icode_matches = status.ActiveBlock()->_icode_matches;
 
-	//for(u4 i = 0;  ; i++ ) 
-	u4 i = 0;
+    //for(u4 i = 0;  ; i++ ) 
+    u4 i = 0;
     while(i< status._icode_pos -2 ) //最后 2 个 不是被截断的文字，就是E2E1; 需要回溯到上一个 tagB ， 才能移动数据。
-	{	
+    {    
         /*
          * 需要考虑 n 种情况
          * 1 产品型号， 英文+数字+特定符号
@@ -165,16 +165,16 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
             _icodes[i].tagSegA = 'S';
             i++; continue; // 已经被标记为单字的，在 MMSeg 阶段继续保持（在 CRF 阶段则不同，因为需要进行新词发现）
         }
-		if(_icode_matches[i] == 0) {
-			// 词库里一条记录都没有的家伙， 单着去。
-			_icodes[i].tagSegA = 'S';
-			i++; continue; 
-		}
+        if(_icode_matches[i] == 0) {
+            // 词库里一条记录都没有的家伙， 单着去。
+            _icodes[i].tagSegA = 'S';
+            i++; continue; 
+        }
 
         // 处理为三层循环，会有额外的计算量。从长到短， 贪心算优化; 晕， 盗梦空间
-		// 也许不节省内存，计算 bigram 更好。取决于 循环执行的速度快还是内存访问的速度快。
+        // 也许不节省内存，计算 bigram 更好。取决于 循环执行的速度快还是内存访问的速度快。
         for(int term1_i = (_icode_matches[i] - _icode_matches[i-1]); term1_i >= 0; term1_i--) {
-			//term1_i -= 1; //make it as an index
+            //term1_i -= 1; //make it as an index
             current_chunk.match_entry = NULL;
             if(term1_i) {
                 pos = _icode_matches[i-1] + term1_i - 1;  // status._icode_matches[i-1] is the begin position of current char stored.
@@ -186,19 +186,19 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                 i_level2 = i + 1;
 
             current_chunk.term1_pos = i_level2;
-			//if(match_entry)
+            //if(match_entry)
             {
                 // 规则：用户自定义词典优先，如果是用户自定义词 ( dict_id != 0 ), 则直接返回
                if(match_entry->match._dict_id)
                    break; // 直接转到 ·标注字符·
             }
-			
-			if(i_level2 >= status._icode_pos) // 因为 status._icode_pos -2 , 所以，必然存在最后两个字都是单字的路径。
-				continue;
+            
+            if(i_level2 >= status._icode_pos) // 因为 status._icode_pos -2 , 所以，必然存在最后两个字都是单字的路径。
+                continue;
 
             for(int term2_i = (_icode_matches[i_level2] - _icode_matches[i_level2-1]); term2_i >= 0; term2_i--) {
-				// 第二层循环
-				//term2_i -= 1; //make it as an index
+                // 第二层循环
+                //term2_i -= 1; //make it as an index
                 if(term2_i) {
                     pos = _icode_matches[i_level2-1] + term2_i - 1;
                     match_entry2 = status.ActiveBlock()->_matches->GetMatch(pos);
@@ -206,13 +206,13 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                 }else
                     i_level3 = i_level2 + 1;
 
-				current_chunk.term2_pos = i_level3;
-				
-				if(i_level3 >= status._icode_pos)
-					continue;
+                current_chunk.term2_pos = i_level3;
+                
+                if(i_level3 >= status._icode_pos)
+                    continue;
 
                 for(int term3_i = (_icode_matches[i_level3] - _icode_matches[i_level3-1]); term3_i >= 0; term3_i--) {
-					//term3_i -= 1; //make it as an index
+                    //term3_i -= 1; //make it as an index
                     if(term3_i) {
                         pos = _icode_matches[i_level3-1] + term3_i -1;
                         match_entry3= status.ActiveBlock()->_matches->GetMatch(pos);
@@ -221,14 +221,14 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                     }else
                         current_chunk.term3_pos = i_level3 + 1;
 
-					chunk_len = current_chunk.term3_pos - i ;
-					if(chunk_max_len < chunk_len) {
-						// R1: 更新最长的 chunk
-						chunk_max_len = chunk_len;
-						best_chunk = current_chunk;
+                    chunk_len = current_chunk.term3_pos - i ;
+                    if(chunk_max_len < chunk_len) {
+                        // R1: 更新最长的 chunk
+                        chunk_max_len = chunk_len;
+                        best_chunk = current_chunk;
                     }else
-					if(chunk_len == chunk_max_len) {
-						// 应用 规则 3 4 确定合适的 chunk.
+                    if(chunk_len == chunk_max_len) {
+                        // 应用 规则 3 4 确定合适的 chunk.
                         // R3: 最小的平均长度的方差
                         float avg = current_chunk.avg(i);
                         if(avg < min_avg) {
@@ -254,14 +254,14 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                                 best_chunk = current_chunk;
                             }
                         }
-					}else{
-						// 长度不达标 ，无视
-					}
-				} // end for term3.
-			} //end for term2
+                    }else{
+                        // 长度不达标 ，无视
+                    }
+                } // end for term3.
+            } //end for term2
         } // end for term1
-		
-		// 标注字符
+        
+        // 标注字符
         // check is a mixterm
 
         if(best_chunk.term1_pos == i+1) {
@@ -285,25 +285,25 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
 #endif
           _icodes[i].tagSegA = 'S';
         }else{
-			_icodes[i].tagSegA = 'B';
-			for(u4 j = i+1; j<best_chunk.term1_pos-1;j++)
-			{
-				_icodes[j].tagSegA = 'M';
-			} // end for
-			_icodes[best_chunk.term1_pos-1].tagSegA = 'E';
-		}// end if 
+            _icodes[i].tagSegA = 'B';
+            for(u4 j = i+1; j<best_chunk.term1_pos-1;j++)
+            {
+                _icodes[j].tagSegA = 'M';
+            } // end for
+            _icodes[best_chunk.term1_pos-1].tagSegA = 'E';
+        }// end if 
 
         if(best_chunk.match_entry)  // 没有 match 也自然不会有 annote; 但是不影响在 DAG 上注册的 LUA Script Rule
-		{
-			 /*
+        {
+             /*
              *  Annote:
              *    处理词组： 拼音 | 同义词等
              *
              *  如果是脚本，此处应该使用动态生成的 JIT 代码
-			 *  此时： i 是短语的开始， best_chunk.term1_pos - 1 是短语的结束
-			 *  match_entry  是 词库全局索引 对应的记录 到每个词库词条的偏移量
-			 *
-             *	FIXME: 此处没有考虑用户词典， 目前连加载用户词典(上下文词典)的策略都木有。
+             *  此时： i 是短语的开始， best_chunk.term1_pos - 1 是短语的结束
+             *  match_entry  是 词库全局索引 对应的记录 到每个词库词条的偏移量
+             *
+             *    FIXME: 此处没有考虑用户词典， 目前连加载用户词典(上下文词典)的策略都木有。
              */
             annote_match_rs.Reset();
             int nrs = dict_mgr.GetMatchByDictionary(best_chunk.match_entry, best_chunk.term1_pos, &annote_match_rs);
@@ -314,7 +314,7 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                 // dump pinyin ,  std mmseg have no pinyin , should output as NULL.
                 mm::DictBase* dict = dict_mgr.GetDictionary( per_dict_match_entry->match._dict_id );
                 mm::EntryData* entry = dict->GetEntryDataByOffset( per_dict_match_entry->match._value );
-				// 处理 Annote
+                // 处理 Annote
                 CHECK_LT(per_dict_match_entry->match._dict_id, TOTAL_DICTIONARY_COUNT) << "dict_id out of range.";
                 for(BaseDictColumnReadMarkerList::const_iterator mit = _prop2annote_map[per_dict_match_entry->match._dict_id].begin();
                     mit < _prop2annote_map[per_dict_match_entry->match._dict_id].end(); mit++ )
@@ -327,22 +327,22 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                                                             dict->GetStringPool(), (*mit).prop_dict_idx, &annote_data_len);
                         if(annote_data_ptr) {
                             //printf("entry offset in dict is %d. \n", per_dict_match_entry->match._value );
-							status.AnnoteByPropID(i, (u2)(best_chunk.term1_pos - i), (*mit).dict_id, (*mit).prop_id, (const u1*)annote_data_ptr, annote_data_len, false );
-						}
+                            status.AnnoteByPropID(i, (u2)(best_chunk.term1_pos - i), (*mit).dict_id, (*mit).prop_id, (const u1*)annote_data_ptr, annote_data_len, false );
+                        }
                     }else{
                         CHECK_EQ((*mit).column_datatype, 's') << "only string annote supported now";
                     }
                 }
             } // end for
-		}
+        }
 
         i = best_chunk.term1_pos; //step to next term.
-		// clear chunk status
-		{
-			chunk_max_len = 0;
-			min_avg = FLT_MAX ;  
-			max_freedom = 0.0; 
-		}
+        // clear chunk status
+        {
+            chunk_max_len = 0;
+            min_avg = FLT_MAX ;  
+            max_freedom = 0.0; 
+        }
     } // end for char
     return status._icode_pos;
 }
@@ -398,7 +398,7 @@ int SegPolicyMMSeg::BuildUSC2CharFreqMap(const DictMgr &dict_mgr)
         dict_mgr.GetCharMapper()->Transform( (u4)0x4E2D, &icode_tag );  // Chinese Char `中`
         _cjk_chartag = icode_tag;
     }
-	return 0;
+    return 0;
 }
 
 } // namespace mm

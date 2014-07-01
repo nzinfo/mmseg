@@ -33,7 +33,7 @@ public:
     int Remove(u2 dict_id, const char* term, u2 term_len);  // 删除某个词典中的词条
     int Remove(const char* term, u2 term_len);              // 删除全部的词条
 protected:
-	DictMgr* _mgr;
+    DictMgr* _mgr;
 };
 
 } //mm namespace

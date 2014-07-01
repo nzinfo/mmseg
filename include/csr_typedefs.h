@@ -9,17 +9,17 @@ extern "C" {
 #define NULL 0
 #endif
 
-typedef char				i1;
-typedef unsigned char			u1;
-typedef short				i2;
-typedef unsigned short			u2;
-typedef int				i4;
-typedef unsigned int			u4;
-typedef long long			i8;
-typedef unsigned long long		u8;
+typedef char                i1;
+typedef unsigned char            u1;
+typedef short                i2;
+typedef unsigned short            u2;
+typedef int                i4;
+typedef unsigned int            u4;
+typedef long long            i8;
+typedef unsigned long long        u8;
 
 typedef u1*     u1ptr;
-typedef u4	csr_offset_t;
+typedef u4    csr_offset_t;
 /*
 #if U8_AVAILABLE
 typedef signed long int         s8;
@@ -30,26 +30,26 @@ typedef struct {u4 low, high;}  u8;
 #endif
 */
 
-#define CSR_INT8_MIN	-128
-#define CSR_INT8_MAX	127
-#define CSR_UINT8_MAX	255
+#define CSR_INT8_MIN    -128
+#define CSR_INT8_MAX    127
+#define CSR_UINT8_MAX    255
 
-#define CSR_INT16_MIN	-32768
-#define CSR_INT16_MAX	32767
-#define CSR_UINT16_MAX	65535
+#define CSR_INT16_MIN    -32768
+#define CSR_INT16_MAX    32767
+#define CSR_UINT16_MAX    65535
 
 /*
  * Note that "int" is 32 bits on all currently supported Unix-like operating
  * systems, but "long" can be either 32 bits or 64 bits, thus the 32 bit
  * constants are not qualified with "L".
  */
-#define CSR_INT32_MIN	-2147483648
-#define CSR_INT32_MAX	2147483647
-#define CSR_UINT32_MAX	4294967295U
+#define CSR_INT32_MIN    -2147483648
+#define CSR_INT32_MAX    2147483647
+#define CSR_UINT32_MAX    4294967295U
 
-#define CSR_INT64_MIN	-9223372036854775808LL
-#define CSR_INT64_MAX	9223372036854775807LL
-#define CSR_UINT64_MAX	18446744073709551615ULL
+#define CSR_INT64_MIN    -9223372036854775808LL
+#define CSR_INT64_MAX    9223372036854775807LL
+#define CSR_UINT64_MAX    18446744073709551615ULL
 
 
 #ifdef WIN32
@@ -93,6 +93,6 @@ typedef unsigned int DWORD;
 
 #ifdef __cplusplus
 }
-#endif		
+#endif
 #endif
 

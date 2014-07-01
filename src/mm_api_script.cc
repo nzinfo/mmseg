@@ -213,7 +213,7 @@ LUAAPI
 int reg_proc(LUAScript* ctx, script_processor_proto proc)
 {
     mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
-	return 0;
+    return 0;
 }
 
 /* 数据处理回调有关, 被 LUA 的脚本中回调 */

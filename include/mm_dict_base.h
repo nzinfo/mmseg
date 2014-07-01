@@ -23,11 +23,11 @@
 #include "mm_entrydata.h"
 #include "mm_entrydata_script.h"
 
-#define	MAX_PREFIX_SEARCH_RESULT	256u	// prefix 最多出现的结果。
+#define    MAX_PREFIX_SEARCH_RESULT    256u    // prefix 最多出现的结果。
 
 //FIXME: move the define -> some common header.
-#define SafeDelete(_arg)		{ if ( _arg ) delete ( _arg );		(_arg) = NULL; }
-#define SafeDeleteArray(_arg)	{ if ( _arg ) delete [] ( _arg );	(_arg) = NULL; }
+#define SafeDelete(_arg)        { if ( _arg ) delete ( _arg );        (_arg) = NULL; }
+#define SafeDeleteArray(_arg)    { if ( _arg ) delete [] ( _arg );    (_arg) = NULL; }
 
 namespace mm {
 
@@ -76,7 +76,7 @@ public:
     int Load(const char* fname);
     int Save(const char* fname, u8 rev);
     int Init(const char* dict_name, const char* schema_define); // dict_name like Java's classname.
-	void Reset();
+    void Reset();
 
     // @ return , the inner term id of the newly append string. (term_offset)
     // if - stands term pre existed.
@@ -92,12 +92,12 @@ public:
     const char* GetDiskEntryByIndex(u4 idx, u2 *key_len, u4* entry_offset);
 
     u4 BuildIndex(bool bShowProc = false);
-	// Find the exactly term in the diictionary.
-	// if found,  return the offset of term.
-	// if not, return ERR_TERM_NOT_FOUND
-	int ExactMatch(const char* q, u2 len);
-	// return all entry share the same prefix.
-	// if rs is NULL, just return the count of result in prefix matching.
+    // Find the exactly term in the diictionary.
+    // if found,  return the offset of term.
+    // if not, return ERR_TERM_NOT_FOUND
+    int ExactMatch(const char* q, u2 len);
+    // return all entry share the same prefix.
+    // if rs is NULL, just return the count of result in prefix matching.
     int PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs);
 
     // Unicode route
@@ -109,7 +109,7 @@ public:
     int LoadRaw(const char* fname);
 
     int MakeUpdatable();
-	bool IsUpdatable();
+    bool IsUpdatable();
 
     mm::IStringPool* GetStringPool();
     const mm::DictSchema* GetSchema() const { return &_schema; }
@@ -120,11 +120,11 @@ public:
     // return the entrydata corrosponding to the term.
     mm::EntryData*   GetEntryData(const char* term, u2 len, bool bAppendIfNotExist = false);
     i4           GetEntryOffset(const char* term, u2 len);
-	// if term_offset beyone the range, a system assert will be raised.
+    // if term_offset beyone the range, a system assert will be raised.
     mm::EntryData*   GetEntryDataByOffset(i4 term_offset);
 
-	// Set the dictionary of this dicionary in the current Dictmgr, whom loaded the dictionary.
-	void SetDictionaryId(u2 dict_id_of_mgr);
+    // Set the dictionary of this dicionary in the current Dictmgr, whom loaded the dictionary.
+    void SetDictionaryId(u2 dict_id_of_mgr);
     u2   DictionaryId() const { return _dict_id; }
     u8 GetReversion();
 
@@ -145,9 +145,9 @@ protected:
 
 protected:
 
-    IStringPool*	_string_pool;
-	DictSchema		_schema;
-	EntryDataPool*	_entry_pool;
+    IStringPool*    _string_pool;
+    DictSchema        _schema;
+    EntryDataPool*    _entry_pool;
 
     bool            _updatable;
     u2              _dict_id;

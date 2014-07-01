@@ -19,14 +19,14 @@
 #include "mm_dict_base.h"
 
 namespace mm {
-	
+    
 class DictTerm : public DictBase {
 public:
-	/*
-	void GetTermID(string term) {
+    /*
+    void GetTermID(string term) {
 
-	}
-	*/
+    }
+    */
 };
 
 } //end namespace 

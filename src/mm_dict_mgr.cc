@@ -109,15 +109,15 @@ int DictMgr::LoadTerm(const char* dict_path) {
     std::vector<std::string> charmap_dicts;
     // if path have more dict. only the first 20 , 24 solt, 0~3 reversed.
     int nfiles = GetDictFileNames(dict_path, ".uni", charmap_dicts);
-	// if more than one file , accept the 1st.
-	if(nfiles)
+    // if more than one file , accept the 1st.
+    if(nfiles)
     {
         // _mapper 不需要 Reset | Clear， Load 的同时清除
         _mapper->Load(charmap_dicts[0].c_str());
         _charmap_fname = charmap_dicts[0];
         LOG(INFO) << "load charmap file " << charmap_dicts[0];
     }
-	// if none, break.
+    // if none, break.
     CHECK_GT(nfiles, 0) << "none *.uni file found, exit";
 
     // Load Term Dictionarys.
@@ -135,7 +135,7 @@ int DictMgr::LoadTerm(const char* dict_path) {
             _term_dictionaries[i]->Load(_terms_fname[i].c_str());
             _terms_fname.push_back(_terms_fname[i]);
             LOG(INFO) << "load term " << _terms_fname[i] << " named " << _term_dictionaries[i]->GetDictName() << " @pos " << DICTIONARY_BASE + i;
-		}
+        }
     }
     return 0;
 }
@@ -161,8 +161,8 @@ int DictMgr::GetDictFileNames(const char* dict_path, std::string fext, bool file
     char resolved_dict_buf[255];
     files.clear();
     std::string fname; fname.reserve(255);
-	std::string f_root;
-	std::string f_ext;
+    std::string f_root;
+    std::string f_ext;
     DIR *dir;
     struct stat filestat;
     struct dirent *ent;
@@ -177,9 +177,9 @@ int DictMgr::GetDictFileNames(const char* dict_path, std::string fext, bool file
           fname +=ent->d_name;
           if (stat( fname.c_str(), &filestat )) continue;
           if (S_ISDIR( filestat.st_mode ))         continue;
-		  pystring::os::path::splitext(f_root, f_ext, fname);
+          pystring::os::path::splitext(f_root, f_ext, fname);
           //if( std::string::npos != fname.rfind(fext.c_str(), fname.length() - fext.length(), fext.length()) {
-		  if(f_ext == fext) {
+          if(f_ext == fext) {
               if(filename_only)
                 files.push_back(ent->d_name);
               else
@@ -199,9 +199,9 @@ DictBase* DictMgr::GetDictionary(const char* dict_name) const
      *  根据名字，返回词典对象， 包括 专用词表
      *  - GetDictionarySepcial 包括在内
      */
-	unordered_map<std::string, mm::DictBase*>::const_iterator it = _name2dict.find(dict_name);
-	if(it == _name2dict.end() )
-		return NULL;
+    unordered_map<std::string, mm::DictBase*>::const_iterator it = _name2dict.find(dict_name);
+    if(it == _name2dict.end() )
+        return NULL;
     return it->second;
 }
 
@@ -209,7 +209,7 @@ int DictMgr::GetDictionaryID(const char* dict_name) const
 {
     unordered_map<std::string, mm::DictBase*>::const_iterator it = _name2dict.find(dict_name);
     if(it == _name2dict.end() )
-        return NULL;
+        return -1;
     u2 dict_id = it->second->DictionaryId();
     if(dict_id != 0)
         return dict_id;
@@ -295,7 +295,7 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
             _term_dictionaries[i]->SetDictionaryId(DICTIONARY_BASE+i);
             total_entry += _term_dictionaries[i]->EntryCount();
             u4 string_size = _term_dictionaries[i]->StringPoolSize();
-			total_stringpool_size += string_size;
+            total_stringpool_size += string_size;
         }
     }
     for(int i=0; i<MAX_PHARSE_DICTIONARY; i++) {
@@ -317,7 +317,7 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
         }
     }
 
-	/*
+    /*
     const char kChineseSampleText[] = {-28, -72, -83, -26, -106, -121, 0};
     {
         //int n = mgr.ExactMatch(kChineseSampleText, 6, &rs);
@@ -340,25 +340,25 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
             }
         }
     }
-	*/
+    */
 
     // build global darts index.
-	if(bRebuildGlobalIdx)
+    if(bRebuildGlobalIdx)
     {
         // debug code.
-		/*
+        /*
         u2 key_len = 0;
         for(int i=0; i<_term_dictionaries[0]->EntryCount(); i++) {
             const char* ptr = _term_dictionaries[0]->GetDiskEntryByIndex(i, &key_len, NULL);
             printf("%*.*s/o ", key_len, key_len, ptr);
         }
-		*/
-		/*
-		 *	use quick & dirty struct. map<std::string, dict_list>	dict_list = std::vector<dict_hit>	dict_hit = (dict_id, entry_offset)
-		 *  encode dict_list -> string , save as string.
+        */
+        /*
+         *    use quick & dirty struct. map<std::string, dict_list>    dict_list = std::vector<dict_hit>    dict_hit = (dict_id, entry_offset)
+         *  encode dict_list -> string , save as string.
          *
          *  might cause huge memory consume
-		 */
+         */
 
         keymap keys;  // 必须包括字符串的原始信息
         keys.reserve(total_entry);
@@ -381,13 +381,13 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
                 entry.dict_id = i + DICTIONARY_BASE;
                 for(u4 j=0; j<_term_dictionaries[i]->EntryCount(); j++) {
                     const char* ptr = _term_dictionaries[i]->GetDiskEntryByIndex(j, &key_len, &entry_offset);
-					/*
+                    /*
                     {
                         if(key_len == 6 && strncmp(ptr, kChineseSampleText, 6) == 0) {
                             printf(" chinese 's offset is %d\n", entry_offset);
                         }
                     } 
-					*/
+                    */
 
                     //printf("%*.*s/o ", key_len, key_len, ptr);
                     //memcpy(string_pool_ptr, ptr, key_len);
@@ -460,12 +460,12 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
             for(keymap::iterator it = keys.begin();
                     it !=  keys.end(); ++it) {
                 entry = _global_idx ->Insert( it->first.c_str(), it->first.length() );
-				//printf("inser key =%s, %d, %p\n", it->first, strlen(it->first), it->first);
+                //printf("inser key =%s, %d, %p\n", it->first, strlen(it->first), it->first);
                 CHECK_NE(entry, (mm::EntryData*)NULL) << "dup key?";
                 buf_len = encode_entry_in_dict(it->second, entries);
                 entry->SetDataIdx(_global_idx->GetSchema(), _global_idx->GetStringPool(), _global_idx_entry_propidx, (const u1*)entries, buf_len);
             }
-			_global_idx->BuildIndex();
+            _global_idx->BuildIndex();
         }
         // free
         keys.clear();
@@ -528,7 +528,7 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
             }
         }
     }
-	LOG(INFO) << "build index done ";
+    LOG(INFO) << "build index done ";
     return 0;
 }
 
@@ -539,16 +539,16 @@ int DictMgr::Reload() {
 }
 
 void DictMgr::UnloadAll() {
-	for(int i=0; i<MAX_TERM_DICTIONARY; i++) {
-		if(_term_dictionaries[i] != NULL )
-			delete _term_dictionaries[i];
-		_term_dictionaries[i] = NULL;
-	}
+    for(int i=0; i<MAX_TERM_DICTIONARY; i++) {
+        if(_term_dictionaries[i] != NULL )
+            delete _term_dictionaries[i];
+        _term_dictionaries[i] = NULL;
+    }
     for(int i=0; i<MAX_PHARSE_DICTIONARY; i++) {
         if(_pharse_dictionaries[i] != NULL )
             delete _pharse_dictionaries[i];
         _pharse_dictionaries[i] = NULL;
-	}
+    }
     if(_delta_dictionary)
         delete _delta_dictionary;
     _delta_dictionary = NULL;
@@ -588,16 +588,16 @@ int DictMgr::PrefixMatch(const char* q, u2 len, mm::DictMatchResult* rs) {
 
 int DictMgr::ExactMatch(u4* q, u2 len, mm::DictMatchResult* rs)
 {
-	// FIXME: impl icode match.
-	assert(0);
-	return 0;
+    // FIXME: impl icode match.
+    assert(0);
+    return 0;
 }
 int DictMgr::PrefixMatch(u4* q, u2 len, mm::DictMatchResult* rs, bool extend_value)
 {
-	if(!_global_idx)
-		BuildIndex();
+    if(!_global_idx)
+        BuildIndex();
     int num = _global_idx->PrefixMatch(q, len, rs, extend_value);
-	return num;
+    return num;
 }
 
 int DictMgr::GetMatchByDictionary(const mm::DictMatchEntry* mentry, u2 term_len, mm::DictMatchResult* rs) const
@@ -605,10 +605,10 @@ int DictMgr::GetMatchByDictionary(const mm::DictMatchEntry* mentry, u2 term_len,
     /*
      * 使用 _global_idx 返回的 entry, 展开结果集
      */
-	mm::EntryData* entry = NULL;
-	u2 data_len = 0;
+    mm::EntryData* entry = NULL;
+    u2 data_len = 0;
 
-	entry = _global_idx->GetEntryDataByOffset(mentry->match._value);
+    entry = _global_idx->GetEntryDataByOffset(mentry->match._value);
     const char* sptr = (const char*)entry->GetData( _global_idx->GetSchema(),
                                                     _global_idx->GetStringPool(), _global_idx_entry_propidx, &data_len);
     return decode_entry_to_matchentry((const u1*)sptr, data_len, term_len, rs);

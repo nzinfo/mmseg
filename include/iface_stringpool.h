@@ -25,14 +25,14 @@ namespace mm {
 // Ensure each unique string copy have only one instance.
 class IStringPool {
 public:
-	// input a buffer of string, return the offset of the string in this string pool.
-	// The string pool format
-	// length:u4, data:u1
-	// 
-	virtual i4 AllocString(const char* buf, u2 length) = 0;
-	// return the string's ptr by string 's offset
+    // input a buffer of string, return the offset of the string in this string pool.
+    // The string pool format
+    // length:u4, data:u1
+    //
+    virtual i4 AllocString(const char* buf, u4 length) = 0;
+    // return the string's ptr by string 's offset
     virtual const char* GetString(u4 offset, u2* data_length) = 0;
-	virtual u4 GetSize() = 0;
+    virtual u4 GetSize() = 0;
 
     virtual int Dump(u1* ptr, u4 size) = 0;
     virtual int Load(u1* ptr, u4 size) = 0;

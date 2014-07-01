@@ -55,14 +55,14 @@ int SegScript::LoadScripts(const std::string script_path)
     std::sort(lua_scripts.begin(),lua_scripts.end());
     // load each
     int rs = 0;
-	std::string script_fname;
+    std::string script_fname;
     int script_id = 0;
     for(std::vector<std::string>::iterator it = lua_scripts.begin();
          it != lua_scripts.end(); ++it) {
 #ifndef WIN32
-			 script_fname = pystring::os::path::join(script_path, *it);
+             script_fname = pystring::os::path::join(script_path, *it);
 #else
-			 script_fname = pystring::os::path::join_nt(script_path, *it);
+             script_fname = pystring::os::path::join_nt(script_path, *it);
 #endif // !WIN32
         rs = init_script(_script,  script_id, script_fname.c_str());  //FIXME: how to report error ?
         if(rs < 0) {
@@ -73,7 +73,7 @@ int SegScript::LoadScripts(const std::string script_path)
         LOG(INFO) << "load script " << *it;
         script_id ++;
     }
-	init_script_done(_script);
+    init_script_done(_script);
     return nfiles;
 }
 
@@ -239,13 +239,13 @@ int SegScript::RemoveRulesByScriptId(int script_id)
      */
     SegScriptRuleList::iterator it;
     for(it = _rules.begin(); it < _rules.end(); it++) {
-		if( (*it).script_id == script_id)
-			(*it).script_id = -1;
-	}
+        if( (*it).script_id == script_id)
+            (*it).script_id = -1;
+    }
 
-	it = std::remove_if(_rules.begin(), _rules.end(),
+    it = std::remove_if(_rules.begin(), _rules.end(),
                         rule_script_id_cmp);
-	_rules.erase(it);
+    _rules.erase(it);
     return 0;
 }
 
@@ -276,7 +276,7 @@ int SegScript::BuildRegIndex()
     // 保存基于 Term 的 RuleHit List
     unordered_map<i4, std::string> term_hit_string_seg;
     unordered_map<i4, std::string> term_hit_string_dag;
-	unordered_map<i4, std::string>::iterator term_it;
+    unordered_map<i4, std::string>::iterator term_it;
 
     // 保存基于 dict_id 的规则, 且不包括按照词条命中的。理论上应该不多了。
     SegScriptRuleList rules_by_dictid[TOTAL_DICTIONARY_COUNT];
@@ -315,11 +315,11 @@ int SegScript::BuildRegIndex()
             if(term_it == term_hit_string_seg.end()) {
                 // add new hit string
                 term_hit_string_seg[(*it).term_entry_offset] = std::string(utf8_hit);
-				term_hit_string_dag[(*it).term_entry_offset] = std::string(utf8_hit);
+                term_hit_string_dag[(*it).term_entry_offset] = std::string(utf8_hit);
             } else{
                 // append hit string
                 term_hit_string_seg[(*it).term_entry_offset] += std::string(utf8_hit);
-				term_hit_string_dag[(*it).term_entry_offset] += std::string(utf8_hit);
+                term_hit_string_dag[(*it).term_entry_offset] += std::string(utf8_hit);
             }
         } else {
             // 除了 Term 之外，都需要依赖 dict_id
@@ -346,7 +346,7 @@ int SegScript::BuildRegIndex()
     bool rule_hit = false;
     for(u4 i=0; i< idx->EntryCount(); i ++) {
         data_len = 0;
-		rs.Reset();
+        rs.Reset();
 
         dict_seg_hit_ptr = dict_seg_hit;
         dict_dag_hit_ptr = dict_dag_hit;
@@ -358,12 +358,12 @@ int SegScript::BuildRegIndex()
         if(sptr == NULL) {
             // strange..
             printf("i=%d, offset=%d\n", i, i*entry_size);
-			continue;
+            continue;
         }
         // give term_len always 1, don't care about term_len
         int rs_n = decode_entry_to_matchentry((const u1*)sptr, data_len, 1, &rs);
-		{
-			for(int j = 0; j<rs_n;j++) {
+        {
+            for(int j = 0; j<rs_n;j++) {
                 //printf("@offset %d, dict id=%d, offset in sub dict=%d\n", i*entry_size, rs.GetMatch(j)->match._dict_id, rs.GetMatch(j)->match._value);
                 // loop for each dict's match.
                 u2   dict_id = rs.GetMatch(j)->match._dict_id;
@@ -424,16 +424,16 @@ int SegScript::BuildRegIndex()
                         if((*rule_it).in_dag) {
                             if(dict_dag_hit_ptr < dict_dag_hit_end)
                                 dict_dag_hit_ptr += csr::csrUTF8Encode(dict_dag_hit_ptr, (*rule_it).rule_id );
-						}else {
+                        }else {
                             if(dict_seg_hit_ptr < dict_seg_hit_end)
                                 dict_seg_hit_ptr += csr::csrUTF8Encode(dict_seg_hit_ptr, (*rule_it).rule_id );
-						}
+                        }
                     }
 
                 } // check each rule.
             } // for each sub dict's entry.
             // check offset -> append per term's hit.
-		}
+        }
         // update each entry's dag & seg.
         {
             int hit_dag_string_offset = 0;

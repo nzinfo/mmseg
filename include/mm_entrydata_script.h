@@ -43,8 +43,8 @@ public:
         return entry->SetU8(schema, prop, v);
     }
 
-	// SetTheStringValue. In fact store the string offset of the string pool.
-	// As a shortcut of SetU4 
+    // SetTheStringValue. In fact store the string offset of the string pool.
+    // As a shortcut of SetU4 
     int SetData(mm::EntryData* entry, const mm::DictSchema* schema, mm::IStringPool* pool, const char* prop, const char* v, u2 v_size) {
         return entry->SetData(schema, pool, prop, (const u1*)v, v_size);
     }

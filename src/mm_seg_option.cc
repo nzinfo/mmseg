@@ -75,7 +75,7 @@ std::string SegOptions::ProcessAnnotes(DictMgr *dict_mgr, std::string & annotes)
             _annote_name_ptr += (*it).length();
             *_annote_name_ptr = 0;
             _annote_name_ptr ++;
-			annote_id++;
+            annote_id++;
         }
 
         if(*it== "origin")

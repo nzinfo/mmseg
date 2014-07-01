@@ -31,17 +31,17 @@ namespace mm {
 // AnnoteTypeID -> [ (dictid, prop_id ) , ]
 // 
 class SegOptions {
-	/*
-		分词系统的选项
-		- 允许出现的标引
-		- 激活的特殊词典
+    /*
+        分词系统的选项
+        - 允许出现的标引
+        - 激活的特殊词典
         - 用户词典 (移出， option 不应该与某个切分的 session 有关)
-		- 是否允许 script
-		- 是否启用未登录词识别
-		- 是否启用 NER
-		//- 使用的切分策略 mm;crf;script
+        - 是否允许 script
+        - 是否启用未登录词识别
+        - 是否启用 NER
+        //- 使用的切分策略 mm;crf;script
         记录系统发现的未登录词
-	 */
+     */
 protected:
     std::string _annotes;            // 系统中允许出现的标引名称， 该名称为系统各模块约定。 如不遵守约定，可能冲突。 以 ； 分割 如为空，则为全部允许
     std::string _columns;            // 需要从词典中读取的 property 的名称的列表

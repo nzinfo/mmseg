@@ -87,7 +87,7 @@ namespace mm {
 typedef struct AnnoteEntry {
     u4 flag_value;          //  flag + type + value|offset_in_stringpool
     u4 source_next_idx;     //  source + next_element_in_array.
-}AnnoteEntry;				//
+}AnnoteEntry;                //
 
 typedef std::vector<AnnoteEntry> AnnoteEntryList;
 
@@ -145,38 +145,38 @@ class SegStatus {
 
     // 这里暗示了一个 设计缺陷， 但是我没想好怎么改。
     friend class Segmentor;
-	friend class SegPolicy;
+    friend class SegPolicy;
     friend class SegPolicyMMSeg;
     friend class SegmentorResultReader;
 
-	/*
-	 * 执行分词使用的上下文。
-	 */
+    /*
+     * 执行分词使用的上下文。
+     */
 public:
-    SegStatus(SegOptions& option, u4 size = SEG_STATUS_DEFAULT_BATCH);		// 一个处理批次可以处理的文字数量
+    SegStatus(SegOptions& option, u4 size = SEG_STATUS_DEFAULT_BATCH);        // 一个处理批次可以处理的文字数量
     virtual ~SegStatus();
-	void Reset();
+    void Reset();
 
 public:
     int SetBuffer(const char* buf, u4 len);
 
-	// Similar with Reset, but slide window to next valid postions.
-	int MoveNext();		// 不是移动到下一个字，而是移动到下一个处理批次的起始位置
+    // Similar with Reset, but slide window to next valid postions.
+    int MoveNext();        // 不是移动到下一个字，而是移动到下一个处理批次的起始位置
     bool HasMoreData() {
         return _text_buffer_ptr < _text_buffer + _text_buffer_len;
     }
 
     const mm::DictMatchResult* GetMatchesAt(u4 pos, u2* count);
-	// Called By SegPolicy
+    // Called By SegPolicy
     u1 SetTagA(u4 pos, u1 tag);
-	// Use by LUA Script, set the highest 8bit as tag.
-	// if in CRFMode, tagA is the result of assistant tokenizer's result
+    // Use by LUA Script, set the highest 8bit as tag.
+    // if in CRFMode, tagA is the result of assistant tokenizer's result
     u1 SetTagB(u4 pos, u1 tag);
-	// Almost the save as tagB, but Push the originB -> A, if originB is not 0;
-	// Used by SegPolicy chain.
+    // Almost the save as tagB, but Push the originB -> A, if originB is not 0;
+    // Used by SegPolicy chain.
     u1 SetTagPush(u4 pos, u1 tag);
-	// Build property's index. 用于支持 find term by property 
-	void BuildTermIndex();
+    // Build property's index. 用于支持 find term by property 
+    void BuildTermIndex();
     SegOptions& GetOption() { return _options; }
 
 public:
@@ -201,13 +201,13 @@ public:
 protected:
     // Segmenter's Intractive functions.
     u4 FillWithICode(const DictMgr& dict_mgr, bool toLower = true); // 转换到 icode, 转换到小写（常用字）
-	// 根据 词典生成候选词表, 返回 DAG 图中的元素个数。可以同时加载 用户自定义词库 与 专用的一个领域词库。
+    // 根据 词典生成候选词表, 返回 DAG 图中的元素个数。可以同时加载 用户自定义词库 与 专用的一个领域词库。
     u4 BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_user = NULL);
 
     int Apply(const DictMgr& dict_mgr, SegPolicy* policy);   //不使用 const，因为有些policy 可能有上下文词典，需要修改自身。（虽然理论上不应）
 
 protected:
-	void _DebugCodeConvert();
+    void _DebugCodeConvert();
     void _DebugDumpDAG();
     void _DebugMMSegResult();
 
@@ -236,8 +236,8 @@ protected:
 
     u4 _icode_pos;  // 当前的位置，当切换时会被重置
     u4 _icode_last_s_pos; // 最后一个 根据 unicode script 标注为 S 的字的位置；需要检查如果为0， 则 _icode_last_s_pos == _icode_pos
-    u4 _offset;		// 从起点开始， 现在的偏移量 （目前好像没用到）
-	u4 _size;		// 整个 status 的最大字符容量
+    u4 _offset;        // 从起点开始， 现在的偏移量 （目前好像没用到）
+    u4 _size;        // 整个 status 的最大字符容量
 
     SegStatusSwapBlock* _block1;
     SegStatusSwapBlock* _block2;

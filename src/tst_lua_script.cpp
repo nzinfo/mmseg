@@ -25,15 +25,15 @@ main(int argc, char* argv[])
 {
     //mm::DictBase dict;
 
-	LUAScript ctx;
-	
-	lua_script_init(&ctx);
-	
-	{
-		const char* fname = argv[1];
-		int n = init_script(&ctx, fname);
-	}
-	
-	lua_script_clear(&ctx);
+    LUAScript ctx;
+    
+    lua_script_init(&ctx);
+    
+    {
+        const char* fname = argv[1];
+        int n = init_script(&ctx, fname);
+    }
+    
+    lua_script_clear(&ctx);
     return 0;
 }
