@@ -129,6 +129,7 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
     u4 i_level3 = 0;
     MMSegChunk current_chunk;
     MMSegChunk best_chunk;
+
     mm::DictMatchResult annote_match_rs;  // 256.. 一个词条在多少个词典中同时出现， 最多 32
     const mm::DictMatchEntry* per_dict_match_entry = NULL;
     u2    annote_data_len = 0;

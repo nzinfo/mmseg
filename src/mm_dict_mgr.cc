@@ -130,7 +130,7 @@ int DictMgr::LoadTerm(const char* dict_path) {
             _term_dictionaries[i] = NULL;
         }
 
-        for(int i=0; i<min(nfiles, MAX_TERM_DICTIONARY); i++) {
+        for(int i=0; i< min(nfiles, MAX_TERM_DICTIONARY); i++) {
             _term_dictionaries[i] = new mm::DictTerm();
             _term_dictionaries[i]->Load(_terms_fname[i].c_str());
             _terms_fname.push_back(_terms_fname[i]);
@@ -361,7 +361,9 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
          */
 
         keymap keys;  // 必须包括字符串的原始信息
+#if HASH_MAP_C11
         keys.reserve(total_entry);
+#endif
 
         u2 key_len = 0;
         u4 entry_offset = 0;
