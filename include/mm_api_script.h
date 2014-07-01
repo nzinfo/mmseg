@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -163,6 +163,12 @@ int reg_at_term_prop_u8(LUAScript* ctx, int rule_id, u2 dict_id, const char* pro
 LUAAPI
 int reg_at_term_prop_s(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop,
                        const char* sv, u2 sl, bool bInDAG);
+
+// 当一个Block被填满，或者最后一个 Block。 回调本函数
+typedef int (STDCALL *script_processor_proto)(LUAScript* ctx, int start_pos);
+
+LUAAPI
+int reg_proc(LUAScript* ctx, script_processor_proto proc);
 
 /* 数据处理回调有关, 被 LUA 的脚本中回调 */
 

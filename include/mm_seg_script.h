@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -57,7 +57,14 @@ public:
     bool        in_dag;
 };
 
+class SegScriptProc {
+public:
+    int script_id;
+    script_processor_proto proc;
+};
+
 typedef std::vector<SegScriptRule> SegScriptRuleList;
+typedef std::vector<SegScriptProc> SegScriptProcList;
 
 class SegScript {
 public:
@@ -84,6 +91,11 @@ public: // used @lua side
     int RegPropStr(int rule_id, int script_id, u2 dict_id, const char* prop,
                            const char* sv, u2 sl, bool bInDAG);
 
+    int RegProc(int script_id, script_processor_proto proc);
+
+    int RemoveRulesByScriptId(int script_id);
+    int RemoveProcessorCallBack(int script_id);
+
     int BuildRegIndex();
 
     const char* GetDictionaryName(u2 dict_id) const;
@@ -103,6 +115,7 @@ protected:
     //std::vector<rule_list> _dict_dagtag2rulelist;
 
     SegScriptRuleList  _rules;
+    SegScriptProcList  _procs;
     mm::StringPoolMemory _rulehits_pool;    //保存字符串形式的规则的命中， 自动去重。
 
 protected:

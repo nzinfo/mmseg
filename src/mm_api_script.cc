@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -209,6 +209,12 @@ int reg_at_term_prop_s(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop
     return script->RegPropStr(rule_id, ctx->script_id, dict_id, prop, sv, sl, bInDAG);
 }
 
+LUAAPI
+int reg_proc(LUAScript* ctx, script_processor_proto proc)
+{
+    mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
+	return 0;
+}
 
 /* 数据处理回调有关, 被 LUA 的脚本中回调 */
 

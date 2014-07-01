@@ -1,4 +1,4 @@
-﻿#if defined(WIN32)
+#if defined(WIN32)
     #define STDCALL __stdcall
     #define LUAAPI   __declspec( dllexport )
 #elif defined (__GNUG__)     /*  gcc  IIRC */

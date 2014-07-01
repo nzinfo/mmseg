@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  MMSeg Chinese tokenizer command line interface.
  */
 #include <glog/logging.h>

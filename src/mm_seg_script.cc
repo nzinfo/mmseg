@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -219,6 +219,38 @@ int SegScript::RegPropStr(int rule_id, int script_id, u2 dict_id, const char* pr
     rule.v_str = std::string(sv, sl);
     rule.rule_type = 's';
     _rules.push_back(rule);
+    return 0;
+}
+
+int SegScript::RegProc(int script_id, script_processor_proto proc)
+{
+    return 0;
+}
+
+bool rule_script_id_cmp(SegScriptRule& r)
+{
+    return r.script_id == -1;
+}
+
+int SegScript::RemoveRulesByScriptId(int script_id)
+{
+    /*
+     * 删除某个 script_id 注册的全部 rule； rule_id 必须是全局唯一的
+     */
+    SegScriptRuleList::iterator it;
+    for(it = _rules.begin(); it < _rules.end(); it++) {
+		if( (*it).script_id == script_id)
+			(*it).script_id = -1;
+	}
+
+	it = std::remove_if(_rules.begin(), _rules.end(),
+                        rule_script_id_cmp);
+	_rules.erase(it);
+    return 0;
+}
+
+int SegScript::RemoveProcessorCallBack(int script_id)
+{
     return 0;
 }
 
