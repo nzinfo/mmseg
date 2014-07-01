@@ -129,8 +129,8 @@ int DictMgr::LoadTerm(const char* dict_path) {
                 delete _term_dictionaries[i];
             _term_dictionaries[i] = NULL;
         }
-
-        for(int i=0; i< min(nfiles, MAX_TERM_DICTIONARY); i++) {
+		nfiles = (std::min)(nfiles, MAX_TERM_DICTIONARY);
+        for(int i=0; i< nfiles; i++) {
             _term_dictionaries[i] = new mm::DictTerm();
             _term_dictionaries[i]->Load(_terms_fname[i].c_str());
             _terms_fname.push_back(_terms_fname[i]);
