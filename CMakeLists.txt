@@ -54,7 +54,7 @@ set(CMAKE_COLOR_MAKEFILE ON)
 cmake_minimum_required(VERSION 2.6 FATAL_ERROR)
 
 IF (WIN32)
-  add_definitions( -D_CRT_SECURE_NO_WARNINGS )  
+  add_definitions( -D_CRT_SECURE_NO_WARNINGS /wd4819 /nologo )
 ENDIF (WIN32)
 
 set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
