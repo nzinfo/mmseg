@@ -27,6 +27,8 @@
 #define MAX_PHARSE_DICTIONARY 8
 #define TOTAL_DICTIONARY_COUNT 32
 
+#define GLOBAL_IDX_SCHEMA   "seg:4;dag:4;term_tag:2;entries:s"
+
 namespace mm {
 
 typedef struct BaseDictColumnReadMarker{
@@ -161,6 +163,8 @@ protected:
 
     mm::DictGlobalIndex* _global_idx;
     int                  _global_idx_entry_propidx; // 保存 entries 的 为位置，因为新增加了两个字段 so...
+    int                  _global_idx_term_tag_propidx;
+
 
     unordered_map<std::string, mm::DictBase*> _name2dict;
     unordered_map<u2, std::string> _id2name;

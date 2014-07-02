@@ -56,6 +56,8 @@ int init_script(LUAScript* ctx, int script_id, const char* script_fname)
     if(ctx->stage != LUASCRIPT_STATUS_INIT)
         return -10; // 初始化已经完成，不可以再继续加载了。
 
+    mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
+
     ctx->script_id = script_id;
     lua_State *L = ctx->L;
 
@@ -101,6 +103,11 @@ int init_script(LUAScript* ctx, int script_id, const char* script_fname)
         z = lua_tonumber(L, -1);
         lua_pop(L, 1);  /* pop returned value */
         //printf("get function 'f' result=%f\n", z);
+        if (z < 0) {
+            // 如果返回  < 0 表示 初始化的过程出错。
+            script->RemoveProcessorCallBack(ctx->script_id);
+            script->RemoveRulesByScriptId(ctx->script_id);
+        }
     }
 
     ctx->script_id = 0;
@@ -213,7 +220,7 @@ LUAAPI
 int reg_proc(LUAScript* ctx, script_processor_proto proc)
 {
     mm::SegScript* script = (mm::SegScript*)ctx->seg_script_ptr;
-    return 0;
+	return script->RegProc(ctx->script_id, proc);
 }
 
 /* 数据处理回调有关, 被 LUA 的脚本中回调 */

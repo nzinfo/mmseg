@@ -77,7 +77,7 @@ public:
     virtual int Feed(SegStatus* status);
 
     // 读取字的标注，用于分词 | 读取 Annote 的数量 （ 目前永远为 0 ）, 如果返回 0 表示 pos 越界
-    const char Char(int pos, u2* annote_count_at_pos);
+    const char CharAt(int pos, u2* annote_count_at_pos);
     const u4 iCodeLength() {
         return _icode_lastpos;
     }

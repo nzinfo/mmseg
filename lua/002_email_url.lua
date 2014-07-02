@@ -30,12 +30,28 @@ ffi.cdef[[
 	int reg_at_term_prop_u8(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, u8 v, bool bInDAG);
 	int reg_at_term_prop_s(LUAScript* ctx, int rule_id, u2 dict_id, const char* prop, const char* sv, u2 sl, bool bInDAG);
 
+        typedef int (__stdcall *script_processor_proto)(LUAScript* ctx, int start_pos);
+
+        int reg_proc(LUAScript* ctx, script_processor_proto proc);
 ]]
 
 function mm_init( ctx )
-	-- print ("in mm_init")
-	local C = ffi.C
-	-- print("mm_init in email")  -- 用于测试函数是否会冲突; 不会冲突
-	
-	return 0
+    -- print ("in mm_init")
+    local C = ffi.C
+    local ctx_ptr = ffi.cast("LUAScript*", ctx)
+
+    local s_utf8_key = "@" -- 当出现 @ 符号时... 可能是邮件，可能是微博
+    local n = C.reg_at_term(ctx_ptr, 500, s_utf8_key, s_utf8_key:len(), false)
+    print(n)
+    -- print("mm_init in email")  -- 用于测试函数是否会冲突; 不会冲突
+    local process_cb = ffi.cast("script_processor_proto",
+        function(ctx, start_pos)
+            print("hello")
+            return 0
+        end )
+
+    C.reg_proc(ctx_ptr, process_cb)
+    -- FIXME: should release the cb
+    -- process_cb:free()
+    return 0
 end

@@ -224,10 +224,19 @@ int SegScript::RegPropStr(int rule_id, int script_id, u2 dict_id, const char* pr
 
 int SegScript::RegProc(int script_id, script_processor_proto proc)
 {
+    SegScriptProc seg_proc;
+    seg_proc.script_id = script_id;
+    seg_proc.proc  = proc;
+    _procs.push_back(seg_proc);
     return 0;
 }
 
 bool rule_script_id_cmp(SegScriptRule& r)
+{
+    return r.script_id == -1;
+}
+
+bool proc_script_id_cmp(SegScriptProc& r)
 {
     return r.script_id == -1;
 }
@@ -251,6 +260,16 @@ int SegScript::RemoveRulesByScriptId(int script_id)
 
 int SegScript::RemoveProcessorCallBack(int script_id)
 {
+    SegScriptProcList::iterator it;
+    for(it = _procs.begin(); it < _procs.end(); it++) {
+        if( (*it).script_id == script_id)
+            (*it).script_id = -1;
+    }
+
+    it = std::remove_if(_procs.begin(), _procs.end(),
+                        proc_script_id_cmp);
+    _procs.erase(it);
+
     return 0;
 }
 
@@ -355,14 +374,16 @@ int SegScript::BuildRegIndex()
         // test dump the entry per dict hit list.
         const char* sptr = (const char*)entry_data_ptr->GetData(idx->GetSchema(),
             idx->GetStringPool(), entries_idx, &data_len);
+
         if(sptr == NULL) {
-            // strange..
+            // strange.. 因为有 ucs-2 字符不全的原因，为 NULL 的常见。
             printf("i=%d, offset=%d\n", i, i*entry_size);
             continue;
         }
         // give term_len always 1, don't care about term_len
-        int rs_n = decode_entry_to_matchentry((const u1*)sptr, data_len, 1, &rs);
+        if(sptr)
         {
+            int rs_n = decode_entry_to_matchentry((const u1*)sptr, data_len, 1, &rs);
             for(int j = 0; j<rs_n;j++) {
                 //printf("@offset %d, dict id=%d, offset in sub dict=%d\n", i*entry_size, rs.GetMatch(j)->match._dict_id, rs.GetMatch(j)->match._value);
                 // loop for each dict's match.

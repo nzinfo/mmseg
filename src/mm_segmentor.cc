@@ -119,7 +119,7 @@ int SegmentorResultReaderScript::Feed(SegStatus* status)
     return 0;
 }
 
-const char SegmentorResultReaderScript::Char(int pos, u2* annote_count_at_pos)
+const char SegmentorResultReaderScript::CharAt(int pos, u2* annote_count_at_pos)
 {
     if(pos >= 0 &&  _icode_lastpos - pos > 0) {
       if(_icode_chars[pos] >= SEG_PADING_B1)

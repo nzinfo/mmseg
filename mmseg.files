@@ -62,11 +62,13 @@ src/utils/scoped_ptr.h
 src/utils/utf8_to_16.cpp
 src/config.win.h
 src/seg_result.c
+src/CMakeLists.txt
 tests/tst_gtest.cpp
 README
 binding/CMakeLists.txt
 binding/mmseg.i
-src/CMakeLists.txt
+lua/001_word_count.lua
+lua/002_email_url.lua
 CMakeLists.txt
 build_dicts.bat
 design/script_interface.txt

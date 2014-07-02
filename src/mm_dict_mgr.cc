@@ -259,7 +259,7 @@ int DictMgr::LoadIndexCache(const char* fname) {
     if(!_global_idx) {
         // FIXME: dup code. & and should reset _global_idx @ each load cache.
         _global_idx = new mm::DictGlobalIndex();
-        _global_idx->Init("com.coreseek.mm.global_idx", "seg:4;dag:4;entries:s"); // entries all the dict.
+        _global_idx->Init("com.coreseek.mm.global_idx", GLOBAL_IDX_SCHEMA); // entries all the dict.
     }
     // checkfile.
     std::ifstream dfile(fname, std::ios::binary);
@@ -268,8 +268,11 @@ int DictMgr::LoadIndexCache(const char* fname) {
     dfile.close();
     // reopen and load.
     int nret = _global_idx->Load(fname);
-    if(nret == 0)
+    if(nret == 0) {
         _global_idx_entry_propidx = _global_idx->GetSchema()->GetColumn("entries")->GetIndex();
+        _global_idx_term_tag_propidx = _global_idx->GetSchema()->GetColumn("term_tag")->GetIndex();
+    }
+
     return nret;
 }
 
@@ -368,7 +371,7 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
         u2 key_len = 0;
         u4 entry_offset = 0;
         // alloc all possible entryindict.
-        EntryInDict* pool = (EntryInDict*) malloc( total_entry * sizeof(EntryInDict) );
+        EntryInDict* pool = (EntryInDict*) malloc( (total_entry + CSR_UINT16_MAX) * sizeof(EntryInDict) ); // 增加 UCS-2 的空间
         EntryInDict* pool_ptr = pool;
         //char * string_pool = (char*)malloc(total_stringpool_size + total_entry); //add more space, unness.
         //memset(string_pool, 0, total_stringpool_size + total_entry);
@@ -455,17 +458,103 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
             SafeDelete(_global_idx);
             _global_idx = new mm::DictGlobalIndex();
             // FIXME: use macro | global const define global_idx's schema.
-            _global_idx->Init("com.coreseek.mm.global_idx", "seg:4;dag:4;entries:s"); // entries all the dict.
+            _global_idx->Init("com.coreseek.mm.global_idx", GLOBAL_IDX_SCHEMA); // entries all the dict.
 
             mm::EntryData* entry = NULL;
             _global_idx_entry_propidx = _global_idx->GetSchema()->GetColumn("entries")->GetIndex();
+            _global_idx_term_tag_propidx = _global_idx->GetSchema()->GetColumn("term_tag")->GetIndex();
+            /*
+             * 词典补完：
+             * 1 如果在 UCS-2 空间中，有字符不再 keys 中，则 增加； term_tag 与 script_type 同；
+             *   对应的 EntryInDict 为 NULL
+             * 2 检测每个词条中，每个字的类型。判断词条的基本类型
+             *   - 默认为中文
+             *   - 如果全部为数字，则标记为数字
+             *   - 如果全部为符号，则标记为符号
+             *   - 如果全部为字母，则标记为西文
+             *   - [目前不实现] 如果存在某个 dict ，指定了 term_tag，则从其指定
+             *   - 对于不在词典中的新出现的词条，取其第一个字符长度 tag
+             */
+            /*
+            {
+                keymap::const_iterator cit;
+                char char_utf8[10];
+                for(u4 icode = 1; icode <= CSR_UINT16_MAX; icode++) {
+                    // encode icode -> utf8
+                    char_utf8[csr::csrUTF8Encode((u1*)char_utf8, icode)] = 0;  //必然可以被正确的编码
+                    // query in key
+                    cit = keys.find(char_utf8);
+                    if(cit==keys.end()) {
+                        // 因为其他算法模块的原因， 此处不能为 NULL
+                        // icode missing
+                        // keys[char_utf8] = NULL;
+						pool_ptr->dict_id = 0;
+                        pool_ptr->entry_offset = 0;
+                        pool_ptr->next = NULL;
+                        keys[char_utf8] = pool_ptr;
+                        pool_ptr ++;
+
+                    }
+                } // end for each icode
+            }
+            */
+            // 确定 CJK 区的 Tag
+            u2 _cjk_chartag = 0;
+            u2 _num_chartag = 0;
+            u2 _ascii_chartag = 0;
+            u2 _sym_chartag = 0;
+            u2 char_tag = 0;
+            u2 term_tag = 0;
+            {
+                GetCharMapper()->Transform( (u4)0x4E2D, &_cjk_chartag );  // Chinese Char `中`
+                GetCharMapper()->Transform( (u4)'1', &_num_chartag );
+                GetCharMapper()->Transform( (u4)'A', &_ascii_chartag );
+                GetCharMapper()->Transform( (u4)',', &_sym_chartag );
+            }
+
+
             for(keymap::iterator it = keys.begin();
                     it !=  keys.end(); ++it) {
                 entry = _global_idx ->Insert( it->first.c_str(), it->first.length() );
                 //printf("inser key =%s, %d, %p\n", it->first, strlen(it->first), it->first);
                 CHECK_NE(entry, (mm::EntryData*)NULL) << "dup key?";
-                buf_len = encode_entry_in_dict(it->second, entries);
-                entry->SetDataIdx(_global_idx->GetSchema(), _global_idx->GetStringPool(), _global_idx_entry_propidx, (const u1*)entries, buf_len);
+                if(it->second) {
+                    buf_len = encode_entry_in_dict(it->second, entries);
+                    entry->SetDataIdx(_global_idx->GetSchema(), _global_idx->GetStringPool(),
+                                      _global_idx_entry_propidx, (const u1*)entries, buf_len);
+                }
+
+                {
+                    // 检查词条的类别
+                    // 1 解码回 icode
+                    // 检查编码是否都一样
+                    // 检查是否是 _num_chartag  _ascii_chartag _sym_chartag
+                    // 标注 词条
+                    term_tag = _cjk_chartag;
+
+                    const char* ptr_begin = it->first.c_str();
+                    const char* ptr_end = ptr_begin + it->first.length();
+                    const char* ptr = ptr_begin;
+
+                    u2 utf8_icode_len = 0;
+                    int iCode = 0;
+                    while(*ptr && ptr < ptr_end) {
+                        iCode = csr::csrUTF8Decode (
+                                    (const u1*)ptr, utf8_icode_len);
+                        // query icode's type
+                        ptr += utf8_icode_len;
+                        GetCharMapper()->Transform( (u4)iCode, &char_tag );
+                        if (term_tag == 0)
+                            term_tag = char_tag;
+                        if (term_tag != char_tag)
+                            term_tag = CSR_UINT16_MAX; //设置为最大的u2, 表示无效。 自动检测只能检查字符都属于同一个 script_type 的情况。
+                    } //end while check
+
+                    if(term_tag == CSR_UINT16_MAX)
+                        term_tag = _cjk_chartag;
+                    //注册之
+                    entry->SetU2(_global_idx->GetSchema(), _global_idx_term_tag_propidx, term_tag);
+                }
             }
             _global_idx->BuildIndex();
         }
