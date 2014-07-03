@@ -145,7 +145,7 @@ int SegStatus::MoveNext() {
     if(icode_last_s_pos < 5)  // 最后一个 E 也过于靠前，说明全部都是 S，那么随便找 最后 50 个
         icode_last_s_pos = _icode_pos - 50;
 
-    LOG(INFO) << "MNext " <<  icode_last_s_pos << "->" << _icode_pos;
+    //LOG(INFO) << "MNext " <<  icode_last_s_pos << "->" << _icode_pos;
 
     NextBlock()->Reset();
     // move remain char.
@@ -414,11 +414,16 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_us
     return num;
 }
 
-int SegStatus::Apply(const DictMgr& dict_mgr, SegPolicy* policy)
+int SegStatus::Apply(const DictMgr& dict_mgr, const SegScript& script_mgr, SegPolicy* policy)
 {
     if(policy == NULL)
         return -1; // should crash.
-    return policy->Apply(dict_mgr, *this);
+    int n = policy->Apply(dict_mgr, *this);
+    if( n < 0) // some error happen
+        return n;
+    // do scripting post fix, FIXME:
+    n = script_mgr.ProcessScript(this);
+	return n;
 }
 
 int SegStatus::Annote(u4 pos, u2 token_len, u2 source_id, const char* prop_name,

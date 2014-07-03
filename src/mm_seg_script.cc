@@ -501,6 +501,24 @@ int SegScript::BuildRegIndex()
     return 0;
 }
 
+int SegScript::ProcessScript(SegStatus* status) const
+{
+    /*
+     *  执行 脚本的 回调
+     */
+    _script->seg_status_ptr = status;
+    int n = 0;
+
+    for(SegScriptProcList::const_iterator it = _procs.begin();
+        it < _procs.end(); it++) {
+        if( (*it).proc ) {
+            n = (*it).proc(_script, 101);
+        }
+    }
+    _script->seg_status_ptr = NULL;
+    return 0;
+}
+
 const char* SegScript::GetDictionaryName(u2 dict_id) const
 {
     mm::DictBase * dict = _dict_mgr->GetDictionary(dict_id);

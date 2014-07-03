@@ -31,6 +31,7 @@ int lua_script_init(LUAScript* ctx)
     luaL_openlibs(ctx->L);
     ctx->stage = LUASCRIPT_STATUS_INIT;
     ctx->task_ctx = NULL;
+    ctx->seg_status_ptr = NULL;
     return 0;
 }
 

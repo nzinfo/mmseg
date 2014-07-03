@@ -55,7 +55,7 @@ int Segmentor::Tokenizer(u8 task_id, const char* text_to_seg, u4 text_len, SegSt
         //在启用 人名库 | 组织名库后， 在此处即进行处理。 可能需要 CRF 对人名做二次确认。类似 Adaboost ?
         status->BuildTermIndex();                                 // 用于支持脚本对词条的快速查找
         //status->_DebugDumpDAG();
-        int icode_seg = status->Apply(_dict_mgr, &_mmseg);          // 应用具体的切分算法。 返回处理的文字个数
+        int icode_seg = status->Apply(_dict_mgr, _script_mgr, &_mmseg);          // 应用具体的切分算法。 返回处理的文字个数
         //status->_DebugMMSegResult();
         //check is enable crfseg.
         //check enable pos

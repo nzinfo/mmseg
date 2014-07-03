@@ -18,6 +18,7 @@
 #include "mm_hashmap.h"
 #include "mm_seg_option.h"
 #include "mm_dict_mgr.h"
+#include "mm_seg_script.h"
 #include "mm_dict_term_user.h"
 #include "mm_segpolicy.h"
 #include "mm_stringpool.h"
@@ -205,7 +206,7 @@ protected:
     // 根据 词典生成候选词表, 返回 DAG 图中的元素个数。可以同时加载 用户自定义词库 与 专用的一个领域词库。
     u4 BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_user = NULL);
 
-    int Apply(const DictMgr& dict_mgr, SegPolicy* policy);   //不使用 const，因为有些policy 可能有上下文词典，需要修改自身。（虽然理论上不应）
+    int Apply(const DictMgr& dict_mgr, const SegScript &script_mgr, SegPolicy* policy);   //不使用 const，因为有些policy 可能有上下文词典，需要修改自身。（虽然理论上不应）
 
 protected:
     void _DebugCodeConvert();

@@ -88,6 +88,7 @@ typedef struct LUAScript
     TokenContext* task_ctx; //当前执行的分词上下文。不可以持续绑定到 LUAScript
     char error_msg[LUASCRIPT_ERROR_MESSAGE_LENGTH];       // the errror message of lua script.
     void* seg_script_ptr;
+    void* seg_status_ptr;   // 指向实际的 seg_status （用于保存分词结果的那个类）
 }LUAScript;
 
 /* 系统初始化有关 */

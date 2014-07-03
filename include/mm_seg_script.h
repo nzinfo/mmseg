@@ -33,7 +33,7 @@ namespace mm {
 //typedef u1* rule_list; //使用文本形式编码(big utf-8)过的rules
 
 class DictMgr;
-
+class SegStatus;
 
 typedef union prop_v {
     u2 v_u2;
@@ -101,6 +101,8 @@ public: // used @lua side
     const char* GetDictionaryName(u2 dict_id) const;
     const std::string GetDictionaryNames(const char* category) const;
     int   GetDictionaryID(const char* dict_name) const;
+
+    int ProcessScript(SegStatus* status) const;
 
 protected:
     // find is term in global_idx
