@@ -140,7 +140,8 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
     u4* _icode_matches = status.ActiveBlock()->_icode_matches;
 
     //for(u4 i = 0;  ; i++ ) 
-    u4 i = 0;
+    u4 i = 1;
+    // 因为后续需要有三个字才能构成一个 trunk，因此如果后续两个字不是 E2E1，
     while(i< status._icode_pos -2 ) //最后 2 个 不是被截断的文字，就是E2E1; 需要回溯到上一个 tagB ， 才能移动数据。
     {    
         /*
@@ -292,6 +293,7 @@ int SegPolicyMMSeg::Apply(const DictMgr& dict_mgr, SegStatus& status)
                 _icodes[j].tagSegA = 'M';
             } // end for
             _icodes[best_chunk.term1_pos-1].tagSegA = 'E';
+            status.ActiveBlock()->_icode_last_e_pos_candi = best_chunk.term1_pos-1;
         }// end if 
 
         if(best_chunk.match_entry)  // 没有 match 也自然不会有 annote; 但是不影响在 DAG 上注册的 LUA Script Rule

@@ -475,7 +475,7 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
              *   - [目前不实现] 如果存在某个 dict ，指定了 term_tag，则从其指定
              *   - 对于不在词典中的新出现的词条，取其第一个字符长度 tag
              */
-            /*
+
             {
                 keymap::const_iterator cit;
                 char char_utf8[10];
@@ -497,7 +497,7 @@ int DictMgr::BuildIndex(bool bRebuildGlobalIdx) {
                     }
                 } // end for each icode
             }
-            */
+
             // 确定 CJK 区的 Tag
             u2 _cjk_chartag = 0;
             u2 _num_chartag = 0;

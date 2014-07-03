@@ -133,7 +133,8 @@ public:
     AnnoteEntryList _annote_list;           // 本区块对应的 Annote
     mm::StringPoolMemory _annote_pool;      // annote 被处理为字符串.. so...
 
-    u4               _icode_last_s_pos;     // 保存最后一个有效的 icode 位置
+    u4               _icode_last_s_pos;       // 保存最后一个有效的 icode 位置
+    u4               _icode_last_e_pos_candi; // 最后一个标记为 E 的有效位置
 
 protected:
     u1*              _matches_data_ptr;     // 实际存 match 大的区域
@@ -224,10 +225,10 @@ protected:
 
     inline void SwapBlock() {
         if(_block1 == _block_active) {
-            _block2->Reset();
+            //_block2->Reset();
             _block_active = _block2;
         }else{
-            _block1->Reset();
+            //_block1->Reset();
             _block_active = _block1;
         }
     }
@@ -235,7 +236,13 @@ protected:
 protected:
 
     u4 _icode_pos;  // 当前的位置，当切换时会被重置
+    /*
+     * 原来是 记录标记为 S 的，但是由于采用 S 会被切碎。而且会导致随机从后取 50 个字的规则无效。
+     *
+     */
     u4 _icode_last_s_pos; // 最后一个 根据 unicode script 标注为 S 的字的位置；需要检查如果为0， 则 _icode_last_s_pos == _icode_pos
+    u4 _icode_last_e_pos_candi; // 用于缺少标点符号的情况，记录最后一个标记为 E 的位置
+
     u4 _offset;        // 从起点开始， 现在的偏移量 （目前好像没用到）
     u4 _size;        // 整个 status 的最大字符容量
 
@@ -249,6 +256,12 @@ protected:
     const char* _text_buffer;
     const char* _text_buffer_ptr;
     u4          _text_buffer_len;
+
+    // 用于判断字符的类型。
+    u2 _cjk_chartag;
+    u2 _num_chartag;
+    u2 _ascii_chartag;
+    u2 _sym_chartag;
 };
 
 } // namespace mm

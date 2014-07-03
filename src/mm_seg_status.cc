@@ -22,7 +22,7 @@
 namespace mm {
 
 SegStatusSwapBlock::SegStatusSwapBlock(int block_size)
-    :_size(block_size), _icode_last_s_pos(0)
+    :_size(block_size), _icode_last_s_pos(0), _icode_last_e_pos_candi(0)
 {
     u4 size_of_icodes = (_size+4)*sizeof(UnicodeSegChar);   //额外冗余 4 个字符，用于 B1B2 E2E1
     _icodes = (UnicodeSegChar*)malloc(size_of_icodes); // include padding. B1B2; E2E1
@@ -71,7 +71,7 @@ SegStatus::SegStatus(SegOptions &option, u4 size)
 {
 
     _icode_pos = 0;
-
+    _icode_last_e_pos_candi = 0;
     // 初始化 blocks
     _block1 = new SegStatusSwapBlock(size);
     _block2 = new SegStatusSwapBlock(size);
@@ -127,24 +127,37 @@ int SegStatus::MoveNext() {
     /*
      * 把 _icode 之类的状态，切换到下一个 block 可用
      *  - 因为还要保留 annote　等信息，因此无法使用　Reset， 实际上 Reset 不会被调用。
-     *
+     *  - 因为还需要考虑 CRF 的情况，因此切换时，不是考虑最后一个 S 标注的字符位置，而是这个 位置 -2
+     *    * 需要考虑后续的全部连续，只有首字母（2）是 S， 此时
      * 返回，当前 的 _icode_pos
      *
      */
     NextBlock()->Reset();
 
-    LOG(INFO) << "MNext " <<  _icode_last_s_pos << "->" << _icode_pos;
-    u4 icode_last_s_pos = _icode_last_s_pos;
-    if(!_icode_last_s_pos)
-        icode_last_s_pos = _icode_pos - 50; //如果小于 50 ? 则本函数根本不该调用
+    u4 icode_last_s_pos = _icode_last_s_pos; // 定位到最后一个标点符号的位置
+    if(_icode_last_s_pos < 5)  // 最后一个标点符号过于靠前，找最后一个 E
+        icode_last_s_pos = (std::max)(_icode_last_e_pos_candi, ActiveBlock()->_icode_last_e_pos_candi);
+
+	//如果小于 50 ? 则本函数根本不该调用
     if(_icode_pos - 50 < 0 )
         return -1; // verify avoid crash.
 
+    if(icode_last_s_pos < 5)  // 最后一个 E 也过于靠前，说明全部都是 S，那么随便找 最后 50 个
+        icode_last_s_pos = _icode_pos - 50;
+
+    LOG(INFO) << "MNext " <<  icode_last_s_pos << "->" << _icode_pos;
+
+    NextBlock()->Reset();
     // move remain char.
     if(icode_last_s_pos != _icode_pos-1) {
-        memmove(NextBlock()->_icodes, (ActiveBlock()->_icodes) + icode_last_s_pos,
+        // debug block
+		if(0)
+        {
+            _DebugCodeConvert();
+        }
+        memcpy(NextBlock()->_icodes, (ActiveBlock()->_icodes) + icode_last_s_pos,
                 sizeof(UnicodeSegChar)*(_icode_pos - icode_last_s_pos) );
-        memmove(NextBlock()->_icode_chars, (ActiveBlock()->_icode_chars) + icode_last_s_pos,
+        memcpy(NextBlock()->_icode_chars, (ActiveBlock()->_icode_chars) + icode_last_s_pos,
                 sizeof(u4)*(_icode_pos - icode_last_s_pos) );
         /*
          *  此处，前后两个 block 存在一部分数据的重合
@@ -156,10 +169,17 @@ int SegStatus::MoveNext() {
     }else{
         _icode_pos = 0;
     }
-    icode_last_s_pos = 0;
+    _icode_last_s_pos = 0;
 
     // 处理 AnnotePool 的轮换; 使用轮换的初衷是不希望在 block 切换时，丢失上下文的标引信息。
     SwapBlock();
+
+    // debug block
+    if(0)
+	{
+        printf("========================================next block===========================================");
+        _DebugCodeConvert();
+    }
     return _icode_pos;
 }
 
@@ -250,12 +270,23 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
                 _icodes[_icode_pos].tagB = 'B';
                 // fix prev B->S
                 if(_icodes[_icode_pos-1].tagB == 'B') {
-                    _icode_last_s_pos = _icode_pos-1;
+                    /*
+                     *  存在以一种情况，因为词被切碎了，导致意外的 S出现
+                     *  因此，实际保存的应该是倒数第二个 S；
+                     *  考虑到人名、或翻译人名会较长的出现单字，仍然存在概率被切碎。
+                     *  因此， 应该断在标点符号|空格附近
+                     *
+                     */
+                    if(icode_tag == _sym_chartag) // 只有符号才更新最后的 S .
+                        _icode_last_s_pos = _icode_pos-1;
                     _icodes[_icode_pos-1].tagB = 'S';
                 }
                 // fix prev M->E
-                if(_icodes[_icode_pos-1].tagB == 'M')
+                if(_icodes[_icode_pos-1].tagB == 'M') {
+                    // 此处的 E 仅能标注 单词和 数字
+                    _icode_last_e_pos_candi = _icode_pos-1;
                     _icodes[_icode_pos-1].tagB = 'E';
+                }
             }else{
                 _icodes[_icode_pos].tagB = 'M';
             }
@@ -309,10 +340,6 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_us
      */
 
     // 确定 CJK 区的 Tag
-    u2 _cjk_chartag = 0;
-    u2 _num_chartag = 0;
-    u2 _ascii_chartag = 0;
-    u2 _sym_chartag = 0;
     {
         u2 icode_tag = 0;
         dict_mgr.GetCharMapper()->Transform( (u4)0x4E2D, &icode_tag );  // Chinese Char `中`
@@ -320,6 +347,7 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_us
         dict_mgr.GetCharMapper()->Transform( (u4)'1', &_num_chartag );
         dict_mgr.GetCharMapper()->Transform( (u4)'A', &_ascii_chartag );
         dict_mgr.GetCharMapper()->Transform( (u4)',', &_sym_chartag );
+        // dict_mgr.GetCharMapper()->Transform( (u4)0x3002, &_sym_chartag ); // the same as , & '。'
     }
 
     mm::DictBase* special_dict = NULL;
