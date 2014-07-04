@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright 2014 Li Monan <limn@coreseek.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -135,7 +135,7 @@ int SegStatus::MoveNext() {
     NextBlock()->Reset();
 
     u4 icode_last_s_pos = _icode_last_s_pos; // 定位到最后一个标点符号的位置
-    if(_icode_last_s_pos < 5)  // 最后一个标点符号过于靠前，找最后一个 E
+    if(icode_last_s_pos < 5)  // 最后一个标点符号过于靠前，找最后一个 E
         icode_last_s_pos = (std::max)(_icode_last_e_pos_candi, ActiveBlock()->_icode_last_e_pos_candi);
 
 	//如果小于 50 ? 则本函数根本不该调用
@@ -145,15 +145,16 @@ int SegStatus::MoveNext() {
     if(icode_last_s_pos < 5)  // 最后一个 E 也过于靠前，说明全部都是 S，那么随便找 最后 50 个
         icode_last_s_pos = _icode_pos - 50;
 
-    //LOG(INFO) << "MNext " <<  icode_last_s_pos << "->" << _icode_pos;
+    LOG(INFO) << "MNext " <<  icode_last_s_pos << "->" << _icode_pos;
 
     NextBlock()->Reset();
     // move remain char.
     if(icode_last_s_pos != _icode_pos-1) {
         // debug block
-		if(0)
+        if(1)
         {
             _DebugCodeConvert();
+			_DebugCodeCtx(icode_last_s_pos);
         }
         memcpy(NextBlock()->_icodes, (ActiveBlock()->_icodes) + icode_last_s_pos,
                 sizeof(UnicodeSegChar)*(_icode_pos - icode_last_s_pos) );
@@ -175,7 +176,7 @@ int SegStatus::MoveNext() {
     SwapBlock();
 
     // debug block
-    if(0)
+    if(1)
 	{
         printf("========================================next block===========================================");
         _DebugCodeConvert();
@@ -277,8 +278,8 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
                      *  因此， 应该断在标点符号|空格附近
                      *
                      */
-                    if(icode_tag == _sym_chartag) // 只有符号才更新最后的 S .
-                        _icode_last_s_pos = _icode_pos-1;
+                    //if(icode_tag == _sym_chartag) // 只有符号才更新最后的 S . 这里有一个 bug， 此处的符号是当前字符的。
+                    //    _icode_last_s_pos = _icode_pos-1;
                     _icodes[_icode_pos-1].tagB = 'S';
                 }
                 // fix prev M->E
@@ -291,6 +292,10 @@ u4 SegStatus::FillWithICode(const DictMgr &dict_mgr, bool toLower) {
                 _icodes[_icode_pos].tagB = 'M';
             }
         }
+        // 标记最后一个 标点符号 的位置
+        if(icode_tag == _sym_chartag) // 只有符号才更新最后的 S .
+            _icode_last_s_pos = _icode_pos;
+
         _icode_pos++;
     } // end while
 
@@ -347,6 +352,7 @@ u4 SegStatus::BuildTermDAG (const DictMgr& dict_mgr, const DictTermUser *dict_us
         dict_mgr.GetCharMapper()->Transform( (u4)'1', &_num_chartag );
         dict_mgr.GetCharMapper()->Transform( (u4)'A', &_ascii_chartag );
         dict_mgr.GetCharMapper()->Transform( (u4)',', &_sym_chartag );
+		// dict_mgr.GetCharMapper()->Transform( (u4)0x3002, &_sym_chartag ); 
         // dict_mgr.GetCharMapper()->Transform( (u4)0x3002, &_sym_chartag ); // the same as , & '。'
     }
 
@@ -511,6 +517,18 @@ void SegStatus::_DebugCodeConvert()
             printf("/ ");
         }
     }
+}
+
+void SegStatus::_DebugCodeCtx(u4 pos)
+{
+	/* 调试使用的 iCode ， 输出 pos 附近的上下文 */
+	u1 buf[128];
+	int n = 0;
+	for(u4 i = pos-5; i< pos+5; i++ ){
+		n = csr::csrUTF8Encode(buf, ActiveBlock()->_icode_chars[i]);
+		buf[n] = 0;
+		printf("%s", buf );
+	}
 }
 
 void SegStatus::_DebugDumpDAG()

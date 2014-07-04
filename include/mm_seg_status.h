@@ -210,6 +210,7 @@ protected:
 
 protected:
     void _DebugCodeConvert();
+	void _DebugCodeCtx(u4 pos);
     void _DebugDumpDAG();
     void _DebugMMSegResult();
 
