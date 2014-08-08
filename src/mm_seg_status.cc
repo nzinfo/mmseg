@@ -145,13 +145,13 @@ int SegStatus::MoveNext() {
     if(icode_last_s_pos < 5)  // 最后一个 E 也过于靠前，说明全部都是 S，那么随便找 最后 50 个
         icode_last_s_pos = _icode_pos - 50;
 
-    LOG(INFO) << "MNext " <<  icode_last_s_pos << "->" << _icode_pos;
+    //LOG(INFO) << "MNext " <<  icode_last_s_pos << "->" << _icode_pos;
 
     NextBlock()->Reset();
     // move remain char.
     if(icode_last_s_pos != _icode_pos-1) {
         // debug block
-        if(1)
+        if(0)
         {
             _DebugCodeConvert();
 			_DebugCodeCtx(icode_last_s_pos);
@@ -176,7 +176,7 @@ int SegStatus::MoveNext() {
     SwapBlock();
 
     // debug block
-    if(1)
+    if(0)
 	{
         printf("========================================next block===========================================");
         _DebugCodeConvert();

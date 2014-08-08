@@ -42,6 +42,10 @@ ELSE (WIN32)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF (WIN32)
 
+add_subdirectory (sregex)
+
+ADD_EXECUTABLE(sre_cli sre_cli.c )
+target_link_libraries(sre_cli sregex_lt)
 
 SET(LIBMMSEG_SOURCE
     mm_charmap.cc
