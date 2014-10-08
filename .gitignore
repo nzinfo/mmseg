@@ -17,6 +17,7 @@
 /libtool
 /src/Makefile
 /stamp-h1
+/python/build
 
 # binary
 /src/mmseg

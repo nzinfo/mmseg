@@ -1,6 +1,6 @@
 from distutils.core import setup, Extension
 
-module1 = Extension('demo',
+module1 = Extension('cmmseg',
 		    define_macros = [('MAJOR_VERSION', '1'),
                                      ('MINOR_VERSION', '0')],
                     include_dirs = ['/usr/local/include/mmseg'],
@@ -11,6 +11,6 @@ module1 = Extension('demo',
 
 setup (name = 'PackageName',
        version = '1.0',
-       description = 'This is a demo package',
+       description = 'pymmseg, python wrap for libmmseg',
        ext_modules = [module1])
 
