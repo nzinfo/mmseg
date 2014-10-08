@@ -21,9 +21,6 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the `readline' library (-lreadline). */
-#undef HAVE_LIBREADLINE
-
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
@@ -62,12 +59,6 @@
 
 /* Define to 1 if you have the `strspn' function. */
 #undef HAVE_STRSPN
-
-/* Define if your system libraries have a sys_errlist variable. */
-#undef HAVE_SYS_ERRLIST
-
-/* Define if your system libraries have a sys_siglist variable. */
-#undef HAVE_SYS_SIGLIST
 
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
@@ -108,6 +99,9 @@
 
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION

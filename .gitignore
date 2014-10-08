@@ -1,0 +1,28 @@
+# /
+/Makefile
+/config.status
+/config.log
+/aclocal.m4
+/bin
+/junk
+/*.suo
+/*.ncb
+/*.sdf
+/.hg
+/autom4te.cache
+/bld
+/configure
+/config.h
+/config/compile
+/libtool
+/src/Makefile
+/stamp-h1
+
+
+# file types
+*.lo
+*.o
+*.pyc
+*.user
+\.deps
+\.dirstamp
