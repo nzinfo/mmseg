@@ -9,8 +9,13 @@ namespace css {
 //using namespace CRFPP;
 #ifdef WIN32
 using namespace stdext;
-#else
-using namespace __gnu_cxx;
+//#else
+//using namespace __gnu_cxx;
+#endif
+
+#ifdef __GNUC__
+//# include <ext/hash_set>
+//# include <ext/hash_map>
 #endif
 
 #include "darts.h"

@@ -18,11 +18,16 @@
 /src/Makefile
 /stamp-h1
 
+# binary
+/src/mmseg
 
 # file types
 *.lo
+*.la
+*.a
 *.o
 *.pyc
 *.user
 \.deps
+\.libs
 \.dirstamp
