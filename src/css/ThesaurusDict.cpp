@@ -54,6 +54,8 @@ int ThesaurusDict::load(const char* filename)
 
 bool Cmp(const ThesaurusRecord *p1, const ThesaurusRecord *p2)
 {
+	if(p1 == NULL || p2 == NULL)
+		return p1 < p2;
 	char i = 0;
 	while(1) {
 		unsigned char pu1 = p1->key[i];
@@ -91,7 +93,7 @@ int ThesaurusDict::import(const char* filename, const char* target_file)
 			n++;
 			//
 			//the value row
-			ThesaurusRecord* tr = new ThesaurusRecord; //FIXME: should free, but who care
+			ThesaurusRecord* tr = new ThesaurusRecord(); //FIXME: should free, but who care
 			tr->key = key;
 			memset(tr->value,0,sizeof(tr->value));
 			memcpy(tr->value,&line.c_str()[1], line.length()-1);
@@ -119,8 +121,8 @@ int ThesaurusDict::import(const char* filename, const char* target_file)
 	u1* total_buf = (u1*)malloc(string_bufsize);
 	memset((void*)total_buf, 0, string_bufsize);
 	u1* total_buf_ptr = total_buf;
-	//read complete, try make dict
-	std::sort(items.begin(), items.end(), Cmp);
+	//read complete, try make dict -> have bug in Cmp... -- 2014.10
+	//std::sort(items.begin(), items.end(), Cmp);
 	{
 		std::vector <Darts::DoubleArray::key_type *> key;
 		std::vector <Darts::DoubleArray::value_type> value;

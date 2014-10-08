@@ -43,8 +43,9 @@ def main():
             if sk != k and ht.has_key(sk):
                 subk[sk] = 1
         ht[k] = subk
-        
-    for k in ht:
+    
+    keys = sorted(ht.keys())
+    for k in keys:
         if ht[k] != 1 and  ht[k] != {}:
             print k.encode('UTF-8')
             s = ''

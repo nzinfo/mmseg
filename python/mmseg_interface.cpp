@@ -22,12 +22,12 @@ extern "C" {
 typedef struct {
 	PyObject_HEAD
 		/* Type-specific fields go here. */
-		SegmenterManager* m_segmgr; //only PySource is supported for the leak support of setField in other documents
-
+		SegmenterManager* m_segmgr; // only PySource is supported for the leak support of setField in other documents
+		Segmenter* m_thesaurus_seg; // used query thesaurus.
 } csfHelper_MMSegObject;
 
 PyObject * PyMmseg_Segment(PyObject * self, PyObject* args);
-
+PyObject * PyMmseg_Thesaurus(PyObject * self, PyObject* args);
 
 static int PyMMSeg_init(csfHelper_MMSegObject *self, PyObject *args, PyObject *kwds);
 
@@ -35,6 +35,7 @@ static void PyMMSeg_dealloc(csfHelper_MMSegObject* self);
 
 static PyMethodDef PyMMSeg_Helper_methods[] = {  
 	{"segment", PyMmseg_Segment, METH_VARARGS},   
+	{"thesaurus", PyMmseg_Thesaurus, METH_VARARGS},   
 	{"build_dict", PyMmseg_BuildDict, METH_VARARGS},   
 	{NULL, NULL}  
 };  
@@ -106,10 +107,18 @@ static int PyMMSeg_init(csfHelper_MMSegObject *self, PyObject *args, PyObject *k
 			return -1;
 		}
 	}
+	// 初始化 查询同义词需要的 segment
+	self->m_thesaurus_seg = self->m_segmgr->getSegmenter(false); 
 	return 0;
 }
 
 static void PyMMSeg_dealloc(csfHelper_MMSegObject* self) {
+	if(self->m_thesaurus_seg) 
+	{
+		delete self->m_thesaurus_seg;
+		self->m_thesaurus_seg  = NULL;
+	}
+
 	if(self->m_segmgr)
 	{
 		delete self->m_segmgr;
@@ -144,6 +153,30 @@ PyObject * PyMmseg_Segment(PyObject * self, PyObject* args)
 		//FIXME: free the segmenter
 		delete seg;
 
+		return seg_result;
+	}
+}
+
+PyObject * PyMmseg_Thesaurus(PyObject * self, PyObject* args)
+{
+	csfHelper_MMSegObject *self2 = (csfHelper_MMSegObject *)self;
+	char *fromPython; 
+
+	if (!PyArg_Parse(args, "(s)", &fromPython))
+		return NULL;
+	else
+	{
+		Segmenter* seg = self2->m_thesaurus_seg;
+		unsigned short len = 0;
+
+		const char* thesaurus_ptr = seg->thesaurus(fromPython, strlen(fromPython));
+		PyObject* seg_result = PyList_New(0);
+		while(thesaurus_ptr && *thesaurus_ptr) {
+			len = strlen(thesaurus_ptr);
+			//printf("%*.*s/s ",len,len,thesaurus_ptr);
+			PyList_Append(seg_result, PyString_FromStringAndSize(thesaurus_ptr,len));
+			thesaurus_ptr += len + 1; //move next
+		}
 		return seg_result;
 	}
 }
