@@ -120,7 +120,7 @@
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)\..\src&quot;;&quot;$(SolutionDir)\..\src\css&quot;;&quot;$(SolutionDir)\..\src\utils&quot;;&quot;$(SolutionDir)\..\src\iniparser&quot;"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
