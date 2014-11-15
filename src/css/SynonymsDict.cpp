@@ -43,7 +43,7 @@ typedef struct _csr_crfdict_fileheader_tag{
 
 int SynonymsDict::load(const char* filename)
 {
-	m_file = csr_mmap_file(filename,0);
+	m_file = csr_mmap_file(filename,1);
 	if(!m_file)
 		return -1; //can not load dict.
 	csr_offset_t tm_size = csr_mmap_size(m_file);

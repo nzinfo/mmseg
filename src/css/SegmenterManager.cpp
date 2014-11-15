@@ -137,7 +137,7 @@ int SegmenterManager::init(const char* path, u1 method)
 		nRet = m_uni.load(buf);
 
 		if(nRet!=0){
-			printf("Unigram dictionary load Error\n");
+			printf("Unigram dictionary load Error(%d), %s\n", nRet, buf);
 			return nRet;
 		}
 		//no needs to care kwformat
