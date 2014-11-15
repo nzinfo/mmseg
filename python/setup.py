@@ -7,6 +7,8 @@ define_macros = [('MAJOR_VERSION', '1'),
 extra_compile_args=[] 
 extra_link_args=[]                  
 
+# Ref: https://code.google.com/p/cefpython/source/browse/cefpython1/setup/setup.py
+
 if sys.platform == "win32":
     include_dirs = ['../libcss/include']
     library_dirs = ['../libcss/lib']
