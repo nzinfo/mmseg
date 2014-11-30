@@ -30,7 +30,7 @@ module1 = Extension('cmmseg',
                     extra_link_args = extra_link_args,
                     sources = ['pymmseg.c','mmseg_interface.cpp'])
 
-setup (name = 'PackageName',
+setup (name = 'mmseg4py',
        version = '1.0',
        description = 'pymmseg, python wrap for libmmseg',
        ext_modules = [module1])

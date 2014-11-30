@@ -138,7 +138,8 @@ PyObject * PyMmseg_Segment(PyObject * self, PyObject* args)
 		Segmenter* seg = self2->m_segmgr->getSegmenter(false); 
 		seg->setBuffer((u1*)fromPython, (u4)strlen(fromPython));
 
-		PyObject* seg_result = PyList_New(0);
+		PyObject* item;
+        PyObject* seg_result = PyList_New(0);
 		while(1)
 		{
 			u2 len = 0, symlen = 0;
@@ -147,7 +148,9 @@ PyObject * PyMmseg_Segment(PyObject * self, PyObject* args)
 				break;
 			}
 			//append new item
-			PyList_Append(seg_result, PyString_FromStringAndSize(tok,len));
+			item = PyString_FromStringAndSize(tok,len);
+            PyList_Append(seg_result, item);
+            Py_DECREF(item);
 			seg->popToken(len);
 		}
 		//FIXME: free the segmenter
@@ -171,11 +174,14 @@ PyObject * PyMmseg_Thesaurus(PyObject * self, PyObject* args)
 
 		const char* thesaurus_ptr = seg->thesaurus(fromPython, strlen(fromPython));
 		PyObject* seg_result = PyList_New(0);
+        PyObject* item = NULL;
 		while(thesaurus_ptr && *thesaurus_ptr) {
 			len = strlen(thesaurus_ptr);
 			//printf("%*.*s/s ",len,len,thesaurus_ptr);
-			PyList_Append(seg_result, PyString_FromStringAndSize(thesaurus_ptr,len));
-			thesaurus_ptr += len + 1; //move next
+			item = PyString_FromStringAndSize(thesaurus_ptr,len);
+            PyList_Append(seg_result, item);
+			Py_DECREF(item);
+            thesaurus_ptr += len + 1; //move next
 		}
 		return seg_result;
 	}
