@@ -316,6 +316,7 @@ void MMThunk::reset() {
   while (!tokens.empty()) {
     tokens.pop();
   }
+  q_omni_tokens = std::priority_queue<OmniItem,std::vector<OmniItem>, OmniItemCmp>();
   //q_omni_tokens.empty();
   m_queue.reset();
 
