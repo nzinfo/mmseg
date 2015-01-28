@@ -307,6 +307,7 @@ int segment(const char* file,Segmenter* seg, u1 bQuite)
 		printf("%*.*s/x ",symlen,symlen,tok);
 		
 		//omni words at this pos
+		if(0)
 		{
 			tok = (char*)seg->popOmniToken(len);
 			while(tok) {
