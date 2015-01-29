@@ -21,9 +21,15 @@
 
 # binary
 /src/mmseg
+/win32/x64
+/win32/Release
+*.ncb
+*.suo
+/libcss
 
 # file types
 *.lo
+*.in~
 *.la
 *.a
 *.o
