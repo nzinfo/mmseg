@@ -34,7 +34,7 @@
 namespace css {
 	using namespace csr;
 
-#define MAX_TOKEN_LENGTH 15 //3*5
+#define MAX_TOKEN_LENGTH 36 //3*5
 
 int Segmenter::getOffset()
 {
