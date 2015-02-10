@@ -24,9 +24,13 @@ typedef struct _csr_thesaurusdict_fileheader_tag{
 
 int ThesaurusDict::load(const char* filename)
 {
+	if(m_file)
+		csr_munmap_file(m_file);
+	
 	m_file = csr_mmap_file(filename,1); //load all into memory
 	if(!m_file)
 		return -1; //can not load dict.
+
 	csr_offset_t tm_size = csr_mmap_size(m_file);
 	u1* ptr = (u1*)csr_mmap_map(m_file);
 	u1* ptr_end = ptr + tm_size;

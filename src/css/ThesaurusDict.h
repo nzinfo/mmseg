@@ -33,7 +33,7 @@ class ThesaurusDict {
  
  public:
 	typedef Darts::DoubleArray::result_pair_type result_pair_type;
-	ThesaurusDict () :m_stringpool(NULL){};
+	ThesaurusDict () :m_file(NULL), m_stringpool(NULL){};
 	virtual ~ThesaurusDict () {
 		 if(m_file){
 			 csr_munmap_file(m_file);

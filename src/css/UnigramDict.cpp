@@ -42,6 +42,8 @@ typedef struct _csr_unigramdict_fileheader_tag{
 int UnigramDict::load(const char* filename)
 {
 	m_da.clear();
+	if(m_file)
+		csr_munmap_file(m_file);
 	m_file = csr_mmap_file(filename, 1); // no needs mmap, load into memory is more fast.	
 	if(!m_file)
 		return -1; //can not load dict.

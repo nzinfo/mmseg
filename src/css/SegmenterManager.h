@@ -46,7 +46,7 @@ class SegmenterManager {
      */
     Segmenter *getSegmenter( bool bFromPool = true);
 
-    virtual int init(const char* path, u1 method = SEG_METHOD_NGRAM);
+    virtual int init(const char* path, u1 method = SEG_METHOD_NGRAM, bool force_load = false);
 	void loadconfig(const char* confile);
     void clear();
 

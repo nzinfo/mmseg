@@ -101,12 +101,12 @@ void SegmenterManager::loadconfig(const char* confile)
 		iniparser_getint(ini, "mmseg:omni_segmentation", 2); //output this only when term weight over 2
 }
 
-int SegmenterManager::init(const char* path, u1 method)
+int SegmenterManager::init(const char* path, u1 method, bool force_load)
 {
 	if( method != SEG_METHOD_NGRAM)
 		return -4; //unsupport segmethod.
 	
-	if( m_inited )
+	if( m_inited  && !force_load)
 		return 0; //only can be init once.
 	
 	char buf[1024];
